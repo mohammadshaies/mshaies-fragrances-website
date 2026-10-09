@@ -1571,7 +1571,9 @@ function AdminDashboard() {
     setMounted(true);
     const authed =
       sessionStorage.getItem(AUTH_SESSION_KEY) === "true" ||
-      !!sessionStorage.getItem("mshaies_admin_token");
+      !!sessionStorage.getItem("mshaies_admin_token") ||
+      localStorage.getItem(AUTH_SESSION_KEY) === "true" ||
+      !!localStorage.getItem("mshaies_admin_token");
     if (authed) {
       setIsAuthenticated(true);
     }
@@ -1595,7 +1597,7 @@ function AdminDashboard() {
       }
     }
   }, []);
-  const [authMode, setAuthMode] = useState<"supabase" | "pin">("supabase");
+  const [authMode, setAuthMode] = useState<"supabase" | "pin">("pin");
   const [adminEmail, setAdminEmail] = useState("admin@mshaies.com");
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -1893,6 +1895,8 @@ function AdminDashboard() {
       if (res.success && res.token) {
         sessionStorage.setItem("mshaies_admin_token", res.token);
         sessionStorage.setItem(AUTH_SESSION_KEY, "true");
+        localStorage.setItem("mshaies_admin_token", res.token);
+        localStorage.setItem(AUTH_SESSION_KEY, "true");
         setIsAuthenticated(true);
         setFailedAttempts(0);
         toast.success(`Authenticated as ${res.user?.email || "Maison Administrator"}`);
@@ -1928,6 +1932,8 @@ function AdminDashboard() {
       if (res.success && res.token) {
         sessionStorage.setItem("mshaies_admin_token", res.token);
         sessionStorage.setItem(AUTH_SESSION_KEY, "true");
+        localStorage.setItem("mshaies_admin_token", res.token);
+        localStorage.setItem(AUTH_SESSION_KEY, "true");
         setIsAuthenticated(true);
         setFailedAttempts(0);
         sessionStorage.removeItem("mshaies_failed_pin_attempts");
@@ -1961,6 +1967,8 @@ function AdminDashboard() {
     setIsAuthenticated(false);
     sessionStorage.removeItem(AUTH_SESSION_KEY);
     sessionStorage.removeItem("mshaies_admin_token");
+    localStorage.removeItem(AUTH_SESSION_KEY);
+    localStorage.removeItem("mshaies_admin_token");
     setPinInput("");
     setAdminPassword("");
     toast.info("Admin console securely locked.");
@@ -2622,15 +2630,6 @@ function AdminDashboard() {
           <div className="flex rounded-full bg-pearl p-1 border border-border/80">
             <button
               type="button"
-              onClick={() => setAuthMode("supabase")}
-              className={`flex-1 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                authMode === "supabase" ? "bg-white text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
-              }`}
-            >
-              Supabase Staff Auth
-            </button>
-            <button
-              type="button"
               onClick={() => setAuthMode("pin")}
               className={`flex-1 py-1.5 rounded-full text-xs font-semibold transition-all ${
                 authMode === "pin" ? "bg-white text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
@@ -2638,9 +2637,50 @@ function AdminDashboard() {
             >
               Master PIN Lock
             </button>
+            <button
+              type="button"
+              onClick={() => setAuthMode("supabase")}
+              className={`flex-1 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                authMode === "supabase" ? "bg-white text-ink shadow-sm" : "text-muted-foreground hover:text-ink"
+              }`}
+            >
+              Staff Email Auth
+            </button>
           </div>
 
-          {authMode === "supabase" ? (
+          {authMode === "pin" ? (
+            <form onSubmit={handlePinSubmit} className="space-y-4 pt-1">
+              <div className="relative">
+                <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
+                <input
+                  type="password"
+                  maxLength={8}
+                  disabled={isLockedOut || isAuthenticating}
+                  autoFocus
+                  placeholder="Enter Master PIN (7860)"
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  className={`w-full pl-11 pr-4 py-3 rounded-2xl border text-center font-mono text-base tracking-widest bg-background focus:outline-none transition-colors ${
+                    failedAttempts > 0 ? "border-destructive text-destructive" : "border-border focus:border-gold"
+                  }`}
+                />
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-gold/10 border border-gold/30 text-[11px] text-gold-deep font-medium flex items-center justify-between">
+                <span>Default Master PIN:</span>
+                <code className="font-mono font-bold text-xs bg-white/80 px-2 py-0.5 rounded border border-gold/30 text-ink">7860</code>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLockedOut || isAuthenticating}
+                className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <Unlock className="size-3.5" />
+                {isAuthenticating ? "Verifying PIN..." : isLockedOut ? "Lockout Active (Wait 1 Min)" : "Unlock Console with PIN"}
+              </button>
+            </form>
+          ) : (
             <form onSubmit={handleSupabaseLogin} className="space-y-4 pt-1 text-left">
               <div>
                 <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
@@ -2676,6 +2716,11 @@ function AdminDashboard() {
                 </div>
               </div>
 
+              <div className="p-2.5 rounded-xl bg-pearl border border-border/70 text-[11px] text-muted-foreground flex flex-col gap-0.5">
+                <span>Default Credentials:</span>
+                <span className="font-mono text-[10px] text-ink font-semibold">admin@mshaies.com · Mshaies7860! (or PIN 7860)</span>
+              </div>
+
               <button
                 type="submit"
                 disabled={isAuthenticating}
@@ -2683,33 +2728,6 @@ function AdminDashboard() {
               >
                 <Unlock className="size-3.5" />
                 {isAuthenticating ? "Verifying Credentials..." : "Authenticate Staff Session"}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handlePinSubmit} className="space-y-4 pt-1">
-              <div className="relative">
-                <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
-                <input
-                  type="password"
-                  maxLength={8}
-                  disabled={isLockedOut}
-                  autoFocus
-                  placeholder="Enter Master PIN"
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 rounded-2xl border text-center font-mono text-base tracking-widest bg-background focus:outline-none transition-colors ${
-                    failedAttempts > 0 ? "border-destructive text-destructive" : "border-border focus:border-gold"
-                  }`}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLockedOut}
-                className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <Unlock className="size-3.5" />
-                {isLockedOut ? "Lockout Active (Wait 1 Min)" : "Unlock with PIN"}
               </button>
             </form>
           )}
