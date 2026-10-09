@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- 1. Primary Landing & Homepage -->
+  <url>
+    <loc>https://mshaies.com/</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://mshaies.com/logo-wordmark.png</image:loc>
+      <image:title>M.shaies Haute Parfumerie Lahore</image:title>
+      <image:caption>Signature Artisanal Fragrances Crafted in Pakistan</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 2. Collections & Department Hubs -->
+  <url>
+    <loc>https://mshaies.com/shop</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/attars</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/perfumes</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/watches</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 3. Brand Story & Olfactory Heritage -->
+  <url>
+    <loc>https://mshaies.com/journey</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 4. Individual Product Showcases (with Google Image Sitemap tags) -->
+  <url>
+    <loc>https://mshaies.com/product/oud-al-jamil</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://mshaies.com/product-dark.jpg</image:loc>
+      <image:title>Oud Al-Jamil Pure Attar Oil</image:title>
+      <image:caption>12ml Aged Cambodian Oud and Taif Rose Oil</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/product/midnight-rose-attar</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://mshaies.com/product-midnight-rose.png</image:loc>
+      <image:title>Midnight Rose Pure Attar Oil</image:title>
+      <image:caption>Damask Rose, Amber &amp; Vanilla Pure Concentrate</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/product/desert-gold-edp</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <image:image>
+      <image:loc>https://mshaies.com/product-desert-gold.png</image:loc>
+      <image:title>Desert Gold Extrait De Parfum</image:title>
+      <image:caption>50ml Luxury Saffron, Leather and Amber Perfume Spray</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/product/royal-ambergris</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://mshaies.com/product-box.jpg</image:loc>
+      <image:title>Royal Ambergris Pure Attar</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/product/dehn-al-oudh-qadeem</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://mshaies.com/product-box.jpg</image:loc>
+      <image:title>Dehn Al Oudh Qadeem Aged Agarwood</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/product/velvet-saffron-edp</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://mshaies.com/product-box.jpg</image:loc>
+      <image:title>Velvet Saffron Eau De Parfum</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/product/mshaies-royal-chronograph</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://mshaies.com/product-box.jpg</image:loc>
+      <image:title>Maison Royal Chronograph Luxury Timepiece</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/product/mshaies-skeleton-automatic</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://mshaies.com/product-box.jpg</image:loc>
+      <image:title>Maison Skeleton Automatic Watch</image:title>
+    </image:image>
+  </url>
+
+  <!-- 5. Corporate, Concierge & Information Pages -->
+  <url>
+    <loc>https://mshaies.com/about</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/contact</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/support</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://mshaies.com/careers</loc>
+    <lastmod>2026-10-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+</urlset>

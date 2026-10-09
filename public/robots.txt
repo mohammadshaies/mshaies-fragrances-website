@@ -1,0 +1,89 @@
+# ==============================================================================
+# M.shaies Haute Parfumerie — Robots Crawler Policy
+# Website: https://mshaies.com
+# Canonical Sitemap: https://mshaies.com/sitemap.xml
+# ==============================================================================
+
+# General rules for all compliant search engine web crawlers
+User-agent: *
+Allow: /
+Allow: /shop
+Allow: /attars
+Allow: /perfumes
+Allow: /watches
+Allow: /journey
+Allow: /about
+Allow: /contact
+Allow: /support
+Allow: /careers
+Allow: /product/
+Allow: /product/*
+
+# Disallow private administrative, staff, and transactional customer routes
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /checkout
+Disallow: /checkout/
+Disallow: /checkout/*
+Disallow: /invoice/
+Disallow: /invoice/*
+Disallow: /api/
+Disallow: /api/*
+Disallow: /_server/
+Disallow: /_server/*
+
+# Dedicated crawler directives
+User-agent: Googlebot
+Allow: /
+Allow: /public/
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+User-agent: Googlebot-Image
+Allow: /
+Allow: /product-*.png
+Allow: /product-*.jpg
+Allow: /logo-*.png
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+User-agent: Applebot
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+User-agent: DuckDuckBot
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+User-agent: Baiduspider
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+User-agent: YandexBot
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+# Rate crawl delay for aggressive non-major bots
+User-agent: AhrefsBot
+Crawl-delay: 2
+
+User-agent: SemrushBot
+Crawl-delay: 2
+
+# XML Sitemap Index
+Sitemap: https://mshaies.com/sitemap.xml
+Host: https://mshaies.com
