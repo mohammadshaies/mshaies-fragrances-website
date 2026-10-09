@@ -38,7 +38,7 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
     let standardShippingFee = 250;
     let expressShippingFee = 450;
     let lahoreLocalFee = 150;
-    let codFee = 0;
+    let codFee = 400;
     let freeShippingEnabled = true;
 
     if (isSupabaseConfigured()) {
@@ -51,7 +51,7 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
             standardShippingFee = s.standard_shipping_fee ?? 250;
             expressShippingFee = s.express_shipping_fee ?? 450;
             lahoreLocalFee = s.lahore_local_fee ?? 150;
-            codFee = s.cod_fee ?? 0;
+            codFee = s.cod_fee ?? 400;
             freeShippingEnabled = s.free_shipping_enabled ?? true;
           }
         }

@@ -250,7 +250,7 @@ function InvoicePage() {
               </div>
             )}
             <div className="flex justify-between text-muted-foreground">
-              <span>Nationwide Shipping:</span>
+              <span>Nationwide Delivery {order.paymentMethod === "cod" ? "(incl. ₨ 400 COD Surcharge)" : ""}:</span>
               <span className="font-serif font-medium text-ink">
                 {order.shipping === 0 ? "FREE" : formatPKR(order.shipping)}
               </span>

@@ -6279,7 +6279,7 @@ function AdminDashboard() {
               </div>
 
               <form onSubmit={handleSaveSettings} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
                       Free Shipping Over (PKR)
@@ -6301,6 +6301,18 @@ function AdminDashboard() {
                       value={settingsForm.standardShippingFee}
                       onChange={(e) => setSettingsForm({ ...settingsForm, standardShippingFee: Number(e.target.value) })}
                       className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                      Cash on Delivery (COD) Fee (PKR)
+                    </label>
+                    <input
+                      type="number"
+                      value={settingsForm.codFee ?? 400}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, codFee: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none font-semibold text-amber-700"
                     />
                   </div>
                 </div>

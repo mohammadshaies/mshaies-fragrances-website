@@ -198,7 +198,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   expressShippingActive: true,
   lahoreLocalFee: 150,
   lahoreLocalActive: true,
-  codFee: 0,
+  codFee: 400,
   freeShippingEnabled: true,
   shippingEstimateDays: "2-4 Business Days",
   courierPartners: "TCS Express & Leopards Courier",

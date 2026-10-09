@@ -15,7 +15,7 @@ function mapSupabaseSettings(s: any) {
     expressShippingActive: Boolean(s.express_shipping_active ?? s.expressShippingActive ?? true),
     lahoreLocalFee: Number(s.lahore_local_fee ?? s.lahoreLocalFee ?? 150),
     lahoreLocalActive: Boolean(s.lahore_local_active ?? s.lahoreLocalActive ?? true),
-    codFee: Number(s.cod_fee ?? s.codFee ?? 0),
+    codFee: Number(s.cod_fee ?? s.codFee ?? 400),
     freeShippingEnabled: Boolean(s.free_shipping_enabled ?? s.freeShippingEnabled ?? true),
     shippingEstimateDays: s.shipping_estimate_days ?? s.shippingEstimateDays ?? "2-4 Business Days Nationwide",
     whatsappNumber: s.whatsapp_number ?? s.whatsappNumber ?? "+923325568922",
