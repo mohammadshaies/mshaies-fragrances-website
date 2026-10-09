@@ -4,31 +4,35 @@ import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { eq } from "drizzle-orm";
 
-export const placeOrderServerFn = createServerFn({ method: "POST" })
-  .validator(
+export const placeOrderSchema = z.object({
+  orderId: z.string().optional(),
+  customerName: z.string().min(1).max(100).trim(),
+  email: z.string().max(150).optional(),
+  phone: z.string().min(8).max(25).trim(),
+  address: z.string().min(3).max(300).trim(),
+  city: z.string().min(2).max(100).trim(),
+  postalCode: z.string().max(20).optional(),
+  shippingMethod: z.enum(["standard", "express", "lahoreLocal"]).default("standard"),
+  paymentMethod: z.enum(["cod", "jazzcash", "easypaisa", "nayapay", "card"]).default("cod"),
+  transactionId: z.string().max(100).optional(),
+  discountCode: z.string().max(50).optional(),
+  isGiftWrapped: z.boolean().optional(),
+  giftMessage: z.string().max(500).optional(),
+  items: z.array(
     z.object({
-      customerName: z.string().min(1).max(100).trim(),
-      email: z.string().max(150).optional(),
-      phone: z.string().min(8).max(25).trim(),
-      address: z.string().min(3).max(300).trim(),
-      city: z.string().min(2).max(100).trim(),
-      postalCode: z.string().max(20).optional(),
-      shippingMethod: z.enum(["standard", "express", "lahoreLocal"]).default("standard"),
-      paymentMethod: z.enum(["cod", "jazzcash", "easypaisa", "nayapay", "card"]).default("cod"),
-      transactionId: z.string().max(100).optional(),
-      discountCode: z.string().max(50).optional(),
-      isGiftWrapped: z.boolean().optional(),
-      giftMessage: z.string().max(500).optional(),
-      items: z.array(
-        z.object({
-          productId: z.string().min(1).max(100),
-          qty: z.number().int().positive().max(100),
-          volume: z.string().max(100),
-        })
-      ).min(1).max(50),
+      productId: z.string().min(1).max(100),
+      qty: z.number().int().positive().max(100),
+      volume: z.string().max(100),
+      name: z.string().max(200).optional(),
+      price: z.number().nonnegative().optional(),
+      image: z.string().optional(),
     })
-  )
-  .handler(async ({ data }) => {
+  ).min(1).max(50),
+});
+
+export type PlaceOrderInput = z.infer<typeof placeOrderSchema>;
+
+export async function processPlaceOrder(data: PlaceOrderInput) {
     if (data.items.length === 0) {
       return { success: false, error: "Cannot place an order with empty cart." };
     }
@@ -103,6 +107,16 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
         } else {
           unitPrice = dbProd.price;
         }
+      } else {
+        if (item.price !== undefined && item.price >= 0) {
+          unitPrice = item.price;
+        }
+        if (item.name) {
+          itemName = item.name;
+        }
+        if (item.image) {
+          itemImage = item.image;
+        }
       }
 
       subtotal += unitPrice * item.qty;
@@ -174,7 +188,7 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
     const finalTotal = Math.max(0, subtotal - discountAmount + shippingFee);
 
     // 5. Construct Order Object
-    const orderId = `MSH-${Date.now().toString().slice(-5)}`;
+    const orderId = data.orderId || `MSH-${Date.now().toString().slice(-5)}`;
     const cleanPhone = data.phone.replace(/[^0-9]/g, "");
     const customerId = `cust-${cleanPhone}`;
 
@@ -304,11 +318,16 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
         items: verifiedItems,
       },
     };
-  });
+}
 
-export const getOrdersServerFn = createServerFn({ method: "POST" })
-  .validator(z.object({ authToken: z.string().optional() }))
-  .handler(async ({ data }) => {
+export const placeOrderServerFn = createServerFn({ method: "POST" })
+  .validator(placeOrderSchema)
+  .handler(async ({ data }) => processPlaceOrder(data));
+
+export const getOrdersSchema = z.object({ authToken: z.string().optional() });
+export type GetOrdersInput = z.infer<typeof getOrdersSchema>;
+
+export async function processGetOrders(data: GetOrdersInput) {
     const auth = await verifyAdminSession(data.authToken);
     if (!auth.valid) {
       return { success: false, error: auth.error || "Unauthorized admin access." };
@@ -401,19 +420,22 @@ export const getOrdersServerFn = createServerFn({ method: "POST" })
     }
 
     return { success: true, orders: [], source: "none" };
-  });
+}
 
-export const updateOrderStatusServerFn = createServerFn({ method: "POST" })
-  .validator(
-    z.object({
-      id: z.string().min(1),
-      status: z.enum(["Confirmed", "Processing", "Dispatched", "Delivered"]),
-      courierName: z.string().optional(),
-      trackingNumber: z.string().optional(),
-      authToken: z.string().optional(),
-    })
-  )
-  .handler(async ({ data }) => {
+export const getOrdersServerFn = createServerFn({ method: "POST" })
+  .validator(getOrdersSchema)
+  .handler(async ({ data }) => processGetOrders(data));
+
+export const updateOrderStatusSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(["Confirmed", "Processing", "Dispatched", "Delivered"]),
+  courierName: z.string().optional(),
+  trackingNumber: z.string().optional(),
+  authToken: z.string().optional(),
+});
+export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
+
+export async function processUpdateOrderStatus(data: UpdateOrderStatusInput) {
     const auth = await verifyAdminSession(data.authToken);
     if (!auth.valid) {
       return { success: false, error: auth.error || "Unauthorized admin action." };
@@ -464,17 +486,20 @@ export const updateOrderStatusServerFn = createServerFn({ method: "POST" })
     }
 
     return { success: true };
-  });
+}
 
-export const updatePaymentStatusServerFn = createServerFn({ method: "POST" })
-  .validator(
-    z.object({
-      id: z.string().min(1),
-      paymentStatus: z.enum(["Paid", "Pending COD", "Verification Required"]),
-      authToken: z.string().optional(),
-    })
-  )
-  .handler(async ({ data }) => {
+export const updateOrderStatusServerFn = createServerFn({ method: "POST" })
+  .validator(updateOrderStatusSchema)
+  .handler(async ({ data }) => processUpdateOrderStatus(data));
+
+export const updatePaymentStatusSchema = z.object({
+  id: z.string().min(1),
+  paymentStatus: z.enum(["Paid", "Pending COD", "Verification Required"]),
+  authToken: z.string().optional(),
+});
+export type UpdatePaymentStatusInput = z.infer<typeof updatePaymentStatusSchema>;
+
+export async function processUpdatePaymentStatus(data: UpdatePaymentStatusInput) {
     const auth = await verifyAdminSession(data.authToken);
     if (!auth.valid) {
       return { success: false, error: auth.error || "Unauthorized admin action." };
@@ -521,4 +546,108 @@ export const updatePaymentStatusServerFn = createServerFn({ method: "POST" })
     }
 
     return { success: true };
-  });
+}
+
+export const updatePaymentStatusServerFn = createServerFn({ method: "POST" })
+  .validator(updatePaymentStatusSchema)
+  .handler(async ({ data }) => processUpdatePaymentStatus(data));
+
+export const getOrderByIdSchema = z.object({ orderId: z.string().min(1) });
+export type GetOrderByIdInput = z.infer<typeof getOrderByIdSchema>;
+
+export async function processGetOrderById(data: GetOrderByIdInput) {
+    // 1. Supabase REST API
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseAdmin() || getSupabaseClient();
+        if (client) {
+          const { data: o, error: orderErr } = await client
+            .from("orders")
+            .select("*")
+            .eq("id", data.orderId)
+            .maybeSingle();
+
+          if (!orderErr && o) {
+            const { data: itemRows } = await client
+              .from("order_items")
+              .select("*")
+              .eq("order_id", data.orderId);
+
+            return {
+              success: true,
+              order: {
+                id: o.id,
+                customerId: o.customer_id,
+                customerName: o.customer_name,
+                email: o.email || "",
+                phone: o.phone,
+                address: o.address,
+                city: o.city,
+                postalCode: o.postal_code || undefined,
+                paymentMethod: o.payment_method,
+                paymentStatus: o.payment_status,
+                transactionId: o.transaction_id || undefined,
+                subtotal: Number(o.subtotal),
+                discountCode: o.discount_code || undefined,
+                discountAmount: Number(o.discount_amount || 0),
+                shipping: Number(o.shipping || 0),
+                total: Number(o.total),
+                orderStatus: o.order_status,
+                courierName: o.courier_name || undefined,
+                trackingNumber: o.tracking_number || undefined,
+                isGiftWrapped: Boolean(o.is_gift_wrapped),
+                giftMessage: o.gift_message || undefined,
+                date: o.created_at ? o.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
+                items: (itemRows || []).map((i: any) => ({
+                  productId: i.product_id || "",
+                  name: i.name,
+                  price: Number(i.price),
+                  qty: Number(i.qty),
+                  volume: i.volume,
+                  image: i.image || "/product-box.jpg",
+                })),
+              },
+            };
+          }
+        }
+      } catch (err) {
+        console.warn("[getOrderByIdServerFn] Supabase order exception:", err);
+      }
+    }
+
+    // 2. Direct Drizzle DB
+    if (isDatabaseConfigured() && db) {
+      try {
+        const rows = await db.select().from(schema.orders).where(eq(schema.orders.id, data.orderId)).limit(1);
+        if (rows.length > 0) {
+          const o = rows[0];
+          const items = await db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, data.orderId));
+          return {
+            success: true,
+            order: {
+              ...o,
+              date: o.createdAt ? o.createdAt.toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+              items: items.map((i) => ({
+                productId: i.productId || "",
+                name: i.name,
+                price: i.price,
+                qty: i.qty,
+                volume: i.volume,
+                image: i.image || "/product-box.jpg",
+              })),
+            },
+          };
+        }
+      } catch (err: any) {
+        console.warn("[getOrderByIdServerFn] DB order lookup error:", err);
+      }
+    }
+
+    return { success: false, error: "Order not found." };
+}
+
+export const getOrderByIdServerFn = createServerFn({ method: "POST" })
+  .validator(getOrderByIdSchema)
+  .handler(async ({ data }) => processGetOrderById(data));
+
+

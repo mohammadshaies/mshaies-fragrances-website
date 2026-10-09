@@ -808,17 +808,12 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
       });
     });
 
-    setOrders((prev) => [newOrder, ...prev]);
-    addAuditLog(
-      "Order Received",
-      "Order",
-      `Order #${orderId} placed by ${orderData.customerName} for ₨ ${orderData.total.toLocaleString()} via ${orderData.paymentMethod.toUpperCase()}`
-    );
-
     // Synchronize authoritative order to database via server function
+    let finalOrderId = orderId;
     try {
       const serverResult = await placeOrderServerFn({
         data: {
+          orderId,
           customerName: orderData.customerName,
           email: orderData.email,
           phone: orderData.phone,
@@ -833,14 +828,24 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
           giftMessage: orderData.giftMessage,
           items: orderData.items.map((i) => ({
             productId: i.productId,
+            name: i.name,
+            price: i.price,
             qty: i.qty,
             volume: i.volume,
+            image: i.image,
           })),
         },
       });
 
       if (serverResult && !serverResult.success && serverResult.error) {
         throw new Error(serverResult.error);
+      }
+
+      if (serverResult?.order?.id && serverResult.order.id !== orderId) {
+        finalOrderId = serverResult.order.id;
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, id: finalOrderId } : o))
+        );
       }
     } catch (err: any) {
       console.warn("[placeOrderServerFn] Server order sync notification:", err?.message || err);
@@ -850,7 +855,14 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    return orderId;
+    setOrders((prev) => [newOrder, ...prev.filter((o) => o.id !== newOrder.id)]);
+    addAuditLog(
+      "Order Received",
+      "Order",
+      `Order #${finalOrderId} placed by ${orderData.customerName} for ₨ ${orderData.total.toLocaleString()} via ${orderData.paymentMethod.toUpperCase()}`
+    );
+
+    return finalOrderId;
   };
 
   const updateOrderStatus = (

@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useProductsStore } from "@/lib/products-store";
+import { useProductsStore, type Order, type OrderItem } from "@/lib/products-store";
 import { formatPKR } from "@/lib/cart-context";
+import { getOrderByIdServerFn } from "@/lib/api/orders.server";
 import { 
   Printer, 
   ArrowLeft, 
@@ -12,6 +14,7 @@ import {
   AlertCircle,
   MessageCircle,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/invoice/$orderId")({
@@ -22,11 +25,39 @@ function InvoicePage() {
   const { orderId } = Route.useParams();
   const { getOrder } = useProductsStore();
 
-  const order = getOrder(orderId);
+  const localOrder = getOrder(orderId);
+  const [serverOrder, setServerOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(!localOrder);
+
+  useEffect(() => {
+    if (!localOrder && orderId) {
+      setLoading(true);
+      getOrderByIdServerFn({ data: { orderId } })
+        .then((res) => {
+          if (res.success && res.order) {
+            setServerOrder(res.order as Order);
+          }
+        })
+        .catch((err) => console.warn("Failed to fetch order from server:", err))
+        .finally(() => setLoading(false));
+    }
+  }, [localOrder, orderId]);
+
+  const order = localOrder || serverOrder;
 
   const handlePrint = () => {
     window.print();
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-32 pb-20 flex flex-col items-center justify-center text-center px-5">
+        <Loader2 className="size-8 text-gold-deep animate-spin mb-4" />
+        <h2 className="font-serif text-xl text-ink">Retrieving Official Invoice...</h2>
+        <p className="text-muted-foreground mt-2 text-xs">Authenticating order reference #{orderId}</p>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -195,7 +226,7 @@ function InvoicePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
-                  {order.items.map((item, idx) => (
+                  {order.items.map((item: OrderItem, idx: number) => (
                     <tr key={idx} className="py-3">
                       <td className="py-3.5 pr-4">
                         <p className="font-serif text-sm font-semibold text-ink">{item.name}</p>
@@ -218,7 +249,7 @@ function InvoicePage() {
 
             {/* Mobile Stacked Items List */}
             <div className="sm:hidden print:hidden space-y-2.5">
-              {order.items.map((item, idx) => (
+              {order.items.map((item: OrderItem, idx: number) => (
                 <div key={idx} className="p-3 rounded-xl border border-border/60 bg-pearl/30 flex items-center justify-between text-xs gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-serif text-sm font-semibold text-ink truncate">{item.name}</p>
