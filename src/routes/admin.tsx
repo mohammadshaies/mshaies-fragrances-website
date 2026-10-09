@@ -3697,7 +3697,18 @@ function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
-                  {products.map((p) => (
+                  {products.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-14 text-center text-muted-foreground">
+                        <Package className="size-8 mx-auto text-gold-deep opacity-60 mb-2" />
+                        <p className="font-serif text-base text-ink">No fragrances found in catalog</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Your Supabase catalog is currently empty. Use the "Add New Fragrance" button or upload a CSV template to add items.
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    products.map((p) => (
                     <tr key={p.id} className="hover:bg-muted/20 transition-colors">
                       <td className="py-4 px-6 flex items-center gap-3">
                         <img src={p.image} alt={p.name} className="size-11 rounded-lg object-contain bg-pearl border border-border" />
@@ -3872,8 +3883,9 @@ function AdminDashboard() {
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
+                  ))
+                )}
+              </tbody>
               </table>
             </div>
           </div>

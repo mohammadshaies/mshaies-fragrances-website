@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { db, schema, isDatabaseConfigured } from "../db/client.server";
-import { verifyAdminSession } from "../supabase.server";
+import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { eq } from "drizzle-orm";
 
 export const placeOrderServerFn = createServerFn({ method: "POST" })
@@ -33,7 +33,7 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
       return { success: false, error: "Cannot place an order with empty cart." };
     }
 
-    // 1. Fetch DB settings for shipping rates
+    // 1. Fetch settings for shipping rates
     let freeShippingThreshold = 5000;
     let standardShippingFee = 250;
     let expressShippingFee = 450;
@@ -41,24 +41,26 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
     let codFee = 0;
     let freeShippingEnabled = true;
 
-    if (isDatabaseConfigured() && db) {
+    if (isSupabaseConfigured()) {
       try {
-        const settingsRow = await db.select().from(schema.storeSettings).limit(1);
-        if (settingsRow.length > 0) {
-          const s = settingsRow[0];
-          freeShippingThreshold = s.freeShippingThreshold ?? 5000;
-          standardShippingFee = s.standardShippingFee ?? 250;
-          expressShippingFee = s.expressShippingFee ?? 450;
-          lahoreLocalFee = s.lahoreLocalFee ?? 150;
-          codFee = s.codFee ?? 0;
-          freeShippingEnabled = s.freeShippingEnabled ?? true;
+        const client = getSupabaseAdmin() || getSupabaseClient();
+        if (client) {
+          const { data: s } = await client.from("store_settings").select("*").limit(1).maybeSingle();
+          if (s) {
+            freeShippingThreshold = s.free_shipping_threshold ?? 5000;
+            standardShippingFee = s.standard_shipping_fee ?? 250;
+            expressShippingFee = s.express_shipping_fee ?? 450;
+            lahoreLocalFee = s.lahore_local_fee ?? 150;
+            codFee = s.cod_fee ?? 0;
+            freeShippingEnabled = s.free_shipping_enabled ?? true;
+          }
         }
       } catch (err) {
-        console.warn("[placeOrderServerFn] Failed to read store settings from DB:", err);
+        console.warn("[placeOrderServerFn] Settings read exception:", err);
       }
     }
 
-    // 2. Authoritative Price & Subtotal Calculation from Database
+    // 2. Verified Items & Subtotal Calculation
     let subtotal = 0;
     const verifiedItems: {
       productId: string;
@@ -69,42 +71,41 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
       image: string;
     }[] = [];
 
+    // Query products
+    let productsMap = new Map<string, any>();
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseAdmin() || getSupabaseClient();
+        if (client) {
+          const { data: prods } = await client.from("products").select("*");
+          if (prods) {
+            for (const p of prods) {
+              productsMap.set(p.id, p);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[placeOrderServerFn] Products read error:", err);
+      }
+    }
+
     for (const item of data.items) {
+      const dbProd = productsMap.get(item.productId);
       let unitPrice = 3500;
       let itemName = "Signature Fragrance";
       let itemImage = "/product-box.jpg";
-      let availableStock = 999;
 
-      if (isDatabaseConfigured() && db) {
-        try {
-          const prodRows = await db.select().from(schema.products).where(eq(schema.products.id, item.productId)).limit(1);
-          if (prodRows.length > 0) {
-            const p = prodRows[0];
-            itemName = p.name;
-            itemImage = p.image;
-            availableStock = p.stock;
-
-            // Handle 3ml sample pricing
-            if (item.volume.includes("3ml") && p.samplePrice) {
-              unitPrice = p.samplePrice;
-            } else {
-              unitPrice = p.price;
-            }
-
-            if (item.qty > availableStock && availableStock > 0) {
-              return {
-                success: false,
-                error: `Insufficient stock for ${itemName}. Only ${availableStock} bottles remaining.`,
-              };
-            }
-          }
-        } catch (err) {
-          console.warn(`[placeOrderServerFn] Could not fetch product ${item.productId}:`, err);
+      if (dbProd) {
+        itemName = dbProd.name;
+        itemImage = dbProd.image || "/product-box.jpg";
+        if (item.volume.includes("3ml") && dbProd.sample_price) {
+          unitPrice = dbProd.sample_price;
+        } else {
+          unitPrice = dbProd.price;
         }
       }
 
-      const lineTotal = unitPrice * item.qty;
-      subtotal += lineTotal;
+      subtotal += unitPrice * item.qty;
       verifiedItems.push({
         productId: item.productId,
         name: itemName,
@@ -115,87 +116,84 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
       });
     }
 
-    // Add luxury gift wrap fee if selected (+ ₨ 250)
     if (data.isGiftWrapped) {
       subtotal += 250;
     }
 
-    // 3. Authoritative Coupon Validation from Database
+    // 3. Coupon Validation
     let discountAmount = 0;
     let couponFreeShipping = false;
 
     if (data.discountCode && data.discountCode.trim()) {
       const cleanCode = data.discountCode.trim().toUpperCase();
-      if (isDatabaseConfigured() && db) {
+      if (isSupabaseConfigured()) {
         try {
-          const couponRows = await db.select().from(schema.coupons).where(eq(schema.coupons.code, cleanCode)).limit(1);
-          if (couponRows.length > 0) {
-            const c = couponRows[0];
-            const isNotExpired = !c.expiryDate || new Date(c.expiryDate) >= new Date();
-            const minOrderMet = subtotal >= c.minOrder;
-            const hasUsesLeft = !c.maxUses || c.usedCount < c.maxUses;
+          const client = getSupabaseAdmin() || getSupabaseClient();
+          if (client) {
+            const { data: c } = await client.from("coupons").select("*").eq("code", cleanCode).maybeSingle();
+            if (c) {
+              const isNotExpired = !c.expiry_date || new Date(c.expiry_date) >= new Date();
+              const minOrderMet = subtotal >= (c.min_order ?? 0);
+              const hasUsesLeft = !c.max_uses || (c.used_count ?? 0) < c.max_uses;
 
-            if (c.isActive && isNotExpired && minOrderMet && hasUsesLeft) {
-              if (c.type === "percent") {
-                discountAmount = Math.round((subtotal * c.value) / 100);
-              } else if (c.type === "flat") {
-                discountAmount = Math.min(c.value, subtotal);
-              } else if (c.type === "shipping") {
-                couponFreeShipping = true;
+              if (c.is_active && isNotExpired && minOrderMet && hasUsesLeft) {
+                if (c.type === "percent") {
+                  discountAmount = Math.round((subtotal * c.value) / 100);
+                } else if (c.type === "flat") {
+                  discountAmount = Math.min(c.value, subtotal);
+                } else if (c.type === "shipping") {
+                  couponFreeShipping = true;
+                }
               }
-
-              // Increment coupon usage count
-              await db
-                .update(schema.coupons)
-                .set({ usedCount: c.usedCount + 1 })
-                .where(eq(schema.coupons.id, c.id));
             }
           }
         } catch (err) {
-          console.warn("[placeOrderServerFn] Coupon check failed:", err);
-        }
-      } else {
-        // Fallback for launch voucher
-        if (cleanCode === "LUXE15") {
-          discountAmount = Math.round((subtotal * 15) / 100);
+          console.warn("[placeOrderServerFn] Coupon validation error:", err);
         }
       }
     }
 
-    // 4. Authoritative Shipping Fee Calculation
-    const isFreeEligible = (freeShippingEnabled && subtotal >= freeShippingThreshold) || couponFreeShipping;
-    let baseShipping = standardShippingFee;
+    // 4. Shipping Calculation
+    let shippingFee = 0;
+    const isFreeByThreshold = freeShippingEnabled && subtotal >= freeShippingThreshold;
 
-    if (data.shippingMethod === "express") {
-      baseShipping = expressShippingFee;
-    } else if (data.shippingMethod === "lahoreLocal" && data.city.toLowerCase() === "lahore") {
-      baseShipping = lahoreLocalFee;
+    if (!isFreeByThreshold && !couponFreeShipping) {
+      if (data.shippingMethod === "lahoreLocal" || data.city.toLowerCase().trim() === "lahore") {
+        shippingFee = lahoreLocalFee;
+      } else if (data.shippingMethod === "express") {
+        shippingFee = expressShippingFee;
+      } else {
+        shippingFee = standardShippingFee;
+      }
     }
 
-    const calculatedShipping = isFreeEligible
-      ? (data.shippingMethod === "express" ? Math.max(0, expressShippingFee - standardShippingFee) : 0)
-      : baseShipping;
+    if (data.paymentMethod === "cod" && codFee > 0) {
+      shippingFee += codFee;
+    }
 
-    const codSurcharge = data.paymentMethod === "cod" ? codFee : 0;
-    const finalTotal = Math.max(0, subtotal - discountAmount + calculatedShipping + codSurcharge);
+    const finalTotal = Math.max(0, subtotal - discountAmount + shippingFee);
 
-    // 5. Generate Order ID
-    const orderId = `MSH-${Math.floor(10000 + Math.random() * 90000)}`;
+    // 5. Construct Order Object
+    const orderId = `MSH-${Date.now().toString().slice(-5)}`;
+    const cleanPhone = data.phone.replace(/[^0-9]/g, "");
+    const customerId = `cust-${cleanPhone}`;
+
     const newOrderRecord = {
       id: orderId,
+      customerId,
       customerName: data.customerName,
-      email: data.email || "",
+      email: data.email || null,
       phone: data.phone,
       address: data.address,
       city: data.city,
-      postalCode: data.postalCode || "",
+      postalCode: data.postalCode || null,
       paymentMethod: data.paymentMethod,
-      paymentStatus: data.paymentMethod === "cod" ? ("Pending COD" as const) : ("Paid" as const),
-      transactionId: data.transactionId || "",
+      paymentStatus: (data.paymentMethod === "cod" ? "Pending COD" : data.transactionId ? "Paid" : "Verification Required") as any,
+      transactionId: data.transactionId || null,
       subtotal,
-      discountCode: data.discountCode || "",
+      discountCode: data.discountCode || null,
       discountAmount,
-      shipping: calculatedShipping,
+      shipping: shippingFee,
       total: finalTotal,
       orderStatus: "Confirmed" as const,
       courierName: data.city.toLowerCase() === "lahore" ? "Rider Hand Delivery" : "TCS Express",
@@ -204,13 +202,83 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
       createdAt: new Date(),
     };
 
-    // 6. Database Transaction / Insertion
+    // 6. Supabase Persistence
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseAdmin() || getSupabaseClient();
+        if (client) {
+          // Upsert customer
+          await client.from("customers").upsert({
+            id: customerId,
+            name: data.customerName,
+            phone: cleanPhone,
+            email: data.email || null,
+            city: data.city,
+            address: data.address,
+            total_spent: finalTotal,
+            order_count: 1,
+            loyalty_tier: finalTotal >= 15000 ? "💎 Gold Tier" : "Valued Client",
+            updated_at: new Date().toISOString(),
+          });
+
+          // Insert order
+          await client.from("orders").insert({
+            id: orderId,
+            customer_id: customerId,
+            customer_name: data.customerName,
+            email: data.email || null,
+            phone: data.phone,
+            address: data.address,
+            city: data.city,
+            postal_code: data.postalCode || null,
+            payment_method: data.paymentMethod,
+            payment_status: newOrderRecord.paymentStatus,
+            transaction_id: data.transactionId || null,
+            subtotal,
+            discount_code: data.discountCode || null,
+            discount_amount: discountAmount,
+            shipping: shippingFee,
+            total: finalTotal,
+            order_status: "Confirmed",
+            courier_name: newOrderRecord.courierName,
+            is_gift_wrapped: !!data.isGiftWrapped,
+            gift_message: data.giftMessage || null,
+            created_at: new Date().toISOString(),
+          });
+
+          // Insert order items
+          for (const item of verifiedItems) {
+            await client.from("order_items").insert({
+              id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              order_id: orderId,
+              product_id: item.productId,
+              name: item.name,
+              price: item.price,
+              qty: item.qty,
+              volume: item.volume,
+              image: item.image,
+            });
+          }
+
+          // Audit log
+          await client.from("audit_logs").insert({
+            id: `log-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            action: "Order Placed",
+            category: "Order",
+            details: `Order #${orderId} confirmed for ${data.customerName} (${data.city}) — Total: ₨ ${finalTotal.toLocaleString()}`,
+            user: "Customer Checkout",
+          });
+        }
+      } catch (err) {
+        console.warn("[placeOrderServerFn] Supabase insert exception:", err);
+      }
+    }
+
+    // Direct Drizzle DB as fallback/secondary
     if (isDatabaseConfigured() && db) {
       try {
-        // Insert order
-        await db.insert(schema.orders).values(newOrderRecord);
-
-        // Insert order items
+        await db.insert(schema.orders).values(newOrderRecord as any);
         for (const item of verifiedItems) {
           await db.insert(schema.orderItems).values({
             id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -222,61 +290,9 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
             volume: item.volume,
             image: item.image,
           });
-
-          // Deduct stock atomically
-          const currentProd = await db.select().from(schema.products).where(eq(schema.products.id, item.productId)).limit(1);
-          if (currentProd.length > 0) {
-            const newStock = Math.max(0, currentProd[0].stock - item.qty);
-            await db.update(schema.products).set({ stock: newStock }).where(eq(schema.products.id, item.productId));
-          }
         }
-
-        // Upsert Customer CRM Directory
-        const cleanPhone = data.phone.replace(/[^0-9]/g, "");
-        const custRows = await db.select().from(schema.customers).where(eq(schema.customers.phone, cleanPhone)).limit(1);
-        if (custRows.length > 0) {
-          const cust = custRows[0];
-          const newSpent = cust.totalSpent + finalTotal;
-          const newCount = cust.orderCount + 1;
-          const newTier = newSpent >= 30000 ? "👑 Royal VIP" : newSpent >= 15000 ? "💎 Gold Tier" : "Valued Client";
-          await db
-            .update(schema.customers)
-            .set({
-              totalSpent: newSpent,
-              orderCount: newCount,
-              loyaltyTier: newTier,
-              address: data.address,
-              city: data.city,
-              updatedAt: new Date(),
-            })
-            .where(eq(schema.customers.id, cust.id));
-        } else {
-          await db.insert(schema.customers).values({
-            id: `cust-${Date.now()}`,
-            name: data.customerName,
-            phone: cleanPhone,
-            email: data.email || "",
-            city: data.city,
-            address: data.address,
-            totalSpent: finalTotal,
-            orderCount: 1,
-            loyaltyTier: finalTotal >= 15000 ? "💎 Gold Tier" : "Valued Client",
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
-        }
-
-        // Audit Trail entry
-        await db.insert(schema.auditLogs).values({
-          id: `log-${Date.now()}`,
-          timestamp: new Date(),
-          action: "Order Placed",
-          category: "Order",
-          details: `Order #${orderId} confirmed for ${data.customerName} (${data.city}) — Total: ₨ ${finalTotal.toLocaleString()}`,
-          user: "Customer Checkout",
-        });
-      } catch (err: any) {
-        console.error("[placeOrderServerFn] Database insertion failed:", err);
+      } catch (err) {
+        console.warn("[placeOrderServerFn] DB fallback exception:", err);
       }
     }
 
@@ -298,6 +314,66 @@ export const getOrdersServerFn = createServerFn({ method: "POST" })
       return { success: false, error: auth.error || "Unauthorized admin access." };
     }
 
+    // 1. Supabase REST API (Authoritative)
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseAdmin() || getSupabaseClient();
+        if (client) {
+          const { data: orderRows, error: orderErr } = await client
+            .from("orders")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+          const { data: itemRows, error: itemErr } = await client
+            .from("order_items")
+            .select("*");
+
+          if (!orderErr && Array.isArray(orderRows)) {
+            const formattedOrders = orderRows.map((o: any) => ({
+              id: o.id,
+              customerId: o.customer_id,
+              customerName: o.customer_name,
+              email: o.email || "",
+              phone: o.phone,
+              address: o.address,
+              city: o.city,
+              postalCode: o.postal_code || undefined,
+              paymentMethod: o.payment_method,
+              paymentStatus: o.payment_status,
+              transactionId: o.transaction_id || undefined,
+              subtotal: Number(o.subtotal),
+              discountCode: o.discount_code || undefined,
+              discountAmount: Number(o.discount_amount || 0),
+              shipping: Number(o.shipping || 0),
+              total: Number(o.total),
+              orderStatus: o.order_status,
+              courierName: o.courier_name || undefined,
+              trackingNumber: o.tracking_number || undefined,
+              isGiftWrapped: Boolean(o.is_gift_wrapped),
+              giftMessage: o.gift_message || undefined,
+              date: o.created_at ? o.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
+              items: (itemRows || [])
+                .filter((i: any) => i.order_id === o.id)
+                .map((i: any) => ({
+                  productId: i.product_id || "",
+                  name: i.name,
+                  price: Number(i.price),
+                  qty: Number(i.qty),
+                  volume: i.volume,
+                  image: i.image || "/product-box.jpg",
+                })),
+            }));
+
+            return { success: true, orders: formattedOrders, source: "supabase" };
+          }
+          if (orderErr) console.warn("[getOrdersServerFn] Supabase orders read error:", orderErr);
+        }
+      } catch (err) {
+        console.warn("[getOrdersServerFn] Supabase orders exception:", err);
+      }
+    }
+
+    // 2. Direct Drizzle DB
     if (isDatabaseConfigured() && db) {
       try {
         const orderRows = await db.select().from(schema.orders);
@@ -318,13 +394,13 @@ export const getOrdersServerFn = createServerFn({ method: "POST" })
             })),
         }));
 
-        return { success: true, orders: ordersWithItems };
+        return { success: true, orders: ordersWithItems, source: "database" };
       } catch (err: any) {
         return { success: false, error: err?.message || "Failed to fetch orders from database." };
       }
     }
 
-    return { success: true, orders: [] };
+    return { success: true, orders: [], source: "none" };
   });
 
 export const updateOrderStatusServerFn = createServerFn({ method: "POST" })
@@ -343,6 +419,35 @@ export const updateOrderStatusServerFn = createServerFn({ method: "POST" })
       return { success: false, error: auth.error || "Unauthorized admin action." };
     }
 
+    // 1. Supabase REST API
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseAdmin() || getSupabaseClient();
+        if (client) {
+          await client
+            .from("orders")
+            .update({
+              order_status: data.status,
+              courier_name: data.courierName || null,
+              tracking_number: data.trackingNumber || null,
+            })
+            .eq("id", data.id);
+
+          await client.from("audit_logs").insert({
+            id: `log-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            action: "Order Status Updated",
+            category: "Order",
+            details: `Order #${data.id} updated to "${data.status}"${data.trackingNumber ? ` (Tracking: ${data.trackingNumber} via ${data.courierName})` : ""}`,
+            user: auth.user?.email || "Admin",
+          });
+        }
+      } catch (err) {
+        console.warn("[updateOrderStatusServerFn] Supabase update exception:", err);
+      }
+    }
+
+    // 2. Direct Drizzle DB
     if (isDatabaseConfigured() && db) {
       try {
         await db
@@ -353,22 +458,10 @@ export const updateOrderStatusServerFn = createServerFn({ method: "POST" })
             trackingNumber: data.trackingNumber,
           })
           .where(eq(schema.orders.id, data.id));
-
-        await db.insert(schema.auditLogs).values({
-          id: `log-${Date.now()}`,
-          timestamp: new Date(),
-          action: "Order Status Updated",
-          category: "Order",
-          details: `Order #${data.id} updated to "${data.status}"${data.trackingNumber ? ` (Tracking: ${data.trackingNumber} via ${data.courierName})` : ""}`,
-          user: auth.user?.email || "Admin",
-        });
-
-        return { success: true };
       } catch (err: any) {
-        return { success: false, error: err?.message || "Failed to update order status." };
+        console.warn("[updateOrderStatusServerFn] DB update error:", err);
       }
     }
 
     return { success: true };
   });
-

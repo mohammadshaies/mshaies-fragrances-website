@@ -1060,18 +1060,30 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
         ]);
 
         if (isMounted) {
-          if (prodRes.success && prodRes.products && prodRes.products.length > 0) {
+          if (prodRes.success && ((prodRes as any).source === "supabase" || (prodRes as any).source === "database" || (prodRes.products && prodRes.products.length > 0))) {
             setProducts(prodRes.products as any);
+            try {
+              localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prodRes.products));
+            } catch (e) {
+              console.warn("Failed to persist products to localStorage:", e);
+            }
           }
           if (settingsRes.success && settingsRes.settings) {
             setSettings((prev) => ({ ...DEFAULT_SETTINGS, ...prev, ...(settingsRes.settings as any) }));
           }
-          if (reviewsRes.success && reviewsRes.reviews && reviewsRes.reviews.length > 0) {
+          if (reviewsRes.success && ((reviewsRes as any).source === "supabase" || (reviewsRes as any).source === "database" || (reviewsRes.reviews && reviewsRes.reviews.length > 0))) {
             setReviews(reviewsRes.reviews as any);
+            try {
+              localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviewsRes.reviews));
+            } catch (e) {
+              console.warn("Failed to persist reviews to localStorage:", e);
+            }
           }
         }
 
-        const adminToken = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") : null;
+        const adminToken = typeof sessionStorage !== "undefined"
+          ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+          : null;
         if (adminToken) {
           const [ordersRes, couponsRes, auditRes] = await Promise.all([
             getOrdersServerFn({ data: { authToken: adminToken } }),
@@ -1080,14 +1092,29 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
           ]);
 
           if (isMounted) {
-            if (ordersRes.success && ordersRes.orders && ordersRes.orders.length > 0) {
+            if (ordersRes.success && ((ordersRes as any).source === "supabase" || (ordersRes as any).source === "database" || (ordersRes.orders && ordersRes.orders.length > 0))) {
               setOrders(ordersRes.orders as any);
+              try {
+                localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(ordersRes.orders));
+              } catch (e) {
+                console.warn("Failed to persist orders to localStorage:", e);
+              }
             }
-            if (couponsRes.success && couponsRes.coupons && couponsRes.coupons.length > 0) {
+            if (couponsRes.success && ((couponsRes as any).source === "supabase" || (couponsRes as any).source === "database" || (couponsRes.coupons && couponsRes.coupons.length > 0))) {
               setCoupons(couponsRes.coupons as any);
+              try {
+                localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify(couponsRes.coupons));
+              } catch (e) {
+                console.warn("Failed to persist coupons to localStorage:", e);
+              }
             }
-            if (auditRes.success && auditRes.logs && auditRes.logs.length > 0) {
+            if (auditRes.success && ((auditRes as any).source === "supabase" || (auditRes as any).source === "database" || (auditRes.logs && auditRes.logs.length > 0))) {
               setAuditLogs(auditRes.logs as any);
+              try {
+                localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditRes.logs));
+              } catch (e) {
+                console.warn("Failed to persist audit logs to localStorage:", e);
+              }
             }
           }
         }
@@ -1143,7 +1170,9 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     setProducts((prev) => [fullProd, ...prev]);
     addAuditLog("Product Added", "Product", `Added new fragrance "${newProd.name}" priced at ₨ ${newProd.price.toLocaleString()}`);
 
-    const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+    const token = typeof sessionStorage !== "undefined"
+      ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
+      : undefined;
     saveProductServerFn({ data: { authToken: token, product: fullProd as any } }).catch((err) =>
       console.warn("[saveProductServerFn]", err)
     );
@@ -1164,7 +1193,9 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
 
     addAuditLog("Product Modified", "Product", `Updated configuration for "${updates.name || id}"`);
 
-    const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+    const token = typeof sessionStorage !== "undefined"
+      ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
+      : undefined;
     const target = updatedTarget || products.find((p) => p.id === id);
     if (target) {
       saveProductServerFn({ data: { authToken: token, product: { ...target, ...updates } as any } }).catch((err) =>
@@ -1178,7 +1209,9 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     setProducts((prev) => prev.filter((p) => p.id !== id));
     addAuditLog("Product Removed", "Product", `Deleted item "${found?.name || id}" from catalog`);
 
-    const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+    const token = typeof sessionStorage !== "undefined"
+      ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
+      : undefined;
     deleteProductServerFn({ data: { authToken: token, id } }).catch((err) =>
       console.warn("[deleteProductServerFn]", err)
     );
@@ -1192,7 +1225,9 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     addAuditLog("Stock Adjusted", "Stock", `Restocked "${found?.name || id}" to ${newStock} units`);
 
     if (found) {
-      const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+      const token = typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
+        : undefined;
       saveProductServerFn({
         data: {
           authToken: token,
@@ -1241,7 +1276,9 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
       setProducts((prev) => [...cleanList, ...prev]);
       addAuditLog("Bulk Import", "Product", `Batch imported ${cleanList.length} fragrances into inventory.`);
 
-      const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+      const token = typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
+        : undefined;
       bulkImportProductsServerFn({ data: { authToken: token, products: cleanList as any } }).catch((err) =>
         console.warn("[bulkImportProductsServerFn]", err)
       );
