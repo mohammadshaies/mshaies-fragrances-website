@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import crypto from "node:crypto";
-import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured } from "../supabase.server";
+import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { createAdminSessionToken } from "../security/session.server";
 
@@ -79,12 +79,12 @@ export const adminVerifyPinServerFn = createServerFn({ method: "POST" })
       };
     }
 
-    // Retrieve active Master PIN from environment, database, or default
+    // Retrieve active Master PIN from environment, database, or settings (strictly requiring non-default configuration)
     let activePin: string | null = process.env.ADMIN_PIN?.trim() || null;
     if (!activePin && isDatabaseConfigured() && db) {
       try {
         const settingsRow = await db.select().from(schema.storeSettings).limit(1);
-        if (settingsRow.length > 0 && settingsRow[0].adminPin) {
+        if (settingsRow.length > 0 && settingsRow[0].adminPin && settingsRow[0].adminPin !== "7860") {
           activePin = settingsRow[0].adminPin.trim();
         }
       } catch (err) {
@@ -97,7 +97,7 @@ export const adminVerifyPinServerFn = createServerFn({ method: "POST" })
         const client = getSupabaseAdmin() || getSupabaseClient();
         if (client) {
           const { data: dbData } = await client.from("store_settings").select("admin_pin").limit(1).maybeSingle();
-          if (dbData?.admin_pin) {
+          if (dbData?.admin_pin && dbData.admin_pin !== "7860") {
             activePin = String(dbData.admin_pin).trim();
           }
         }
@@ -106,16 +106,12 @@ export const adminVerifyPinServerFn = createServerFn({ method: "POST" })
       }
     }
 
-    if (!activePin) {
-      activePin = "7860";
-    }
-
     const cleanInput = data.pin.trim();
-    if (safeCompare(cleanInput, activePin) || safeCompare(cleanInput, "7860")) {
+    if (activePin && safeCompare(cleanInput, activePin)) {
       resetAttempts("global_staff");
       const sessionToken = createAdminSessionToken({
         id: "staff-pin-admin",
-        email: "concierge@mshaies.com",
+        email: "admin@mshaies.com",
       });
 
       return {
@@ -123,7 +119,7 @@ export const adminVerifyPinServerFn = createServerFn({ method: "POST" })
         token: sessionToken,
         user: {
           id: "staff-pin-admin",
-          email: "concierge@mshaies.com",
+          email: "admin@mshaies.com",
           role: "admin",
         },
       };
@@ -139,22 +135,22 @@ export const adminVerifyPinServerFn = createServerFn({ method: "POST" })
 
     return {
       success: false,
-      error: `Invalid Master PIN. ${attemptsRemaining} attempt(s) remaining.`,
+      error: `Invalid Emergency PIN. ${attemptsRemaining} attempt(s) remaining.`,
     };
   });
 
 /**
- * Server-side Email & Password authentication for administrators.
+ * Server-side Email & Password authentication for administrators using Supabase Auth.
  */
 export const adminLoginServerFn = createServerFn({ method: "POST" })
   .validator(
     z.object({
       email: z.string().email(),
-      password: z.string().min(4),
+      password: z.string().min(1),
     })
   )
   .handler(async ({ data }) => {
-    // 1. Supabase Auth Mode (if configured and valid credentials supplied)
+    // 1. Supabase Auth Mode (Primary, Authoritative, & Secure)
     if (isSupabaseConfigured()) {
       const client = getSupabaseClient();
       if (client) {
@@ -164,67 +160,103 @@ export const adminLoginServerFn = createServerFn({ method: "POST" })
             password: data.password,
           });
 
-          if (!error && authData?.session) {
+          if (error) {
+            return {
+              success: false,
+              error: error.message || "Invalid email or password.",
+            };
+          }
+
+          if (authData?.session) {
+            // Write to Supabase audit_logs table for comprehensive activity tracking
+            try {
+              const adminClient = getSupabaseAdmin();
+              if (adminClient) {
+                await adminClient.from("audit_logs").insert({
+                  id: `log-${Date.now()}`,
+                  timestamp: new Date().toISOString(),
+                  action: "Staff Authentication",
+                  category: "System",
+                  details: `User ${authData.user.email} successfully logged into management portal.`,
+                  user: authData.user.email || "Staff Admin",
+                });
+              }
+            } catch (auditErr) {
+              console.warn("[adminLoginServerFn] Audit log insert warning:", auditErr);
+            }
+
             return {
               success: true,
               token: authData.session.access_token,
               user: {
                 id: authData.user.id,
                 email: authData.user.email,
+                role: "admin",
               },
             };
           }
-        } catch (err) {
-          console.warn("[adminLoginServerFn] Supabase Auth sign-in failed, attempting fallback:", err);
+        } catch (err: any) {
+          console.error("[adminLoginServerFn] Supabase Auth exception:", err);
+          return {
+            success: false,
+            error: err?.message || "Failed to communicate with Supabase Auth.",
+          };
         }
       }
     }
 
-    // 2. Standalone Server-Side Admin Mode (Cryptographic HMAC Session Token)
-    const expectedEmail = process.env.ADMIN_EMAIL?.trim() || "admin@mshaies.com";
-    const expectedPassword = process.env.ADMIN_PASSWORD?.trim() || "Mshaies7860!";
-    const masterPin = process.env.ADMIN_PIN?.trim() || "7860";
+    // 2. Strict Fallback only if Supabase is offline AND explicit server environment variables exist
+    const expectedEmail = process.env.ADMIN_EMAIL?.trim();
+    const expectedPassword = process.env.ADMIN_PASSWORD?.trim();
 
-    const emailMatches = safeCompare(data.email.trim().toLowerCase(), expectedEmail.toLowerCase());
-    const passMatches = safeCompare(data.password, expectedPassword) || safeCompare(data.password, masterPin) || safeCompare(data.password, "7860");
+    if (expectedEmail && expectedPassword) {
+      const emailMatches = safeCompare(data.email.trim().toLowerCase(), expectedEmail.toLowerCase());
+      const passMatches = safeCompare(data.password, expectedPassword);
 
-    if (emailMatches && passMatches) {
-      const token = createAdminSessionToken({
-        id: "master-admin",
-        email: expectedEmail,
-      });
-
-      return {
-        success: true,
-        token,
-        user: {
+      if (emailMatches && passMatches) {
+        const token = createAdminSessionToken({
           id: "master-admin",
           email: expectedEmail,
-          role: "admin",
-        },
-      };
-    }
+        });
 
-    // Also support entering Master PIN in the password field regardless of the email field
-    if (safeCompare(data.password, masterPin) || safeCompare(data.password, "7860")) {
-      const token = createAdminSessionToken({
-        id: "master-admin",
-        email: data.email.trim() || expectedEmail,
-      });
-
-      return {
-        success: true,
-        token,
-        user: {
-          id: "master-admin",
-          email: data.email.trim() || expectedEmail,
-          role: "admin",
-        },
-      };
+        return {
+          success: true,
+          token,
+          user: {
+            id: "master-admin",
+            email: expectedEmail,
+            role: "admin",
+          },
+        };
+      }
     }
 
     return {
       success: false,
-      error: "Invalid administrative credentials.",
+      error: "Invalid email or password. Access denied.",
+    };
+  });
+
+/**
+ * Server function to verify an existing session token on client mount.
+ */
+export const verifyAdminStatusServerFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      authToken: z.string().optional(),
+    })
+  )
+  .handler(async ({ data }) => {
+    const auth = await verifyAdminSession(data.authToken);
+    if (!auth.valid) {
+      return { valid: false, error: auth.error || "Session invalid or expired." };
+    }
+    return {
+      valid: true,
+      user: {
+        id: auth.user?.id || "admin",
+        email: auth.user?.email || "admin@mshaies.com",
+        role: "admin",
+      },
     };
   });
