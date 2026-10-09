@@ -1,7 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProductsStore } from "@/lib/products-store";
 import { formatPKR } from "@/lib/cart-context";
-import { Printer, ArrowLeft, CheckCircle2, Shield, QrCode, Download } from "lucide-react";
+import { 
+  Printer, 
+  ArrowLeft, 
+  CheckCircle2, 
+  Shield, 
+  QrCode, 
+  Download,
+  Clock,
+  AlertCircle,
+  MessageCircle,
+  ExternalLink,
+} from "lucide-react";
 
 export const Route = createFileRoute("/invoice/$orderId")({
   component: InvoicePage,
@@ -59,6 +70,42 @@ function InvoicePage() {
           </div>
         </div>
 
+        {/* Dynamic Verification Required Alert for Online Payments */}
+        {order.paymentStatus === "Verification Required" && (
+          <div className="print:hidden mb-6 p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3 shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="size-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h3 className="font-serif text-sm font-bold text-ink">
+                  Payment Verification in Progress · Direct Mobile Account
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Your order <strong className="text-ink">#{order.id}</strong> has been received! Our team is verifying the transfer to <strong className="text-ink">Muhammad Shees</strong> (0332 5568922).
+                  {order.transactionId ? (
+                    <> Your submitted TID is <strong className="font-mono text-ink bg-amber-500/20 px-1.5 py-0.5 rounded">{order.transactionId}</strong>.</>
+                  ) : (
+                    <> Please share your payment screenshot on WhatsApp to expedite courier packing.</>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 pt-1 pl-8">
+              <a
+                href={`https://wa.me/923325568922?text=${encodeURIComponent(
+                  `Assalam-o-Alaikum Muhammad Shees! Here is the payment receipt screenshot for M.Shaies Order #${order.id} of ${formatPKR(order.total)} via ${order.paymentMethod.toUpperCase()}.${order.transactionId ? ` TID: ${order.transactionId}` : ''}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <MessageCircle className="size-3.5" />
+                Send Receipt Screenshot to Muhammad Shees (+92 332 5568922)
+                <ExternalLink className="size-3" />
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Official Printable Invoice Sheet */}
         <div className="bg-card text-card-foreground border border-gold/40 rounded-2xl sm:rounded-3xl p-5 sm:p-12 shadow-[var(--shadow-luxe)] print:border-none print:shadow-none print:p-0 print:m-0">
           {/* Header */}
@@ -110,13 +157,25 @@ function InvoicePage() {
                   ? "NayaPay Transfer"
                   : "Debit / Credit Card"}
               </p>
-              <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/30">
-                <CheckCircle2 className="size-3" />
-                Status: {order.paymentStatus}
-              </div>
+              {order.paymentStatus === "Paid" ? (
+                <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/30">
+                  <CheckCircle2 className="size-3" />
+                  Status: Paid & Verified
+                </div>
+              ) : order.paymentStatus === "Verification Required" ? (
+                <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-700 border border-amber-500/30">
+                  <Clock className="size-3 text-amber-600" />
+                  Status: Verification In Progress
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-700 border border-blue-500/30">
+                  <CheckCircle2 className="size-3 text-blue-600" />
+                  Status: Pending COD
+                </div>
+              )}
               {order.transactionId && (
                 <p className="font-mono text-[11px] text-muted-foreground mt-1.5">
-                  TID: {order.transactionId}
+                  TID: <span className="font-semibold text-ink">{order.transactionId}</span>
                 </p>
               )}
             </div>
@@ -234,12 +293,12 @@ function InvoicePage() {
           <p className="mt-1">
             For shipping updates or order modifications, contact WhatsApp concierge at{" "}
             <a
-              href="https://wa.me/923390001826"
+              href="https://wa.me/923325568922"
               target="_blank"
               rel="noopener noreferrer"
               className="text-emerald-600 font-bold hover:underline inline-flex items-center gap-1"
             >
-              +92 339 0001826 ↗
+              +92 332 5568922 ↗
             </a>
           </p>
         </div>

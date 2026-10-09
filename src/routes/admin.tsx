@@ -27,6 +27,7 @@ import {
   Upload,
   MessageCircle,
   Truck,
+  Smartphone,
   Calendar,
   Gift,
   Check,
@@ -1584,6 +1585,7 @@ function AdminDashboard() {
     toggleCoupon,
     deleteCoupon,
     updateOrderStatus,
+    updatePaymentStatus,
     updateSettings,
     exportAllStoreData,
     importStoreData,
@@ -2625,8 +2627,11 @@ function AdminDashboard() {
   const handleSendWhatsAppNotification = (order: Order) => {
     const cleanPhone = order.phone.replace(/[^0-9]/g, "");
     const formattedPhone = cleanPhone.startsWith("0") ? "92" + cleanPhone.slice(1) : cleanPhone;
-    const trackingMsg = order.trackingNumber ? ` Your tracking number is *${order.trackingNumber}* via *${order.courierName || "Express Courier"}*.` : "";
-    const message = `Assalam-o-Alaikum ${order.customerName},\n\nThank you for choosing *M.shaies Fragrances*! Your order *#${order.id}* for *${formatPKR(order.total)}* has been *${order.orderStatus}*.${trackingMsg}\n\nView your official invoice here: ${window.location.origin}/invoice/${order.id}\n\nWarm regards,\nM.shaies Maison Concierge`;
+    const trackingMsg = order.trackingNumber ? `\nTracking Number: *${order.trackingNumber}* via *${order.courierName || "Express Courier"}*.` : "";
+    const paymentText = order.paymentMethod !== "cod"
+      ? `\nPayment: *${order.paymentMethod.toUpperCase()}* (${order.paymentStatus === "Paid" ? "✅ Verified & Paid" : "⏳ " + order.paymentStatus})${order.transactionId ? `\nTransaction ID: *${order.transactionId}*` : ""}`
+      : `\nPayment: *Cash on Delivery (COD)*`;
+    const message = `Assalam-o-Alaikum ${order.customerName},\n\nThank you for choosing *M.shaies Fragrances*! Your order *#${order.id}* for *${formatPKR(order.total)}* has been *${order.orderStatus}*.${paymentText}${trackingMsg}\n\nView your official invoice here: ${typeof window !== "undefined" ? window.location.origin : "https://mshaies.com"}/invoice/${order.id}\n\nWarm regards,\nMuhammad Shees — M.shaies Maison Concierge`;
 
     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, "_blank");
   };
@@ -4611,9 +4616,80 @@ function AdminDashboard() {
                               </span>
                             )}
                           </td>
-                          <td className="py-4 px-5 font-serif font-bold text-ink whitespace-nowrap">
-                            {formatPKR(o.total)}
-                            <p className="text-[10px] font-sans font-normal text-muted-foreground uppercase">{o.paymentMethod}</p>
+                          <td className="py-4 px-5 whitespace-nowrap">
+                            <span className="font-serif font-bold text-ink block">{formatPKR(o.total)}</span>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              {o.paymentMethod === "jazzcash" ? (
+                                <span className="inline-flex items-center text-[9px] font-bold text-red-700 bg-red-500/15 border border-red-500/30 px-1.5 py-0.5 rounded uppercase">
+                                  JazzCash
+                                </span>
+                              ) : o.paymentMethod === "easypaisa" ? (
+                                <span className="inline-flex items-center text-[9px] font-bold text-emerald-700 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded uppercase">
+                                  Easypaisa
+                                </span>
+                              ) : o.paymentMethod === "nayapay" ? (
+                                <span className="inline-flex items-center text-[9px] font-bold text-orange-700 bg-orange-500/15 border border-orange-500/30 px-1.5 py-0.5 rounded uppercase">
+                                  NayaPay
+                                </span>
+                              ) : o.paymentMethod === "card" ? (
+                                <span className="inline-flex items-center text-[9px] font-bold text-blue-700 bg-blue-500/15 border border-blue-500/30 px-1.5 py-0.5 rounded uppercase">
+                                  Card
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center text-[9px] font-bold text-muted-foreground bg-muted border border-border px-1.5 py-0.5 rounded uppercase">
+                                  COD
+                                </span>
+                              )}
+
+                              {o.paymentStatus === "Paid" ? (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-500/15 px-1.5 py-0.5 rounded">
+                                  <Check className="size-2.5" /> Paid
+                                </span>
+                              ) : o.paymentStatus === "Verification Required" ? (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-700 bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 rounded">
+                                  <Clock className="size-2.5 text-amber-600" /> Verify
+                                </span>
+                              ) : (
+                                <span className="text-[9px] text-muted-foreground bg-pearl px-1.5 py-0.5 rounded">
+                                  Pending COD
+                                </span>
+                              )}
+                            </div>
+
+                            {/* TID badge with 1-click copy */}
+                            {o.transactionId && (
+                              <div className="flex items-center gap-1 mt-1 text-[10px] font-mono text-ink bg-pearl/80 border border-border/80 px-1.5 py-0.5 rounded w-fit">
+                                <span className="truncate max-w-[120px]">TID: {o.transactionId}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (typeof navigator !== "undefined" && navigator.clipboard) {
+                                      navigator.clipboard.writeText(o.transactionId || "");
+                                    }
+                                    toast.success(`TID ${o.transactionId} copied!`);
+                                  }}
+                                  className="text-muted-foreground hover:text-gold-deep"
+                                  title="Copy TID"
+                                >
+                                  <Copy className="size-2.5" />
+                                </button>
+                              </div>
+                            )}
+
+                            {/* 1-Click Verification Action Button */}
+                            {o.paymentStatus === "Verification Required" && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updatePaymentStatus(o.id, "Paid");
+                                  toast.success(`Order #${o.id} payment verified and marked as Paid!`);
+                                }}
+                                className="mt-1.5 px-2 py-0.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] uppercase tracking-wider flex items-center gap-1 transition-colors shadow-xs"
+                              >
+                                <Check className="size-2.5" />
+                                Mark as Paid
+                              </button>
+                            )}
                           </td>
                           <td className="py-4 px-5">
                             <select
@@ -6294,6 +6370,70 @@ function AdminDashboard() {
                     className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
                     placeholder="info@mshaies.com"
                   />
+                </div>
+
+                {/* Direct Mobile Accounts Suite (No Corporate Merchant Account Required) */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-pearl border border-gold/40 space-y-3.5">
+                  <div className="flex items-center justify-between border-b border-gold/30 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="size-4 text-gold-deep" />
+                      <span className="text-xs uppercase tracking-wider text-ink font-bold">
+                        Direct Mobile Accounts (No Merchant API Needed)
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                      JazzCash · Easypaisa · NayaPay
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Direct mobile transfers enable customers to pay directly to your personal mobile account without requiring corporate merchant gateway contracts or NTN integration. Customers enter their transaction TID and send proof to your WhatsApp.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Recipient Account Title
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.paymentAccountTitle || "Muhammad Shees"}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, paymentAccountTitle: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none font-semibold"
+                        placeholder="Muhammad Shees"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Primary Mobile / Raast Number
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.paymentAccountNumber || "03325568922"}
+                        onChange={(e) => setSettingsForm({ 
+                          ...settingsForm, 
+                          paymentAccountNumber: e.target.value,
+                          paymentAccountFormatted: e.target.value.length === 11 ? `${e.target.value.slice(0, 4)} ${e.target.value.slice(4)}` : e.target.value,
+                        })}
+                        className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none font-mono"
+                        placeholder="03325568922"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
+                      WhatsApp Receipt Helpline (With Country Code)
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.paymentWhatsapp || "+923325568922"}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, paymentWhatsapp: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none font-mono"
+                      placeholder="+923325568922"
+                    />
+                  </div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-pearl/60 border border-border/80">

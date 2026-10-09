@@ -9,6 +9,7 @@ import {
   placeOrderServerFn,
   getOrdersServerFn,
   updateOrderStatusServerFn,
+  updatePaymentStatusServerFn,
 } from "./api/orders.server";
 import {
   validateCouponServerFn,
@@ -156,6 +157,20 @@ export type StoreSettings = {
   facebookUrl: string;
   tiktokUrl: string;
   autoLockMinutes: number;
+  // Direct Mobile Payment Accounts (JazzCash, EasyPaisa, NayaPay)
+  paymentAccountTitle: string;
+  paymentAccountNumber: string;
+  paymentAccountFormatted: string;
+  paymentWhatsapp: string;
+  jazzcashActive?: boolean;
+  easypaisaActive?: boolean;
+  nayapayActive?: boolean;
+  jazzcashTitle?: string;
+  jazzcashNumber?: string;
+  easypaisaTitle?: string;
+  easypaisaNumber?: string;
+  nayapayTitle?: string;
+  nayapayNumber?: string;
   // Hero Section Promotional Banner
   heroBannerActive?: boolean;
   heroBannerImage?: string;
@@ -187,12 +202,25 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   freeShippingEnabled: true,
   shippingEstimateDays: "2-4 Business Days",
   courierPartners: "TCS Express & Leopards Courier",
-  whatsappNumber: "+923390001826",
+  whatsappNumber: "+923325568922",
   contactEmail: "info@mshaies.com",
   instagramUrl: "https://www.instagram.com/m.shaiesfragrances",
   facebookUrl: "https://www.facebook.com/profile.php?id=61575714252560",
   tiktokUrl: "https://www.tiktok.com/@mshaiesfragrances",
   autoLockMinutes: 15,
+  paymentAccountTitle: "Muhammad Shees",
+  paymentAccountNumber: "03325568922",
+  paymentAccountFormatted: "0332 5568922",
+  paymentWhatsapp: "+923325568922",
+  jazzcashActive: true,
+  easypaisaActive: true,
+  nayapayActive: true,
+  jazzcashTitle: "Muhammad Shees",
+  jazzcashNumber: "03325568922",
+  easypaisaTitle: "Muhammad Shees",
+  easypaisaNumber: "03325568922",
+  nayapayTitle: "Muhammad Shees",
+  nayapayNumber: "03325568922",
   heroBannerActive: true,
   heroBannerImage: "/product-box.jpg",
   heroBannerLink: "/shop",
@@ -268,6 +296,7 @@ type ProductsStoreContextType = {
   // Order Methods
   placeOrder: (orderData: Omit<Order, "id" | "date">) => Promise<string>;
   updateOrderStatus: (id: string, status: Order["orderStatus"], courier?: string, tracking?: string) => void;
+  updatePaymentStatus: (id: string, paymentStatus: Order["paymentStatus"]) => void;
   getOrder: (id: string) => Order | undefined;
   // Review System Methods
   reviews: ProductReview[];
@@ -860,6 +889,26 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     }).catch((err) => console.warn("[updateOrderStatusServerFn]", err));
   };
 
+  const updatePaymentStatus = (id: string, paymentStatus: Order["paymentStatus"]) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, paymentStatus } : o))
+    );
+    addAuditLog(
+      "Payment Verified",
+      "Order",
+      `Order #${id} payment status updated to "${paymentStatus}"`
+    );
+
+    const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+    updatePaymentStatusServerFn({
+      data: {
+        id,
+        paymentStatus,
+        authToken: token,
+      },
+    }).catch((err) => console.warn("[updatePaymentStatusServerFn]", err));
+  };
+
   const getOrder = (id: string) => {
     return orders.find((o) => o.id === id);
   };
@@ -1043,6 +1092,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
         validateCoupon,
         placeOrder,
         updateOrderStatus,
+        updatePaymentStatus,
         getOrder,
         addReview,
         voteHelpful,

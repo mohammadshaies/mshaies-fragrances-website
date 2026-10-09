@@ -188,7 +188,7 @@ export const placeOrderServerFn = createServerFn({ method: "POST" })
       city: data.city,
       postalCode: data.postalCode || null,
       paymentMethod: data.paymentMethod,
-      paymentStatus: (data.paymentMethod === "cod" ? "Pending COD" : data.transactionId ? "Paid" : "Verification Required") as any,
+      paymentStatus: (data.paymentMethod === "cod" ? "Pending COD" : "Verification Required") as any,
       transactionId: data.transactionId || null,
       subtotal,
       discountCode: data.discountCode || null,
@@ -460,6 +460,63 @@ export const updateOrderStatusServerFn = createServerFn({ method: "POST" })
           .where(eq(schema.orders.id, data.id));
       } catch (err: any) {
         console.warn("[updateOrderStatusServerFn] DB update error:", err);
+      }
+    }
+
+    return { success: true };
+  });
+
+export const updatePaymentStatusServerFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      id: z.string().min(1),
+      paymentStatus: z.enum(["Paid", "Pending COD", "Verification Required"]),
+      authToken: z.string().optional(),
+    })
+  )
+  .handler(async ({ data }) => {
+    const auth = await verifyAdminSession(data.authToken);
+    if (!auth.valid) {
+      return { success: false, error: auth.error || "Unauthorized admin action." };
+    }
+
+    // 1. Supabase REST API
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseAdmin() || getSupabaseClient();
+        if (client) {
+          await client
+            .from("orders")
+            .update({
+              payment_status: data.paymentStatus,
+            })
+            .eq("id", data.id);
+
+          await client.from("audit_logs").insert({
+            id: `log-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            action: "Payment Verified",
+            category: "Order",
+            details: `Order #${data.id} payment status marked as "${data.paymentStatus}".`,
+            user: auth.user?.email || "Admin",
+          });
+        }
+      } catch (err) {
+        console.warn("[updatePaymentStatusServerFn] Supabase update exception:", err);
+      }
+    }
+
+    // 2. Direct Drizzle DB
+    if (isDatabaseConfigured() && db) {
+      try {
+        await db
+          .update(schema.orders)
+          .set({
+            paymentStatus: data.paymentStatus,
+          })
+          .where(eq(schema.orders.id, data.id));
+      } catch (err: any) {
+        console.warn("[updatePaymentStatusServerFn] DB update error:", err);
       }
     }
 

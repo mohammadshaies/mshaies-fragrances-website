@@ -17,7 +17,11 @@ import {
   Trash2,
   Sparkles,
   ArrowRight,
-  X
+  X,
+  Copy,
+  Check,
+  MessageCircle,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -73,6 +77,16 @@ function CheckoutPage() {
 
   const [loading, setLoading] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = (text: string, label: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+    }
+    setCopiedField(label);
+    toast.success(`${label} copied to clipboard!`);
+    setTimeout(() => setCopiedField(null), 2500);
+  };
 
   // Dynamic Shipping Calculation from Store Settings
   const freeThreshold = settings?.freeShippingThreshold ?? 5000;
@@ -517,7 +531,7 @@ function CheckoutPage() {
                       <span className="text-sm">JazzCash</span>
                     </div>
                     <p className="text-[11px] font-normal text-muted-foreground">
-                      Direct Wallet or Till Payment
+                      Direct transfer to 0332 5568922
                     </p>
                   </div>
                   {paymentMethod === "jazzcash" && <CheckCircle2 className="size-4 text-gold-deep shrink-0" />}
@@ -539,7 +553,7 @@ function CheckoutPage() {
                       <span className="text-sm">Easypaisa</span>
                     </div>
                     <p className="text-[11px] font-normal text-muted-foreground">
-                      Instant mobile wallet transfer
+                      Direct transfer to 0332 5568922
                     </p>
                   </div>
                   {paymentMethod === "easypaisa" && <CheckCircle2 className="size-4 text-gold-deep shrink-0" />}
@@ -561,7 +575,7 @@ function CheckoutPage() {
                       <span className="text-sm">NayaPay</span>
                     </div>
                     <p className="text-[11px] font-normal text-muted-foreground">
-                      Send to @mshaies NayaPay ID
+                      Direct transfer to 0332 5568922
                     </p>
                   </div>
                   {paymentMethod === "nayapay" && <CheckCircle2 className="size-4 text-gold-deep shrink-0" />}
@@ -590,59 +604,210 @@ function CheckoutPage() {
                 </button>
               </div>
 
-              {/* Dynamic Gateway Instructions */}
-              {paymentMethod === "jazzcash" && (
-                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3">
-                  <div className="text-xs space-y-1">
-                    <p className="font-semibold text-ink">JazzCash Transfer Instructions:</p>
-                    <p className="text-muted-foreground">1. Send <strong>{formatPKR(finalTotal)}</strong> to Account: <strong>0300 1234567</strong> (Title: M.shaies Fragrances) or Till ID: <strong>89210</strong>.</p>
-                    <p className="text-muted-foreground">2. Enter the Transaction ID (TID) below to generate your confirmed invoice.</p>
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter 12-digit JazzCash TID"
-                    value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink font-mono focus:border-gold focus:outline-none"
-                  />
-                </div>
-              )}
+              {/* Dynamic Smart Direct Mobile Transfer Card */}
+              {(paymentMethod === "jazzcash" || paymentMethod === "easypaisa" || paymentMethod === "nayapay") && (() => {
+                const gatewayData = {
+                  jazzcash: {
+                    title: "JazzCash",
+                    appBadge: "JazzCash Mobile Account & Raast",
+                    color: "#d81e05",
+                    borderColor: "border-red-500/40",
+                    bgHeader: "bg-red-500/10",
+                    pillClass: "bg-red-500/15 text-red-600 border-red-500/30",
+                    tidPlaceholder: "Enter 12-digit JazzCash TID (e.g. 029384758192)",
+                  },
+                  easypaisa: {
+                    title: "Easypaisa",
+                    appBadge: "Easypaisa Mobile Account & Raast",
+                    color: "#00a859",
+                    borderColor: "border-emerald-500/40",
+                    bgHeader: "bg-emerald-500/10",
+                    pillClass: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
+                    tidPlaceholder: "Enter Easypaisa TID / Trx ID (e.g. 1092837456)",
+                  },
+                  nayapay: {
+                    title: "NayaPay",
+                    appBadge: "NayaPay Mobile Account & Raast",
+                    color: "#ff5f00",
+                    borderColor: "border-orange-500/40",
+                    bgHeader: "bg-orange-500/10",
+                    pillClass: "bg-orange-500/15 text-orange-700 border-orange-500/30",
+                    tidPlaceholder: "Enter NayaPay Ref ID or Transaction ID",
+                  },
+                }[paymentMethod];
 
-              {paymentMethod === "easypaisa" && (
-                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-3">
-                  <div className="text-xs space-y-1">
-                    <p className="font-semibold text-ink">Easypaisa Transfer Instructions:</p>
-                    <p className="text-muted-foreground">1. Send <strong>{formatPKR(finalTotal)}</strong> to Easypaisa Account: <strong>0345 7654321</strong> (Title: M.shaies Maison).</p>
-                    <p className="text-muted-foreground">2. Enter your Easypaisa TID below.</p>
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter Easypaisa TID (e.g. 10928374)"
-                    value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink font-mono focus:border-gold focus:outline-none"
-                  />
-                </div>
-              )}
+                const accountTitle = settings?.paymentAccountTitle || "Muhammad Shees";
+                const accountNumber = settings?.paymentAccountNumber || "03325568922";
+                const accountFormatted = settings?.paymentAccountFormatted || "0332 5568922";
+                const cleanWhatsApp = (settings?.paymentWhatsapp || "+923325568922").replace(/[^0-9]/g, "");
 
-              {paymentMethod === "nayapay" && (
-                <div className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/30 space-y-3">
-                  <div className="text-xs space-y-1">
-                    <p className="font-semibold text-ink">NayaPay Transfer Instructions:</p>
-                    <p className="text-muted-foreground">Send <strong>{formatPKR(finalTotal)}</strong> to NayaPay ID: <strong>@mshaies</strong> and enter your reference ID below.</p>
+                const whatsappMsg = encodeURIComponent(
+                  `Assalam-o-Alaikum Muhammad Shees! I am placing an order on M.Shaies Fragrances for ${formatPKR(finalTotal)} via ${gatewayData.title}.\nCustomer: ${name || 'Customer'}\nContact: ${phone || 'N/A'}\n${transactionId ? `TID: ${transactionId}` : 'I am sharing the payment receipt screenshot here.'}`
+                );
+
+                return (
+                  <div className={`p-5 rounded-2xl sm:rounded-3xl border ${gatewayData.borderColor} bg-card space-y-4 shadow-sm`}>
+                    {/* Header Banner */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border/80">
+                      <div className="flex items-center gap-2">
+                        <div className="size-8 rounded-xl bg-pearl border border-border flex items-center justify-center shrink-0">
+                          <Smartphone className="size-4" style={{ color: gatewayData.color }} />
+                        </div>
+                        <div>
+                          <h4 className="font-serif text-sm font-bold text-ink">
+                            {gatewayData.title} Direct Account Transfer
+                          </h4>
+                          <p className="text-[11px] text-muted-foreground">
+                            Personal Account · Instant Raast / Wallet Support
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${gatewayData.pillClass} self-start sm:self-auto`}>
+                        <CheckCircle2 className="size-3" />
+                        Verified Receiver
+                      </span>
+                    </div>
+
+                    {/* Recipient Account Details Card */}
+                    <div className="p-4 rounded-2xl bg-pearl/60 border border-gold/30 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">
+                            Account Title
+                          </span>
+                          <span className="font-serif text-sm font-bold text-ink flex items-center gap-1.5 mt-0.5">
+                            {accountTitle}
+                            <span className="text-[10px] font-sans font-semibold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                              ✓ Verified
+                            </span>
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">
+                            Account / Mobile Number
+                          </span>
+                          <span className="font-mono text-sm font-bold text-ink mt-0.5 block">
+                            {accountFormatted}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 1-Click Copy Buttons */}
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/60">
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(accountNumber, "Account Number")}
+                          className="px-3 py-1.5 rounded-full border border-gold/60 bg-gold/15 text-[11px] font-bold text-ink hover:bg-gold flex items-center gap-1.5 transition-colors shadow-xs"
+                        >
+                          {copiedField === "Account Number" ? (
+                            <>
+                              <Check className="size-3 text-emerald-700" />
+                              Copied: {accountNumber}
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="size-3 text-gold-deep" />
+                              Copy Account: {accountNumber}
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(finalTotal.toString(), "Payable Amount")}
+                          className="px-3 py-1.5 rounded-full border border-border bg-background text-[11px] font-semibold text-ink hover:bg-muted flex items-center gap-1.5 transition-colors"
+                        >
+                          {copiedField === "Payable Amount" ? (
+                            <>
+                              <Check className="size-3 text-emerald-700" />
+                              Amount Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="size-3" />
+                              Copy Exact Amount: {formatPKR(finalTotal)}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Step-by-Step Instructions */}
+                    <div className="space-y-1.5 text-xs text-muted-foreground">
+                      <p className="font-bold text-ink text-[11px] uppercase tracking-wider">
+                        How to complete payment:
+                      </p>
+                      <ol className="list-decimal list-inside space-y-1 pl-1 text-[11px] leading-relaxed">
+                        <li>
+                          Open your <strong className="text-ink">{gatewayData.title}</strong> app or mobile banking.
+                        </li>
+                        <li>
+                          Send <strong className="text-ink">{formatPKR(finalTotal)}</strong> to{" "}
+                          <strong className="text-ink font-mono">{accountFormatted}</strong> (Verify recipient name is{" "}
+                          <strong className="text-ink">{accountTitle}</strong>).
+                        </li>
+                        <li>
+                          Enter the <strong className="text-ink">Transaction ID (TID)</strong> from your confirmation SMS or app receipt below.
+                        </li>
+                      </ol>
+                    </div>
+
+                    {/* TID Input & WhatsApp Proof Helper */}
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <label className="font-bold uppercase tracking-wider text-ink">
+                          Transaction ID (TID / Trx ID)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTransactionId("PAID-VIA-WHATSAPP");
+                            toast.info("Marked for WhatsApp receipt submission. You can click 'WhatsApp Receipt' below.");
+                          }}
+                          className="text-gold-deep font-semibold hover:underline"
+                        >
+                          Sending proof via WhatsApp?
+                        </button>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          placeholder={gatewayData.tidPlaceholder}
+                          value={transactionId}
+                          onChange={(e) => setTransactionId(e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm text-ink font-mono focus:border-gold focus:outline-none placeholder:font-sans placeholder:text-muted-foreground"
+                        />
+                        {transactionId && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">
+                            TID Entered
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* WhatsApp Proof Action */}
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="size-4 text-emerald-600 shrink-0" />
+                        <span className="text-[11px] text-ink">
+                          Need instant confirmation? Send screenshot to <strong>{accountTitle}</strong> ({accountFormatted}):
+                        </span>
+                      </div>
+                      <a
+                        href={`https://wa.me/${cleanWhatsApp}?text=${whatsappMsg}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-full bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-wider hover:bg-emerald-700 transition-colors inline-flex items-center justify-center gap-1.5 shrink-0"
+                      >
+                        WhatsApp Receipt <ExternalLink className="size-3" />
+                      </a>
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter NayaPay Ref ID"
-                    value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink font-mono focus:border-gold focus:outline-none"
-                  />
-                </div>
-              )}
+                );
+              })()}
 
               {paymentMethod === "card" && (
                 <div className="p-5 rounded-2xl border border-border bg-pearl/40 space-y-3">
