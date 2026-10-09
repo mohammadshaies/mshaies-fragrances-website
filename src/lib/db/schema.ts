@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // 1. PRODUCTS TABLE
@@ -30,7 +30,15 @@ export const products = pgTable("products", {
   batchNumber: text("batch_number").default("MSH-2026-B1"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_products_category").on(table.category),
+  index("idx_products_price").on(table.price),
+  index("idx_products_featured").on(table.isFeatured),
+  index("idx_products_gender").on(table.gender),
+  index("idx_products_stock").on(table.stock),
+  index("idx_products_created_at").on(table.createdAt.desc()),
+  index("idx_products_category_price").on(table.category, table.price),
+]);
 
 // 2. PRODUCT VARIANTS TABLE (Size & Concentration Options)
 export const productVariants = pgTable("product_variants", {
@@ -41,7 +49,9 @@ export const productVariants = pgTable("product_variants", {
   price: integer("price").notNull(),
   stock: integer("stock").notNull().default(0),
   sku: text("sku"),
-});
+}, (table) => [
+  index("idx_product_variants_product_id").on(table.productId),
+]);
 
 // 3. PRODUCT FRAGRANCE NOTES TABLE (Normalized Olfactory Pyramid)
 export const productNotes = pgTable("product_notes", {
@@ -49,7 +59,10 @@ export const productNotes = pgTable("product_notes", {
   productId: text("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   noteType: text("note_type").notNull(), // 'top' | 'heart' | 'base'
   noteName: text("note_name").notNull(),
-});
+}, (table) => [
+  index("idx_product_notes_product_id").on(table.productId),
+  index("idx_product_notes_prod_type").on(table.productId, table.noteType),
+]);
 
 // 4. CUSTOMERS CRM DIRECTORY
 export const customers = pgTable("customers", {
@@ -64,7 +77,12 @@ export const customers = pgTable("customers", {
   loyaltyTier: text("loyalty_tier").default("Valued Client").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_customers_email").on(table.email),
+  index("idx_customers_total_spent").on(table.totalSpent.desc()),
+  index("idx_customers_loyalty_tier").on(table.loyaltyTier),
+  index("idx_customers_created_at").on(table.createdAt.desc()),
+]);
 
 // 5. ORDERS TABLE
 export const orders = pgTable("orders", {
@@ -90,7 +108,15 @@ export const orders = pgTable("orders", {
   isGiftWrapped: boolean("is_gift_wrapped").default(false),
   giftMessage: text("gift_message"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_orders_customer_id").on(table.customerId),
+  index("idx_orders_created_at").on(table.createdAt.desc()),
+  index("idx_orders_order_status").on(table.orderStatus),
+  index("idx_orders_payment_status").on(table.paymentStatus),
+  index("idx_orders_phone").on(table.phone),
+  index("idx_orders_email").on(table.email),
+  index("idx_orders_tracking_number").on(table.trackingNumber),
+]);
 
 // 6. ORDER ITEMS TABLE
 export const orderItems = pgTable("order_items", {
@@ -102,7 +128,10 @@ export const orderItems = pgTable("order_items", {
   qty: integer("qty").notNull(),
   volume: text("volume").notNull(),
   image: text("image"),
-});
+}, (table) => [
+  index("idx_order_items_order_id").on(table.orderId),
+  index("idx_order_items_product_id").on(table.productId),
+]);
 
 // 7. COUPONS TABLE
 export const coupons = pgTable("coupons", {
@@ -116,7 +145,9 @@ export const coupons = pgTable("coupons", {
   expiryDate: text("expiry_date"),
   isActive: boolean("is_active").default(true).notNull(),
   description: text("description"),
-});
+}, (table) => [
+  index("idx_coupons_is_active").on(table.isActive),
+]);
 
 // 8. PRODUCT REVIEWS TABLE
 export const productReviews = pgTable("product_reviews", {
@@ -131,7 +162,11 @@ export const productReviews = pgTable("product_reviews", {
   verified: boolean("verified").default(true).notNull(),
   helpfulCount: integer("helpful_count").default(0).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_product_reviews_product_id").on(table.productId),
+  index("idx_product_reviews_prod_date").on(table.productId, table.createdAt.desc()),
+  index("idx_product_reviews_rating").on(table.rating),
+]);
 
 // 9. STORE SETTINGS TABLE (Singleton row with id = 'default')
 // Note: geminiApiKey is STRICTLY excluded per Amendment 2; it lives in server-only process.env.GEMINI_API_KEY
@@ -173,7 +208,10 @@ export const auditLogs = pgTable("audit_logs", {
   category: text("category").notNull(), // 'Product' | 'Stock' | 'Order' | 'Discount' | 'Settings' | 'System'
   details: text("details").notNull(),
   user: text("user").default("Staff Admin"),
-});
+}, (table) => [
+  index("idx_audit_logs_timestamp").on(table.timestamp.desc()),
+  index("idx_audit_logs_category").on(table.category),
+]);
 
 // --- RELATIONS ---
 export const productsRelations = relations(products, ({ many }) => ({

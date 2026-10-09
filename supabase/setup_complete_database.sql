@@ -219,3 +219,51 @@ CREATE POLICY "Service role full access settings" ON store_settings FOR ALL USIN
 
 DROP POLICY IF EXISTS "Service role full access audit logs" ON audit_logs;
 CREATE POLICY "Service role full access audit logs" ON audit_logs FOR ALL USING (auth.role() = 'service_role');
+
+-- 5. PERFORMANCE INDEXES
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- Products
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_price ON products(price);
+CREATE INDEX IF NOT EXISTS idx_products_featured ON products(is_featured);
+CREATE INDEX IF NOT EXISTS idx_products_gender ON products(gender);
+CREATE INDEX IF NOT EXISTS idx_products_stock ON products(stock);
+CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_products_category_price ON products(category, price);
+CREATE INDEX IF NOT EXISTS idx_products_name_trgm ON products USING gin (name gin_trgm_ops);
+
+-- Product Variants & Notes
+CREATE INDEX IF NOT EXISTS idx_product_variants_product_id ON product_variants(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_notes_product_id ON product_notes(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_notes_prod_type ON product_notes(product_id, note_type);
+
+-- Customers CRM
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+CREATE INDEX IF NOT EXISTS idx_customers_total_spent ON customers(total_spent DESC);
+CREATE INDEX IF NOT EXISTS idx_customers_loyalty_tier ON customers(loyalty_tier);
+CREATE INDEX IF NOT EXISTS idx_customers_created_at ON customers(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_customers_name_trgm ON customers USING gin (name gin_trgm_ops);
+
+-- Orders & Order Items
+CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_order_status ON orders(order_status);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
+CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(phone);
+CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email);
+CREATE INDEX IF NOT EXISTS idx_orders_tracking_number ON orders(tracking_number) WHERE tracking_number IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
+
+-- Coupons
+CREATE INDEX IF NOT EXISTS idx_coupons_is_active ON coupons(is_active);
+
+-- Reviews
+CREATE INDEX IF NOT EXISTS idx_product_reviews_product_id ON product_reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_reviews_prod_date ON product_reviews(product_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_product_reviews_rating ON product_reviews(rating);
+
+-- Audit Logs
+CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_category ON audit_logs(category);
