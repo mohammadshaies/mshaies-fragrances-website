@@ -472,7 +472,15 @@ export function FeaturedFragrances({
         {/* =================================================================== */}
         {/* PRODUCT GRID                                                        */}
         {/* =================================================================== */}
-        {displayProducts.length === 0 ? (
+        {products.length === 0 ? (
+          <div className="text-center py-20 rounded-3xl border border-dashed border-border/60 bg-pearl/20 max-w-xl mx-auto px-6">
+            <Sparkles className="size-10 mx-auto text-gold-deep mb-3 opacity-70" />
+            <p className="font-serif text-2xl text-ink">New Collection Unveiling Soon</p>
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              Our master perfumers and horologists are currently formulating fresh artisanal flacons. New releases will be added directly to the catalog.
+            </p>
+          </div>
+        ) : displayProducts.length === 0 ? (
           // Empty State if no products match the current filters
           <div className="text-center py-20 rounded-3xl border border-dashed border-border/60 bg-pearl/20">
             <SlidersHorizontal className="size-9 mx-auto text-gold-deep mb-3 opacity-60" />

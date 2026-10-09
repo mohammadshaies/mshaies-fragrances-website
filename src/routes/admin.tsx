@@ -613,7 +613,7 @@ function AnalyticsDashboardView({
     (o) => o.orderStatus === "Dispatched" || o.orderStatus === "Delivered"
   ).length;
   const fulfillmentRate =
-    totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 100;
+    totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
 
   const repeatCount = (uniqueCustomers || []).filter((c) => (c.orderCount || 0) >= 2).length;
   const repeatRate =
@@ -1098,6 +1098,11 @@ function AnalyticsDashboardView({
             <p className="text-xs text-muted-foreground">
               Hover over data points to inspect daily revenue spikes and transaction volume.
             </p>
+            {totalOrders === 0 && (
+              <p className="text-[11px] text-gold-deep font-medium mt-1">
+                Zero baseline active — Real-time velocity curve will chart daily revenue as orders are placed.
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-4 text-xs font-semibold">
@@ -1258,7 +1263,16 @@ function AnalyticsDashboardView({
             </div>
 
             <div className="space-y-4">
-              {productPerformance.slice(0, 5).map((item, index) => {
+              {productPerformance.length === 0 ? (
+                <div className="text-center py-10 px-4 rounded-2xl border border-dashed border-border/80 bg-pearl/20">
+                  <Award className="size-8 text-gold-deep/50 mx-auto mb-2" />
+                  <p className="font-serif text-sm font-bold text-ink">No product sales recorded yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Bestselling fragrance rankings will automatically populate as customer orders arrive.
+                  </p>
+                </div>
+              ) : (
+                productPerformance.slice(0, 5).map((item, index) => {
                 const sharePercent = totalRevenue > 0 ? Math.round((item.revenue / totalRevenue) * 100) : 0;
                 const isTop1 = index === 0;
 
@@ -1318,7 +1332,7 @@ function AnalyticsDashboardView({
                     </div>
                   </div>
                 );
-              })}
+              }))}
             </div>
           </div>
 
@@ -1359,29 +1373,39 @@ function AnalyticsDashboardView({
             </div>
 
             <div className="space-y-3">
-              {cityMatrix.slice(0, 5).map((city, idx) => (
-                <div
-                  key={city.city}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-background border border-border/70 text-xs"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="size-5 rounded-full bg-pearl border border-gold/40 grid place-items-center text-[10px] font-bold text-gold-deep shrink-0">
-                      {idx + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-ink truncate">{city.city}</p>
-                      <p className="text-[10px] text-muted-foreground">{city.topCourier}</p>
+              {cityMatrix.length === 0 ? (
+                <div className="text-center py-10 px-4 rounded-2xl border border-dashed border-border/80 bg-pearl/20">
+                  <MapPin className="size-8 text-gold-deep/50 mx-auto mb-2" />
+                  <p className="font-serif text-sm font-bold text-ink">No regional orders recorded yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Provincial sales and city distribution will track nationwide customer orders.
+                  </p>
+                </div>
+              ) : (
+                cityMatrix.slice(0, 5).map((city, idx) => (
+                  <div
+                    key={city.city}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-background border border-border/70 text-xs"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="size-5 rounded-full bg-pearl border border-gold/40 grid place-items-center text-[10px] font-bold text-gold-deep shrink-0">
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-ink truncate">{city.city}</p>
+                        <p className="text-[10px] text-muted-foreground">{city.topCourier}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <p className="font-mono font-bold text-ink">{formatPKR(city.revenue)}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {city.orders} order{city.orders !== 1 ? "s" : ""} · AOV {formatPKR(city.aov)}
+                      </p>
                     </div>
                   </div>
-
-                  <div className="text-right shrink-0">
-                    <p className="font-mono font-bold text-ink">{formatPKR(city.revenue)}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {city.orders} order{city.orders !== 1 ? "s" : ""} · AOV {formatPKR(city.aov)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -1459,11 +1483,16 @@ function AnalyticsDashboardView({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stockForecast
-            .filter((f) => f.urgency === "out" || f.urgency === "critical" || f.urgency === "warning")
-            .slice(0, 6)
-            .map((item) => {
+        {stockForecast.filter((f) => f.urgency === "out" || f.urgency === "critical" || f.urgency === "warning").length === 0 ? (
+          <div className="text-center py-6 px-4 rounded-2xl bg-pearl/20 border border-dashed border-border/80">
+            <p className="text-xs text-muted-foreground font-medium">All stock levels are clear and healthy. No depletion warnings.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {stockForecast
+              .filter((f) => f.urgency === "out" || f.urgency === "critical" || f.urgency === "warning")
+              .slice(0, 6)
+              .map((item) => {
               const isOut = item.urgency === "out";
               const isCritical = item.urgency === "critical";
 
@@ -1527,7 +1556,8 @@ function AnalyticsDashboardView({
                 </div>
               );
             })}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1562,6 +1592,7 @@ function AdminDashboard() {
     updateJob,
     deleteJob,
     toggleJobStatus,
+    refreshDataFromServer,
   } = useProductsStore();
 
   // Authentication State
@@ -1586,6 +1617,7 @@ function AdminDashboard() {
 
     if (authed) {
       setIsAuthenticated(true);
+      refreshDataFromServer();
       if (storedToken) {
         verifyAdminStatusServerFn({ data: { authToken: storedToken } })
           .then((res) => {
@@ -1924,6 +1956,7 @@ function AdminDashboard() {
         localStorage.setItem("mshaies_admin_email", authedEmail);
         setCurrentAdminEmail(authedEmail);
         setIsAuthenticated(true);
+        refreshDataFromServer();
         setFailedAttempts(0);
         setAdminPassword("");
         toast.success(`Authenticated as ${authedEmail}`);
@@ -1966,6 +1999,7 @@ function AdminDashboard() {
         localStorage.setItem("mshaies_admin_email", authedEmail);
         setCurrentAdminEmail(authedEmail);
         setIsAuthenticated(true);
+        refreshDataFromServer();
         setFailedAttempts(0);
         sessionStorage.removeItem("mshaies_failed_pin_attempts");
         sessionStorage.removeItem("mshaies_lockout_until");
@@ -4370,7 +4404,16 @@ function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40">
-                      {coupons.map((c) => (
+                      {coupons.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                            <Tag className="size-8 mx-auto text-gold-deep opacity-60 mb-2" />
+                            <p className="font-serif text-sm font-semibold text-ink">No promotional vouchers created yet</p>
+                            <p className="text-xs text-muted-foreground mt-1">Use the form on the left to activate launch coupons and discount codes.</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        coupons.map((c) => (
                         <tr key={c.id} className="hover:bg-muted/20 transition-colors">
                           <td className="py-4 px-5">
                             <span className="font-mono font-bold text-sm text-ink px-2 py-1 rounded bg-pearl border border-gold/40">
@@ -4415,7 +4458,7 @@ function AdminDashboard() {
                             </button>
                           </td>
                         </tr>
-                      ))}
+                      )))}
                     </tbody>
                   </table>
                 </div>
@@ -4488,8 +4531,14 @@ function AdminDashboard() {
               {filteredOrders.length === 0 ? (
                 <div className="text-center py-16 text-muted-foreground">
                   <Receipt className="size-10 mx-auto text-gold-deep opacity-60 mb-2" />
-                  <p className="font-serif text-lg text-ink">No matching customer orders found</p>
-                  <p className="text-xs mt-1">Try changing your search query or status filter.</p>
+                  <p className="font-serif text-lg text-ink">
+                    {orders.length === 0 ? "No customer orders recorded yet" : "No matching customer orders found"}
+                  </p>
+                  <p className="text-xs mt-1">
+                    {orders.length === 0
+                      ? "Live invoices and dispatch records will appear here as orders are placed."
+                      : "Try changing your search query or status filter."}
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -5022,8 +5071,14 @@ function AdminDashboard() {
               {filteredCustomers.length === 0 ? (
                 <div className="text-center py-16 text-muted-foreground">
                   <Users className="size-10 mx-auto text-gold-deep opacity-60 mb-2" />
-                  <p className="font-serif text-lg text-ink">No customer profiles match your search</p>
-                  <p className="text-xs mt-1">Try clearing filters or search terms.</p>
+                  <p className="font-serif text-lg text-ink">
+                    {uniqueCustomers.length === 0 ? "No customer profiles recorded yet" : "No customer profiles match your search"}
+                  </p>
+                  <p className="text-xs mt-1">
+                    {uniqueCustomers.length === 0
+                      ? "Customer records are automatically created as customers place orders."
+                      : "Try clearing filters or search terms."}
+                  </p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">

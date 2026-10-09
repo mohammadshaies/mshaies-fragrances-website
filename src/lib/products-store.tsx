@@ -216,348 +216,9 @@ export const DEFAULT_CATEGORIES: Category[] = [
   "Gift Sets",
 ];
 
-export const DEFAULT_ORDERS: Order[] = [
-  {
-    id: "MSH-98214",
-    customerName: "Malik Tariq Rehman",
-    email: "tariq.rehman@dha-lahore.pk",
-    phone: "03008451920",
-    address: "Bungalow 42, Sector Y, Phase 5, DHA",
-    city: "Lahore",
-    postalCode: "54792",
-    paymentMethod: "card",
-    paymentStatus: "Paid",
-    orderStatus: "Delivered",
-    date: "2026-09-28",
-    items: [
-      {
-        productId: "dehn-al-oudh-qadeem",
-        name: "Dehn Al Oudh Qadeem",
-        price: 24000,
-        qty: 1,
-        volume: "12ml Pure Attar",
-        image: "/product-box.jpg",
-      },
-      {
-        productId: "oud-al-jamil",
-        name: "Oud Al-Jamil",
-        price: 12500,
-        qty: 1,
-        volume: "12ml Pure Attar",
-        image: "/product-box.jpg",
-      },
-    ],
-    subtotal: 36500,
-    discountCode: "LUXE15",
-    discountAmount: 5475,
-    shipping: 0,
-    total: 31025,
-    courierName: "TCS Express",
-    trackingNumber: "TCS-991204812",
-  },
-  {
-    id: "MSH-97430",
-    customerName: "Syeda Zainab Bukhari",
-    email: "zainab.bukhari@gmail.com",
-    phone: "03214598124",
-    address: "Block 4, Clifton Marine Drive",
-    city: "Karachi",
-    postalCode: "75600",
-    paymentMethod: "nayapay",
-    paymentStatus: "Paid",
-    orderStatus: "Delivered",
-    date: "2026-09-30",
-    items: [
-      {
-        productId: "midnight-rose",
-        name: "Midnight Rose",
-        price: 9800,
-        qty: 2,
-        volume: "50ml Extrait",
-        image: "/product-midnight-rose.png",
-      },
-    ],
-    subtotal: 19600,
-    shipping: 0,
-    total: 19600,
-    courierName: "Leopards Courier",
-    trackingNumber: "LCS-77182910",
-  },
-  {
-    id: "MSH-96841",
-    customerName: "Malik Tariq Rehman",
-    email: "tariq.rehman@dha-lahore.pk",
-    phone: "03008451920",
-    address: "Bungalow 42, Sector Y, Phase 5, DHA",
-    city: "Lahore",
-    postalCode: "54792",
-    paymentMethod: "card",
-    paymentStatus: "Paid",
-    orderStatus: "Delivered",
-    date: "2026-10-04",
-    items: [
-      {
-        productId: "royal-ambergris",
-        name: "Royal Ambergris",
-        price: 18500,
-        qty: 1,
-        volume: "12ml Pure Attar",
-        image: "/product-box.jpg",
-      },
-    ],
-    subtotal: 18500,
-    shipping: 0,
-    total: 18500,
-    courierName: "TCS Express",
-    trackingNumber: "TCS-991208944",
-  },
-  {
-    id: "MSH-95312",
-    customerName: "Barrister Hamza Alvi",
-    email: "hamza.alvi@chambers.pk",
-    phone: "03335198240",
-    address: "House 18, Street 24, Sector F-7/2",
-    city: "Islamabad",
-    postalCode: "44000",
-    paymentMethod: "jazzcash",
-    paymentStatus: "Paid",
-    orderStatus: "Dispatched",
-    date: "2026-10-06",
-    items: [
-      {
-        productId: "oud-al-jamil",
-        name: "Oud Al-Jamil",
-        price: 12500,
-        qty: 1,
-        volume: "12ml Pure Attar",
-        image: "/product-box.jpg",
-      },
-    ],
-    subtotal: 12500,
-    shipping: 0,
-    total: 12500,
-    courierName: "TCS Express",
-    trackingNumber: "TCS-991211029",
-  },
-  {
-    id: "MSH-94109",
-    customerName: "Dr. Ayesha Siddiqui",
-    email: "ayesha.siddiqui@aku.edu",
-    phone: "03452109845",
-    address: "Hill Park Society, PECHS Block 6",
-    city: "Karachi",
-    postalCode: "75400",
-    paymentMethod: "easypaisa",
-    paymentStatus: "Paid",
-    orderStatus: "Delivered",
-    date: "2026-10-07",
-    items: [
-      {
-        productId: "desert-gold",
-        name: "Desert Gold",
-        price: 11200,
-        qty: 1,
-        volume: "50ml Extrait",
-        image: "/product-desert-gold.png",
-      },
-    ],
-    subtotal: 11200,
-    shipping: 0,
-    total: 11200,
-    courierName: "Trax Logistics",
-    trackingNumber: "TRX-4412981",
-  },
-  {
-    id: "MSH-93882",
-    customerName: "Chaudhry Shahbaz Warraich",
-    email: "shahbaz@warraichgroup.com",
-    phone: "03017765290",
-    address: "Canal Road, Officers Colony",
-    city: "Faisalabad",
-    postalCode: "38000",
-    paymentMethod: "cod",
-    paymentStatus: "Pending COD",
-    orderStatus: "Processing",
-    date: "2026-10-08",
-    items: [
-      {
-        productId: "dehn-al-oudh-qadeem",
-        name: "Dehn Al Oudh Qadeem",
-        price: 24000,
-        qty: 1,
-        volume: "12ml Pure Attar",
-        image: "/product-box.jpg",
-      },
-    ],
-    subtotal: 24000,
-    shipping: 0,
-    total: 24000,
-  },
-  {
-    id: "MSH-92715",
-    customerName: "Sardar Jahangir Khan",
-    email: "jahangir.khan@peshawarcivic.pk",
-    phone: "03129087612",
-    address: "Mall Road, Peshawar Cantt",
-    city: "Peshawar",
-    postalCode: "25000",
-    paymentMethod: "card",
-    paymentStatus: "Paid",
-    orderStatus: "Confirmed",
-    date: "2026-10-09",
-    items: [
-      {
-        productId: "royal-ambergris",
-        name: "Royal Ambergris",
-        price: 18500,
-        qty: 1,
-        volume: "12ml Pure Attar",
-        image: "/product-box.jpg",
-      },
-    ],
-    subtotal: 18500,
-    shipping: 0,
-    total: 18500,
-  },
-];
-
-export const DEFAULT_COUPONS: Coupon[] = [
-  {
-    id: "luxe15",
-    code: "LUXE15",
-    type: "percent",
-    value: 15,
-    minOrder: 0,
-    maxUses: 500,
-    usedCount: 14,
-    expiryDate: "2026-12-31",
-    isActive: true,
-    description: "Grand Launch Offer: Flat 15% OFF on all products",
-  },
-  {
-    id: "maison1000",
-    code: "MAISON1000",
-    type: "flat",
-    value: 1000,
-    minOrder: 8000,
-    maxUses: 200,
-    usedCount: 6,
-    expiryDate: "2026-12-31",
-    isActive: true,
-    description: "Flat ₨ 1,000 OFF on orders above ₨ 8,000",
-  },
-  {
-    id: "freeship",
-    code: "FREESHIP",
-    type: "shipping",
-    value: 250,
-    minOrder: 0,
-    maxUses: 1000,
-    usedCount: 28,
-    expiryDate: "2026-12-31",
-    isActive: true,
-    description: "Free Express Nationwide Shipping Voucher",
-  }
-];
-
-export const DEFAULT_REVIEWS: ProductReview[] = [
-  {
-    id: "rev-1",
-    productId: "oud-al-jamil",
-    author: "Hamza Tariq",
-    city: "Lahore",
-    rating: 5,
-    title: "Royal projection and immense longevity",
-    comment: "Applied two swipes on Jummah morning and could still smell the sweet aged Cambodian agarwood on my sherwani the next morning. Incredible silage and authentic dry-down. 10/10 masterpiece.",
-    date: "2026-08-24",
-    verified: true,
-    helpfulCount: 24,
-  },
-  {
-    id: "rev-2",
-    productId: "oud-al-jamil",
-    author: "Dr. Ayesha Malik",
-    city: "Islamabad",
-    rating: 5,
-    title: "Comparable to Roja & Clive Christian niche oils",
-    comment: "The damask rose balance with the smoky leather and vintage agarwood is exceptionally refined. Truly a signature scent for high-profile evenings and diplomatic dinners.",
-    date: "2026-08-18",
-    verified: true,
-    helpfulCount: 16,
-  },
-  {
-    id: "rev-3",
-    productId: "midnight-rose-attar",
-    author: "Zainab Farooq",
-    city: "Karachi",
-    rating: 5,
-    title: "Unbelievable performance in Karachi humid climate",
-    comment: "Most European perfumes disappear in Karachi coastal humidity within 2 hours. This pure oil projected for over 10 hours without being cloying or suffocating. Received compliments all evening.",
-    date: "2026-08-27",
-    verified: true,
-    helpfulCount: 19,
-  },
-  {
-    id: "rev-4",
-    productId: "midnight-rose-attar",
-    author: "Usman Ghani",
-    city: "Faisalabad",
-    rating: 5,
-    title: "Intimate velvet rose with dark patchouli",
-    comment: "Gifted this to my wife for our anniversary. The presentation box and crystal bottle are exquisite, and the scent trail is captivating.",
-    date: "2026-08-14",
-    verified: true,
-    helpfulCount: 11,
-  },
-  {
-    id: "rev-5",
-    productId: "desert-gold-edp",
-    author: "Bilal Mansoor",
-    city: "Peshawar",
-    rating: 5,
-    title: "Compliment magnet at family weddings",
-    comment: "The amber and saffron dry-down is stunning. The atomizer produces a fine cloud mist. Delivered to Peshawar via TCS in pristine condition within 2 days.",
-    date: "2026-08-29",
-    verified: true,
-    helpfulCount: 14,
-  },
-  {
-    id: "rev-6",
-    productId: "royal-ambergris",
-    author: "Kamran Siddiqui",
-    city: "Karachi",
-    rating: 5,
-    title: "True oceanic grey ambergris — extremely rare find",
-    comment: "I have collected niche attars for 15 years in the Gulf. Finding genuine grey ambergris resin at this level in Pakistan is unprecedented. Extraordinary warmth and sillage.",
-    date: "2026-08-11",
-    verified: true,
-    helpfulCount: 22,
-  },
-  {
-    id: "rev-7",
-    productId: "dehn-al-oudh-qadeem",
-    author: "Sheikh M. Asif",
-    city: "Rawalpindi",
-    rating: 5,
-    title: "Authentic 15-year aged Assam oud",
-    comment: "No barnyard harshness, only deep wood, ancient honey, and noble smoke. An heirloom investment.",
-    date: "2026-08-05",
-    verified: true,
-    helpfulCount: 31,
-  },
-  {
-    id: "rev-8",
-    productId: "chronographe-or-rose",
-    author: "Daniyal Shah",
-    city: "Lahore",
-    rating: 5,
-    title: "Heirloom craftsmanship on the wrist",
-    comment: "Sapphire glass, textured champagne dial, and hand-stitched leather. The packaging feels like opening an Audemars Piguet box. Exceptional prestige.",
-    date: "2026-08-20",
-    verified: true,
-    helpfulCount: 17,
-  }
-];
+export const DEFAULT_ORDERS: Order[] = [];
+export const DEFAULT_COUPONS: Coupon[] = [];
+export const DEFAULT_REVIEWS: ProductReview[] = [];
 
 export type JobPosting = {
   id: string;
@@ -575,291 +236,9 @@ export type JobPosting = {
   applicantCount?: number;
 };
 
-export const DEFAULT_JOBS: JobPosting[] = [
-  {
-    id: "job-perfumer",
-    title: "Artisanal Perfume Blender & Quality Specialist",
-    department: "Perfumery Studio",
-    location: "Pakistan Studio / Nationwide",
-    type: "Full-Time",
-    experience: "1-3 Years",
-    salaryRange: "PKR 90,000 - 150,000 / Month",
-    description: "Work directly with master distillers handling aged oud distillations, maceration, and flacon filling.",
-    requirements: [
-      "Deep olfactory appreciation for aged oud, rose absolute, and amber notes",
-      "Prior experience in laboratory formulation, distillation, or artisanal chemistry",
-      "Meticulous attention to cleanliness, sterile filling, and batch tracking"
-    ],
-    benefits: [
-      "Monthly allowance of pure attars & rare distillations",
-      "Health insurance & Eid bonuses",
-      "Direct mentorship from master perfumers"
-    ],
-    status: "Open",
-    createdAt: "2026-08-15",
-    applicantCount: 14,
-  },
-  {
-    id: "job-concierge",
-    title: "Luxury Fragrance Concierge & Client Advisor",
-    department: "Maison Retail",
-    location: "Pakistan Retail / Client Concierge",
-    type: "Full-Time",
-    experience: "1-3 Years",
-    salaryRange: "PKR 70,000 - 110,000 + Commissions",
-    description: "Provide personalized olfactory consultations, custom attar curation, and VIP client relations.",
-    requirements: [
-      "Polished interpersonal communication in English and Urdu",
-      "Refined aesthetic etiquette and luxury client service mindset",
-      "Familiarity with luxury notes, fragrance pyramid, and layering"
-    ],
-    benefits: [
-      "Attractive commission on haute parfumerie flacons",
-      "Luxury uniform & grooming allowance",
-      "VIP private salon event exposure"
-    ],
-    status: "Open",
-    createdAt: "2026-08-20",
-    applicantCount: 22,
-  },
-  {
-    id: "job-marketer",
-    title: "Digital E-Commerce & Brand Marketer",
-    department: "Commerce & Growth",
-    location: "Pakistan / Remote",
-    type: "Full-Time",
-    experience: "2-4 Years",
-    salaryRange: "PKR 100,000 - 180,000 / Month",
-    description: "Lead digital campaigns, influencer relations, and visual storytelling for Pakistan's premier fragrance brand.",
-    requirements: [
-      "Proven track record scaling D2C luxury brands in Pakistan / GCC",
-      "Mastery of Meta Ads, TikTok Shop, high-end editorial copy, and aesthetic visual direction",
-      "Understanding of ROAS, CPA, and retention marketing"
-    ],
-    benefits: [
-      "Flexible hybrid/remote schedule with studio access",
-      "Performance incentives tied to milestone targets",
-      "Latest tech gear allowance"
-    ],
-    status: "Open",
-    createdAt: "2026-08-25",
-    applicantCount: 31,
-  }
-];
+export const DEFAULT_JOBS: JobPosting[] = [];
 
-export const DEFAULT_PRODUCTS: Product[] = [
-  // --- ATTARS ---
-  {
-    id: "oud-al-jamil",
-    name: "Oud Al-Jamil",
-    price: 12500,
-    category: "Attars",
-    volume: "12ml Pure Attar",
-    stock: 15,
-    tagline: "Smoked aged Cambodian oud, damask rose absolute, rich leather.",
-    notes: "Aged Oud · Damask Rose · Leather",
-    topNotes: "Taif Rose, Bergamot",
-    heartNotes: "Smoked Leather, Saffron, Frankincense",
-    baseNotes: "Aged Cambodian Oud, Ambergris, Oakmoss",
-    image: "/product-box.jpg",
-    images: ["/product-box.jpg", "/product-dark.jpg", "/product-desert-gold.png"],
-    accent: "from-[#3a2a18] to-[#7a5a2a]",
-    description: "Hand-poured in limited batches using authentic aged Cambodian Agarwood oil. A majestic scent commanding poise and presence.",
-    isFeatured: true,
-    gender: "Unisex",
-    longevityHours: 20,
-    sillageRating: "Enormous",
-    seasonSuitability: ["Winter", "Autumn", "All-Season"],
-    occasionSuitability: ["Wedding / Barat", "Evening Gala", "Jummah / Spiritual"],
-    inspiredBy: "Artisanal kinship to Roja Amber Aoud & Clive Christian C",
-    fragranceFamily: "Woody Oud",
-    layeringPairId: "desert-gold-edp",
-    samplePrice: 650,
-    batchNumber: "MSH-2026-B1",
-  },
-  {
-    id: "midnight-rose-attar",
-    name: "Midnight Rose Attar",
-    price: 9800,
-    category: "Attars",
-    volume: "12ml Pure Attar",
-    stock: 22,
-    tagline: "Velvet petals after rain — quiet, deep, intimate.",
-    notes: "Rose Absolute · Patchouli · White Musk",
-    topNotes: "Fresh Dewdrop, Pink Pepper",
-    heartNotes: "Velvet Rose Petals, Turkish Jasmine",
-    baseNotes: "Indonesian Patchouli, Warm White Musk, Cashmere Wood",
-    image: "/product-midnight-rose.png",
-    images: ["/product-midnight-rose.png", "/product-box.jpg", "/product-dark.jpg"],
-    accent: "from-[#2a1024] to-[#7a2a48]",
-    description: "An evocative, romantic floral fragrance steeped in velvety darkness. Crafted with rare Turkish and Bulgarian rose essences.",
-    isFeatured: true,
-    gender: "Women",
-    longevityHours: 16,
-    sillageRating: "Strong",
-    seasonSuitability: ["Spring", "Autumn", "All-Season"],
-    occasionSuitability: ["Evening Gala", "Daily Office", "Wedding / Barat"],
-    inspiredBy: "Kinship to Frederic Malle Portrait of a Lady & Tom Ford Noir de Noir",
-    fragranceFamily: "Floral Amber",
-    layeringPairId: "velvet-saffron-edp",
-    samplePrice: 650,
-    batchNumber: "MSH-2026-B2",
-  },
-  {
-    id: "royal-ambergris",
-    name: "Royal Ambergris",
-    price: 18500,
-    category: "Attars",
-    volume: "12ml Pure Attar",
-    stock: 8,
-    tagline: "Oceanic grey amber with warm balsamic resins.",
-    notes: "Ambergris · Bergamot · Sweet Cedar",
-    topNotes: "Calabrian Bergamot, Sea Breeze",
-    heartNotes: "Precious Grey Ambergris, Clary Sage",
-    baseNotes: "Atlas Cedarwood, Warm Benzoin, Labdanum",
-    image: "/product-dark.jpg",
-    accent: "from-[#1a2530] to-[#3a4a58]",
-    description: "An extraordinarily rare attar composition anchored by natural grey ambergris notes, harmonized with balsamic resins.",
-    isFeatured: false,
-    gender: "Unisex",
-    longevityHours: 24,
-    sillageRating: "Enormous",
-    seasonSuitability: ["All-Season", "Summer", "Winter"],
-    occasionSuitability: ["Evening Gala", "Wedding / Barat", "Daily Office"],
-    inspiredBy: "Kinship to Creed Millesime Imperial & Brecourt Ambre Noir",
-    fragranceFamily: "Fresh Citrus",
-    layeringPairId: "oud-al-jamil",
-    samplePrice: 850,
-    batchNumber: "MSH-2026-B3",
-  },
-  {
-    id: "dehn-al-oudh-qadeem",
-    name: "Dehn Al Oudh Qadeem",
-    price: 24000,
-    category: "Attars",
-    volume: "6ml Aged Oil",
-    stock: 4,
-    tagline: "Vintage 15-year aged Assam oud oil in crystal flacon.",
-    notes: "Assam Oud · Tobacco · Ancient Woods",
-    topNotes: "Wild Indian Oud, Birch Tar",
-    heartNotes: "Aged Honey, Tobacco Leaf, Myrrh",
-    baseNotes: "Precious Assam Agarwood, Black Amber",
-    image: "/product-box.jpg",
-    accent: "from-[#20150d] to-[#4a301a]",
-    description: "Our crowning jewel attar. Distilled from wild Assam agarwood aged for 15 years in oak barrels.",
-    isFeatured: true,
-    gender: "Men",
-    longevityHours: 24,
-    sillageRating: "Enormous",
-    seasonSuitability: ["Winter", "Autumn"],
-    occasionSuitability: ["Wedding / Barat", "Jummah / Spiritual"],
-    inspiredBy: "Pure artisanal wild harvest vintage Indian agarwood",
-    fragranceFamily: "Woody Oud",
-    layeringPairId: "desert-gold-edp",
-    samplePrice: 1200,
-    batchNumber: "MSH-2026-B0",
-  },
-
-  // --- PERFUMES (EDP) ---
-  {
-    id: "desert-gold-edp",
-    name: "Desert Gold EDP",
-    price: 15000,
-    category: "Perfumes",
-    volume: "50ml Extrait De Parfum",
-    stock: 12,
-    tagline: "Sun-warmed amber across dune horizons in fine spray mist.",
-    notes: "Warm Amber · Saffron · Sandalwood",
-    topNotes: "Golden Saffron, Cardamom, Sweet Orange",
-    heartNotes: "Warm Amber Resin, Cinnamon Bark",
-    baseNotes: "Mysore Sandalwood, Bourbon Vanilla, Cedarwood",
-    image: "/product-desert-gold.png",
-    accent: "from-[#c89048] to-[#7a4a18]",
-    description: "Rich amber radiating with warm spices and precious woods. Formulated with 35% oil concentration for 18+ hours longevity.",
-    isFeatured: true,
-    gender: "Unisex",
-    longevityHours: 18,
-    sillageRating: "Strong",
-    seasonSuitability: ["All-Season", "Winter", "Autumn"],
-    occasionSuitability: ["Wedding / Barat", "Evening Gala", "Daily Office"],
-    inspiredBy: "Kinship to Maison Francis Kurkdjian Grand Soir & Baccarat Rouge",
-    fragranceFamily: "Oriental Spice",
-    layeringPairId: "oud-al-jamil",
-    samplePrice: 650,
-    batchNumber: "MSH-2026-B4",
-  },
-  {
-    id: "velvet-saffron-edp",
-    name: "Velvet Saffron EDP",
-    price: 16500,
-    category: "Perfumes",
-    volume: "50ml Extrait De Parfum",
-    stock: 9,
-    tagline: "Kashmiri saffron, black leather, and crystal violet.",
-    notes: "Kashmiri Saffron · Black Leather · Violet",
-    topNotes: "Organic Kashmiri Saffron, Juniper Berries",
-    heartNotes: "Black Violet, Suede Leather, Clary Sage",
-    baseNotes: "Haitian Vetiver, Raspberry Cashmere, Amber",
-    image: "/product-dark.jpg",
-    accent: "from-[#2d1a3a] to-[#5d304a]",
-    description: "A decadent, leather-floral eau de parfum that opens with radiant Kashmiri saffron and dries down to a supple suede trail.",
-    isFeatured: false,
-    gender: "Unisex",
-    longevityHours: 16,
-    sillageRating: "Strong",
-    seasonSuitability: ["Autumn", "Winter", "Spring"],
-    occasionSuitability: ["Evening Gala", "Wedding / Barat", "Daily Office"],
-    inspiredBy: "Kinship to Byredo Black Saffron & Tom Ford Tuscan Leather",
-    fragranceFamily: "Leather Smoke",
-    layeringPairId: "midnight-rose-attar",
-    samplePrice: 650,
-    batchNumber: "MSH-2026-B5",
-  },
-
-  // --- WATCHES ---
-  {
-    id: "mshaies-royal-chronograph",
-    name: "Maison Royal Chronograph",
-    price: 45000,
-    category: "Watches",
-    volume: "42mm Gold Edition",
-    stock: 5,
-    tagline: "18K Gold PVD Stainless Steel with Sunburst Black Dial.",
-    notes: "Sapphire Crystal · 100M Water Resistant · Japanese Mecha-Quartz",
-    topNotes: "Double-Domed Anti-Reflective Sapphire",
-    heartNotes: "316L Surgical Grade Steel, Gold PVD Finish",
-    baseNotes: "Handcrafted Italian Leather Strap",
-    image: "/product-desert-gold.png",
-    accent: "from-[#b8860b] to-[#4a3500]",
-    description: "A bespoke luxury timepiece crafted to complement M.shaies signature fragrance aesthetics. Features sapphire crystal, chronograph precision, and interchangeable Italian leather straps.",
-    isFeatured: true,
-    gender: "Men",
-    seasonSuitability: ["All-Season"],
-    occasionSuitability: ["Wedding / Barat", "Daily Office", "Evening Gala"],
-    batchNumber: "MSH-WATCH-01",
-  },
-  {
-    id: "mshaies-skeleton-automatic",
-    name: "Maison Skeleton Automatic",
-    price: 68000,
-    category: "Watches",
-    volume: "41mm Automatic",
-    stock: 3,
-    tagline: "Exposed mechanical movement with emerald accents.",
-    notes: "Automatic Self-Winding · Exhibition Caseback · Sapphire Crystal",
-    topNotes: "Scratch-Resistant Sapphire Crystal Front & Back",
-    heartNotes: "24-Jewel Automatic Mechanical Calibre",
-    baseNotes: "Solid Stainless Steel Link Bracelet with Butterfly Clasp",
-    image: "/product-dark.jpg",
-    accent: "from-[#0d2a1a] to-[#1a4a2a]",
-    description: "An extraordinary horological masterpiece showcasing intricate mechanical gears and precision escapements through a clear skeleton dial.",
-    isFeatured: false,
-    gender: "Men",
-    seasonSuitability: ["All-Season"],
-    occasionSuitability: ["Wedding / Barat", "Evening Gala"],
-    batchNumber: "MSH-WATCH-02",
-  }
-];
+export const DEFAULT_PRODUCTS: Product[] = [];
 
 type ValidateCouponResult = {
   valid: boolean;
@@ -911,47 +290,38 @@ type ProductsStoreContextType = {
   updateJob: (id: string, updates: Partial<JobPosting>) => void;
   deleteJob: (id: string) => void;
   toggleJobStatus: (id: string) => void;
+  refreshDataFromServer: () => Promise<void>;
 };
 
 const ProductsStoreContext = createContext<ProductsStoreContextType | null>(null);
 
-export const DEFAULT_AUDIT_LOGS: AuditLogEntry[] = [
-  {
-    id: "log-1",
-    timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
-    action: "System Initialized",
-    category: "System",
-    details: "M.shaies Haute Parfumerie Store & Inventory Database loaded.",
-    user: "System Daemon",
-  },
-  {
-    id: "log-2",
-    timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
-    action: "Shipping Rates Configured",
-    category: "Settings",
-    details: "Standard nationwide courier set to ₨ 250 with Free Shipping threshold at ₨ 5,000.",
-    user: "Master Admin",
-  },
-  {
-    id: "log-3",
-    timestamp: new Date(Date.now() - 3600000 * 8).toISOString(),
-    action: "Inventory Restock",
-    category: "Stock",
-    details: "Restocked Oud Al-Jamil to 15 flacons.",
-    user: "Warehouse Staff",
-  },
-];
+export const DEFAULT_AUDIT_LOGS: AuditLogEntry[] = [];
 
 const STORAGE_KEYS = {
-  PRODUCTS: "mshaies_products_v4",
-  CATEGORIES: "mshaies_categories_v3",
-  COUPONS: "mshaies_coupons_v3",
-  ORDERS: "mshaies_orders_v3",
-  SETTINGS: "mshaies_settings_v3",
-  REVIEWS: "mshaies_reviews_v3",
-  AUDIT_LOGS: "mshaies_audit_logs_v1",
-  JOBS: "mshaies_jobs_v1",
+  PRODUCTS: "mshaies_products_v5",
+  CATEGORIES: "mshaies_categories_v5",
+  COUPONS: "mshaies_coupons_v5",
+  ORDERS: "mshaies_orders_v5",
+  SETTINGS: "mshaies_settings_v5",
+  REVIEWS: "mshaies_reviews_v5",
+  AUDIT_LOGS: "mshaies_audit_logs_v5",
+  JOBS: "mshaies_jobs_v5",
 };
+
+// Immediate client-side cleanup of legacy cache keys
+if (typeof window !== "undefined") {
+  try {
+    const legacyKeys = [
+      "mshaies_products_v1", "mshaies_products_v2", "mshaies_products_v3", "mshaies_products_v4",
+      "mshaies_orders_v1", "mshaies_orders_v2", "mshaies_orders_v3", "mshaies_orders_v4",
+      "mshaies_coupons_v1", "mshaies_coupons_v2", "mshaies_coupons_v3", "mshaies_coupons_v4",
+      "mshaies_reviews_v1", "mshaies_reviews_v2", "mshaies_reviews_v3", "mshaies_reviews_v4",
+      "mshaies_audit_logs_v1", "mshaies_audit_logs_v2", "mshaies_audit_logs_v3", "mshaies_audit_logs_v4",
+      "mshaies_jobs_v1", "mshaies_jobs_v2", "mshaies_jobs_v3", "mshaies_jobs_v4",
+    ];
+    legacyKeys.forEach((key) => localStorage.removeItem(key));
+  } catch {}
+}
 
 export function ProductsStoreProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(() => {
@@ -990,7 +360,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
       return DEFAULT_ORDERS;
     } catch {
@@ -1047,87 +417,77 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [jobs]);
 
-  // Initial Data Synchronization with Server Database
-  useEffect(() => {
-    let isMounted = true;
+  // Initial and on-demand Data Synchronization with Server Database (Supabase)
+  const refreshDataFromServer = async () => {
+    try {
+      const [prodRes, settingsRes, reviewsRes] = await Promise.all([
+        getProductsServerFn(),
+        getPublicSettingsServerFn(),
+        getReviewsServerFn({ data: {} }),
+      ]);
 
-    async function loadDataFromServer() {
-      try {
-        const [prodRes, settingsRes, reviewsRes] = await Promise.all([
-          getProductsServerFn(),
-          getPublicSettingsServerFn(),
-          getReviewsServerFn({ data: {} }),
+      if (prodRes.success && Array.isArray(prodRes.products)) {
+        setProducts(prodRes.products as any);
+        try {
+          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prodRes.products));
+        } catch (e) {
+          console.warn("Failed to persist products to localStorage:", e);
+        }
+      }
+      if (settingsRes.success && settingsRes.settings) {
+        setSettings((prev) => ({ ...DEFAULT_SETTINGS, ...prev, ...(settingsRes.settings as any) }));
+      }
+      if (reviewsRes.success && Array.isArray(reviewsRes.reviews)) {
+        setReviews(reviewsRes.reviews as any);
+        try {
+          localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviewsRes.reviews));
+        } catch (e) {
+          console.warn("Failed to persist reviews to localStorage:", e);
+        }
+      }
+
+      const adminToken = typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+        : null;
+      if (adminToken) {
+        const [ordersRes, couponsRes, auditRes] = await Promise.all([
+          getOrdersServerFn({ data: { authToken: adminToken } }),
+          getCouponsServerFn({ data: { authToken: adminToken } }),
+          getAuditLogsServerFn({ data: { authToken: adminToken } }),
         ]);
 
-        if (isMounted) {
-          if (prodRes.success && ((prodRes as any).source === "supabase" || (prodRes as any).source === "database" || (prodRes.products && prodRes.products.length > 0))) {
-            setProducts(prodRes.products as any);
-            try {
-              localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(prodRes.products));
-            } catch (e) {
-              console.warn("Failed to persist products to localStorage:", e);
-            }
-          }
-          if (settingsRes.success && settingsRes.settings) {
-            setSettings((prev) => ({ ...DEFAULT_SETTINGS, ...prev, ...(settingsRes.settings as any) }));
-          }
-          if (reviewsRes.success && ((reviewsRes as any).source === "supabase" || (reviewsRes as any).source === "database" || (reviewsRes.reviews && reviewsRes.reviews.length > 0))) {
-            setReviews(reviewsRes.reviews as any);
-            try {
-              localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviewsRes.reviews));
-            } catch (e) {
-              console.warn("Failed to persist reviews to localStorage:", e);
-            }
+        if (ordersRes.success && Array.isArray(ordersRes.orders)) {
+          setOrders(ordersRes.orders as any);
+          try {
+            localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(ordersRes.orders));
+          } catch (e) {
+            console.warn("Failed to persist orders to localStorage:", e);
           }
         }
-
-        const adminToken = typeof sessionStorage !== "undefined"
-          ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
-          : null;
-        if (adminToken) {
-          const [ordersRes, couponsRes, auditRes] = await Promise.all([
-            getOrdersServerFn({ data: { authToken: adminToken } }),
-            getCouponsServerFn({ data: { authToken: adminToken } }),
-            getAuditLogsServerFn({ data: { authToken: adminToken } }),
-          ]);
-
-          if (isMounted) {
-            if (ordersRes.success && ((ordersRes as any).source === "supabase" || (ordersRes as any).source === "database" || (ordersRes.orders && ordersRes.orders.length > 0))) {
-              setOrders(ordersRes.orders as any);
-              try {
-                localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(ordersRes.orders));
-              } catch (e) {
-                console.warn("Failed to persist orders to localStorage:", e);
-              }
-            }
-            if (couponsRes.success && ((couponsRes as any).source === "supabase" || (couponsRes as any).source === "database" || (couponsRes.coupons && couponsRes.coupons.length > 0))) {
-              setCoupons(couponsRes.coupons as any);
-              try {
-                localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify(couponsRes.coupons));
-              } catch (e) {
-                console.warn("Failed to persist coupons to localStorage:", e);
-              }
-            }
-            if (auditRes.success && ((auditRes as any).source === "supabase" || (auditRes as any).source === "database" || (auditRes.logs && auditRes.logs.length > 0))) {
-              setAuditLogs(auditRes.logs as any);
-              try {
-                localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditRes.logs));
-              } catch (e) {
-                console.warn("Failed to persist audit logs to localStorage:", e);
-              }
-            }
+        if (couponsRes.success && Array.isArray(couponsRes.coupons)) {
+          setCoupons(couponsRes.coupons as any);
+          try {
+            localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify(couponsRes.coupons));
+          } catch (e) {
+            console.warn("Failed to persist coupons to localStorage:", e);
           }
         }
-      } catch (err) {
-        console.warn("[ProductsStoreProvider] Failed to load data from server, using local store:", err);
+        if (auditRes.success && Array.isArray(auditRes.logs)) {
+          setAuditLogs(auditRes.logs as any);
+          try {
+            localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditRes.logs));
+          } catch (e) {
+            console.warn("Failed to persist audit logs to localStorage:", e);
+          }
+        }
       }
+    } catch (err) {
+      console.warn("[ProductsStoreProvider] Failed to load data from server, using local store:", err);
     }
+  };
 
-    loadDataFromServer();
-
-    return () => {
-      isMounted = false;
-    };
+  useEffect(() => {
+    refreshDataFromServer();
   }, []);
 
   // Sync state to local cache for instant offline fallback
@@ -1696,6 +1056,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
         updateJob,
         deleteJob,
         toggleJobStatus,
+        refreshDataFromServer,
       }}
     >
       {children}
