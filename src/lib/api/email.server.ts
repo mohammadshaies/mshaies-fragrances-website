@@ -90,7 +90,7 @@ async function sendViaResend(to: string, subject: string, html: string): Promise
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: `M.shaies Fragrances <orders@mshaies.com>`,
+        from: process.env.EMAIL_FROM || "M.shaies Fragrances <onboarding@resend.dev>",
         to: [to],
         subject,
         html,
