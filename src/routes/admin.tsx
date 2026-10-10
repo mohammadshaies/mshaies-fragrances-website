@@ -1734,19 +1734,66 @@ function AdminDashboard() {
     });
   };
 
+  // Stylized Luxury Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDestructive?: boolean;
+    icon?: "trash" | "reset" | "warning";
+    onConfirm: () => void | Promise<void>;
+  } | null>(null);
+
+  const requestConfirm = (config: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDestructive?: boolean;
+    icon?: "trash" | "reset" | "warning";
+    onConfirm: () => void | Promise<void>;
+  }) => {
+    setConfirmModal({
+      isOpen: true,
+      confirmText: "Confirm",
+      cancelText: "Cancel",
+      isDestructive: true,
+      icon: "trash",
+      ...config,
+    });
+  };
+
   const handleDeletePackagingBox = (id: string, name: string) => {
-    if (confirm(`Are you sure you want to remove "${name}" from packaging inventory?`)) {
-      const next = packagingBoxes.filter((b) => b.id !== id);
-      savePackagingBoxesList(next);
-      toast.success(`Removed "${name}" from packaging boxes`);
-    }
+    requestConfirm({
+      title: "Remove Packaging Box",
+      message: `Are you sure you want to remove "${name}" from packaging inventory?`,
+      confirmText: "Remove Box",
+      cancelText: "Keep Box",
+      isDestructive: true,
+      icon: "trash",
+      onConfirm: () => {
+        const next = packagingBoxes.filter((b) => b.id !== id);
+        savePackagingBoxesList(next);
+        toast.success(`Removed "${name}" from packaging boxes`);
+      },
+    });
   };
 
   const handleResetPackagingBoxes = () => {
-    if (confirm("Reset packaging boxes back to Maison default inventory?")) {
-      savePackagingBoxesList(DEFAULT_PACKAGING_BOXES);
-      toast.success("Restored default packaging boxes");
-    }
+    requestConfirm({
+      title: "Restore Default Packaging Boxes",
+      message: "Reset all packaging boxes back to Maison default inventory standards?",
+      confirmText: "Restore Defaults",
+      cancelText: "Cancel",
+      isDestructive: false,
+      icon: "reset",
+      onConfirm: () => {
+        savePackagingBoxesList(DEFAULT_PACKAGING_BOXES);
+        toast.success("Restored default packaging boxes");
+      },
+    });
   };
 
   // Editing & Adding Packaging Box Modals State
@@ -4313,19 +4360,27 @@ function AdminDashboard() {
                             <Copy className="size-3.5" />
                           </button>
                           <button
-                            onClick={async () => {
-                              if (confirm(`Are you sure you want to delete ${p.name}?`)) {
-                                const toastId = toast.loading(`Deleting ${p.name}...`);
-                                const res = await deleteProduct(p.id);
-                                if (res.success) {
-                                  toast.success(`Deleted ${p.name}`, { id: toastId });
-                                  refreshDataFromServer();
-                                } else {
-                                  toast.error(res.error || `Failed to delete ${p.name}`, { id: toastId });
-                                }
-                              }
+                            onClick={() => {
+                              requestConfirm({
+                                title: `Delete Fragrance: ${p.name}`,
+                                message: `Are you sure you want to delete "${p.name}"? This will permanently remove the item from your store catalog and database.`,
+                                confirmText: "Delete Fragrance",
+                                cancelText: "Keep Fragrance",
+                                isDestructive: true,
+                                icon: "trash",
+                                onConfirm: async () => {
+                                  const toastId = toast.loading(`Deleting ${p.name}...`);
+                                  const res = await deleteProduct(p.id);
+                                  if (res.success) {
+                                    toast.success(`Deleted ${p.name}`, { id: toastId });
+                                    refreshDataFromServer();
+                                  } else {
+                                    toast.error(res.error || `Failed to delete ${p.name}`, { id: toastId });
+                                  }
+                                },
+                              });
                             }}
-                            className="p-2 rounded-lg border border-border text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            className="p-2 rounded-lg border border-border text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer transition-colors"
                             title="Delete Item"
                           >
                             <Trash2 className="size-3.5" />
@@ -7348,10 +7403,18 @@ function AdminDashboard() {
 
                         <button
                           onClick={() => {
-                            if (confirm(`Are you sure you want to delete the vacancy for "${job.title}"?`)) {
-                              deleteJob(job.id);
-                              toast.success("Vacancy removed.");
-                            }
+                            requestConfirm({
+                              title: "Delete Career Vacancy",
+                              message: `Are you sure you want to delete the vacancy for "${job.title}"? This position will be removed from the public careers page.`,
+                              confirmText: "Delete Vacancy",
+                              cancelText: "Keep Role",
+                              isDestructive: true,
+                              icon: "trash",
+                              onConfirm: () => {
+                                deleteJob(job.id);
+                                toast.success("Vacancy removed.");
+                              },
+                            });
                           }}
                           className="p-2 rounded-xl border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-colors cursor-pointer"
                           title="Delete vacancy"
@@ -8908,6 +8971,77 @@ function AdminDashboard() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Stylized Luxury Confirmation Modal */}
+        {confirmModal && confirmModal.isOpen && (
+          <div 
+            className="fixed inset-0 z-[120] bg-ink/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+            onClick={() => setConfirmModal(null)}
+          >
+            <div 
+              className="bg-card border border-gold/40 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Subtle luxury glow accent */}
+              <div className="absolute -top-16 -right-16 size-36 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-16 -left-16 size-36 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex flex-col items-center text-center space-y-4">
+                {/* Glowing Icon Badge */}
+                <div className={`size-14 rounded-2xl flex items-center justify-center border shadow-inner ${
+                  confirmModal.isDestructive 
+                    ? "bg-destructive/10 text-destructive border-destructive/20" 
+                    : "bg-gold/15 text-gold border-gold/30"
+                }`}>
+                  {confirmModal.icon === "trash" ? (
+                    <Trash2 className="size-6" />
+                  ) : confirmModal.icon === "reset" ? (
+                    <RotateCcw className="size-6" />
+                  ) : (
+                    <AlertTriangle className="size-6" />
+                  )}
+                </div>
+
+                {/* Title & Message */}
+                <div className="space-y-1.5">
+                  <h3 className="font-serif text-lg font-bold text-ink">
+                    {confirmModal.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed px-2">
+                    {confirmModal.message}
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-2 flex items-center justify-center gap-3 w-full">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmModal(null)}
+                    className="flex-1 py-2.5 px-4 rounded-full border border-border text-xs font-semibold text-muted-foreground hover:text-ink hover:border-ink/30 transition-colors cursor-pointer"
+                  >
+                    {confirmModal.cancelText || "Cancel"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const action = confirmModal.onConfirm;
+                      setConfirmModal(null);
+                      await action();
+                    }}
+                    className={`flex-1 py-2.5 px-4 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer ${
+                      confirmModal.isDestructive
+                        ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-destructive/20"
+                        : "btn-gold btn-gold-hover shadow-gold/20"
+                    }`}
+                  >
+                    {confirmModal.confirmText || "Confirm"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
