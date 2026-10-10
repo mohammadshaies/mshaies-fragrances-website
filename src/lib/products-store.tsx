@@ -1055,7 +1055,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
 
   const getProductRating = (productId: string) => {
     const prodReviews = reviews.filter((r) => r.productId === productId);
-    if (prodReviews.length === 0) return { average: 5.0, count: 0 };
+    if (prodReviews.length === 0) return { average: 0, count: 0 };
     const sum = prodReviews.reduce((acc, r) => acc + r.rating, 0);
     return {
       average: Number((sum / prodReviews.length).toFixed(1)),

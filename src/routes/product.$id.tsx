@@ -393,22 +393,37 @@ function ProductDetail() {
                 href="#customer-reviews"
                 className="inline-flex items-center gap-2 mt-2.5 group cursor-pointer"
               >
-                <div className="flex items-center text-amber-400">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`size-4 ${
-                        star <= Math.round(ratingInfo.average)
-                          ? "fill-amber-400 text-amber-400"
-                          : "fill-muted text-muted"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="font-bold text-sm text-ink">{ratingInfo.average}</span>
-                <span className="text-sm text-muted-foreground group-hover:text-gold-deep transition-colors underline decoration-dotted">
-                  ({productReviews.length} Verified {productReviews.length === 1 ? "Review" : "Reviews"})
-                </span>
+                {productReviews.length > 0 ? (
+                  <>
+                    <div className="flex items-center text-amber-400">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`size-4 ${
+                            star <= Math.round(ratingInfo.average)
+                              ? "fill-amber-400 text-amber-400"
+                              : "fill-muted text-muted"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="font-bold text-sm text-ink">{ratingInfo.average}</span>
+                    <span className="text-sm text-muted-foreground group-hover:text-gold-deep transition-colors underline decoration-dotted">
+                      ({productReviews.length} Verified {productReviews.length === 1 ? "Review" : "Reviews"})
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center text-muted-foreground/30">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star key={star} className="size-4 text-muted-foreground/30 fill-transparent" />
+                      ))}
+                    </div>
+                    <span className="text-sm text-muted-foreground group-hover:text-gold-deep transition-colors">
+                      No reviews yet · <span className="underline decoration-dotted text-gold font-medium">Be the first to review</span>
+                    </span>
+                  </>
+                )}
               </a>
 
               {/* Price & Stock */}
@@ -756,48 +771,64 @@ function ProductDetail() {
             
             {/* Left: Score & Stars */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 sm:gap-8 lg:border-r border-border/80 lg:pr-12">
-              <div className="text-center sm:text-left">
-                <div className="font-serif text-5xl sm:text-6xl font-bold text-ink flex items-baseline gap-1">
-                  {ratingInfo.average}
-                  <span className="text-lg text-muted-foreground font-sans font-normal">/ 5.0</span>
-                </div>
-                <div className="flex items-center gap-1 text-amber-400 mt-2 justify-center sm:justify-start">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star
-                      key={s}
-                      className={`size-4 sm:size-5 ${
-                        s <= Math.round(ratingInfo.average)
-                          ? "fill-amber-400 text-amber-400"
-                          : "fill-muted text-muted"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Based on {productReviews.length} verified customer reviews
-                </p>
-              </div>
-
-              {/* Progress bars */}
-              <div className="w-full sm:w-56 space-y-1.5 text-xs text-muted-foreground">
-                {[5, 4, 3, 2, 1].map((rating) => {
-                  const count = productReviews.filter((r) => r.rating === rating).length;
-                  const pct = productReviews.length > 0 ? (count / productReviews.length) * 100 : 0;
-                  return (
-                    <div key={rating} className="flex items-center gap-2">
-                      <span className="w-3 text-right font-medium">{rating}</span>
-                      <Star className="size-3 fill-amber-400 text-amber-400 shrink-0" />
-                      <div className="flex-1 h-2 rounded-full bg-pearl overflow-hidden border border-border/60">
-                        <div
-                          className="h-full bg-gold rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="w-6 text-right tabular-nums text-[11px]">{count}</span>
+              {productReviews.length > 0 ? (
+                <>
+                  <div className="text-center sm:text-left">
+                    <div className="font-serif text-5xl sm:text-6xl font-bold text-ink flex items-baseline gap-1">
+                      {ratingInfo.average}
+                      <span className="text-lg text-muted-foreground font-sans font-normal">/ 5.0</span>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="flex items-center gap-1 text-amber-400 mt-2 justify-center sm:justify-start">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`size-4 sm:size-5 ${
+                            s <= Math.round(ratingInfo.average)
+                              ? "fill-amber-400 text-amber-400"
+                              : "fill-muted text-muted"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Based on {productReviews.length} verified customer {productReviews.length === 1 ? "review" : "reviews"}
+                    </p>
+                  </div>
+
+                  {/* Progress bars */}
+                  <div className="w-full sm:w-56 space-y-1.5 text-xs text-muted-foreground">
+                    {[5, 4, 3, 2, 1].map((rating) => {
+                      const count = productReviews.filter((r) => r.rating === rating).length;
+                      const pct = (count / productReviews.length) * 100;
+                      return (
+                        <div key={rating} className="flex items-center gap-2">
+                          <span className="w-3 text-right font-medium">{rating}</span>
+                          <Star className="size-3 fill-amber-400 text-amber-400 shrink-0" />
+                          <div className="flex-1 h-2 rounded-full bg-pearl overflow-hidden border border-border/60">
+                            <div
+                              className="h-full bg-gold rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="w-6 text-right tabular-nums text-[11px]">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center sm:text-left space-y-2 py-2">
+                  <div className="flex items-center gap-1 text-muted-foreground/30 justify-center sm:justify-start">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star key={s} className="size-5 text-muted-foreground/30 fill-transparent" />
+                    ))}
+                  </div>
+                  <h4 className="font-serif text-2xl font-bold text-ink">No Reviews Yet</h4>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    Be the first customer to share your thoughts and rate {product.name}.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Right: Write Review CTA */}
@@ -973,41 +1004,43 @@ function ProductDetail() {
           </AnimatePresence>
 
           {/* Rating Filter Tabs */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/80 pb-4">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              <button
-                onClick={() => setSelectedFilterRating("all")}
-                className={`px-3.5 py-1.5 rounded-full text-xs uppercase tracking-wider font-semibold transition-colors cursor-pointer ${
-                  selectedFilterRating === "all"
-                    ? "bg-gold text-ink font-bold shadow-xs"
-                    : "bg-pearl/50 text-muted-foreground hover:text-ink"
-                }`}
-              >
-                All Reviews ({productReviews.length})
-              </button>
-              {[5, 4, 3].map((star) => {
-                const count = productReviews.filter((r) => r.rating === star).length;
-                return (
-                  <button
-                    key={star}
-                    onClick={() => setSelectedFilterRating(star)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs uppercase tracking-wider font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
-                      selectedFilterRating === star
-                        ? "bg-gold text-ink font-bold shadow-xs"
-                        : "bg-pearl/50 text-muted-foreground hover:text-ink"
-                    }`}
-                  >
-                    <span>{star} Stars</span>
-                    <span className="text-[10px] opacity-75">({count})</span>
-                  </button>
-                );
-              })}
-            </div>
+          {productReviews.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/80 pb-4">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <button
+                  onClick={() => setSelectedFilterRating("all")}
+                  className={`px-3.5 py-1.5 rounded-full text-xs uppercase tracking-wider font-semibold transition-colors cursor-pointer ${
+                    selectedFilterRating === "all"
+                      ? "bg-gold text-ink font-bold shadow-xs"
+                      : "bg-pearl/50 text-muted-foreground hover:text-ink"
+                  }`}
+                >
+                  All Reviews ({productReviews.length})
+                </button>
+                {[5, 4, 3].map((star) => {
+                  const count = productReviews.filter((r) => r.rating === star).length;
+                  return (
+                    <button
+                      key={star}
+                      onClick={() => setSelectedFilterRating(star)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs uppercase tracking-wider font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
+                        selectedFilterRating === star
+                          ? "bg-gold text-ink font-bold shadow-xs"
+                          : "bg-pearl/50 text-muted-foreground hover:text-ink"
+                      }`}
+                    >
+                      <span>{star} Stars</span>
+                      <span className="text-[10px] opacity-75">({count})</span>
+                    </button>
+                  );
+                })}
+              </div>
 
-            <p className="text-xs text-muted-foreground">
-              Showing {productReviews.filter((r) => selectedFilterRating === "all" || r.rating === selectedFilterRating).length} of {productReviews.length} reviews
-            </p>
-          </div>
+              <p className="text-xs text-muted-foreground">
+                Showing {productReviews.filter((r) => selectedFilterRating === "all" || r.rating === selectedFilterRating).length} of {productReviews.length} reviews
+              </p>
+            </div>
+          )}
 
           {/* Reviews List */}
           {productReviews.length === 0 ? (
