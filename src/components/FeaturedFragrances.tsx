@@ -139,28 +139,33 @@ export function FeaturedFragrances({
         {/* FILTER & TOOLBAR CONTROLS — Compact Smart Luxury Layout             */}
         {/* =================================================================== */}
         <div className="space-y-2.5 sm:space-y-4 mb-6 sm:mb-10 max-w-5xl mx-auto">
-          {/* 1. Centered Luxury Category Navigation (Sleek compact pills on mobile) */}
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 overflow-x-auto py-1 scroll-smooth no-scrollbar scrollbar-none px-1">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`text-[9.5px] xs:text-[10.5px] sm:text-xs uppercase tracking-wider sm:tracking-[0.2em] px-3 xs:px-4 sm:px-6 py-1 sm:py-2 rounded-full transition-all duration-200 whitespace-nowrap cursor-pointer shrink-0 min-h-[28px] sm:min-h-[36px] ${
-                  selectedCategory === cat
-                    ? "bg-ink text-gold font-bold shadow-xs scale-[1.02]"
-                    : "bg-card text-muted-foreground hover:text-ink hover:bg-pearl border border-border/80"
-                }`}
-              >
-                {cat === "All" ? (
-                  <>
-                    <span className="sm:hidden">All</span>
-                    <span className="hidden sm:inline">All Collections</span>
-                  </>
-                ) : (
-                  cat
-                )}
-              </button>
-            ))}
+          {/* 1. Luxury Category Navigation (Edge-to-edge smooth scroll on mobile, centered on desktop) */}
+          <div className="relative -mx-3.5 sm:mx-0 px-3.5 sm:px-0">
+            <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-2.5 overflow-x-auto py-1.5 scroll-smooth no-scrollbar touch-pan-x overscroll-x-contain">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`text-[10px] xs:text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-[0.2em] px-3.5 xs:px-4 sm:px-6 py-1.5 sm:py-2 rounded-full transition-all duration-200 whitespace-nowrap cursor-pointer shrink-0 min-h-[32px] sm:min-h-[36px] border ${
+                    selectedCategory === cat
+                      ? "bg-ink text-gold border-gold/80 font-bold shadow-xs"
+                      : "bg-card text-muted-foreground hover:text-ink hover:bg-pearl border-border/80"
+                  }`}
+                >
+                  {cat === "All" ? (
+                    <>
+                      <span className="sm:hidden">All</span>
+                      <span className="hidden sm:inline">All Collections</span>
+                    </>
+                  ) : (
+                    cat
+                  )}
+                </button>
+              ))}
+              {/* Right edge spacer for smooth mobile scroll termination */}
+              <div className="w-2 shrink-0 sm:hidden" aria-hidden="true" />
+            </div>
           </div>
 
           {/* 2. Unified Smart Action Bar (Search + Sort + Filters in Harmonious Capsule) */}
