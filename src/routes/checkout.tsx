@@ -330,18 +330,24 @@ function CheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                    Email (Optional)
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-medium">
+                      Email Address
+                    </label>
+                    <span className="text-[10px] text-gold-deep font-semibold">✨ Digital Invoice Delivery</span>
+                  </div>
                   <input
                     type="email"
                     inputMode="email"
                     autoComplete="email"
-                    placeholder="name@email.com"
+                    placeholder="e.g. name@example.com (For Invoice Copy)"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
                   />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Official order invoice & dispatch tracking slip will be emailed directly to this address.
+                  </p>
                 </div>
 
                 <div className="sm:col-span-2">

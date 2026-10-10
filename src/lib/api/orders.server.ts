@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { eq } from "drizzle-orm";
+import { dispatchOrderNotificationEmails } from "./email.server";
 
 export const placeOrderSchema = z.object({
   orderId: z.string().optional(),
@@ -308,6 +309,32 @@ export async function processPlaceOrder(data: PlaceOrderInput) {
       } catch (err) {
         console.warn("[placeOrderServerFn] DB fallback exception:", err);
       }
+    }
+
+    // 7. Dispatch Automated Order Notification & Invoice Emails
+    try {
+      await dispatchOrderNotificationEmails({
+        id: orderId,
+        customerName: data.customerName,
+        email: data.email || null,
+        phone: data.phone,
+        address: data.address,
+        city: data.city,
+        postalCode: data.postalCode || null,
+        paymentMethod: data.paymentMethod,
+        paymentStatus: newOrderRecord.paymentStatus,
+        transactionId: data.transactionId || null,
+        subtotal,
+        discountCode: data.discountCode || null,
+        discountAmount,
+        shipping: shippingFee,
+        total: finalTotal,
+        courierName: newOrderRecord.courierName,
+        date: new Date().toISOString().split("T")[0],
+        items: verifiedItems,
+      });
+    } catch (emailErr) {
+      console.warn("[processPlaceOrder] Email dispatch non-blocking error:", emailErr);
     }
 
     return {
