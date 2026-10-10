@@ -176,6 +176,7 @@ export const saveProductServerFn = createServerFn({ method: "POST" })
           const { error: saveErr } = await client.from("products").upsert(supabasePayload);
           if (saveErr) {
             console.error("[saveProductServerFn] Supabase save error:", saveErr);
+            return { success: false, error: `Supabase database error: ${saveErr.message}` };
           }
 
           await client.from("audit_logs").insert({
@@ -187,8 +188,9 @@ export const saveProductServerFn = createServerFn({ method: "POST" })
             user: auth.user?.email || "Admin",
           });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn("[saveProductServerFn] Supabase save exception:", err);
+        return { success: false, error: `Supabase save exception: ${err?.message || "Unknown error"}` };
       }
     }
 
@@ -228,7 +230,10 @@ export const deleteProductServerFn = createServerFn({ method: "POST" })
       try {
         const client = getSupabaseAdmin() || getSupabaseClient();
         if (client) {
-          await client.from("products").delete().eq("id", data.id);
+          const { error: delErr } = await client.from("products").delete().eq("id", data.id);
+          if (delErr) {
+            return { success: false, error: `Supabase delete error: ${delErr.message}` };
+          }
           await client.from("audit_logs").insert({
             id: `log-${Date.now()}`,
             timestamp: new Date().toISOString(),
@@ -238,8 +243,9 @@ export const deleteProductServerFn = createServerFn({ method: "POST" })
             user: auth.user?.email || "Admin",
           });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn("[deleteProductServerFn] Supabase delete exception:", err);
+        return { success: false, error: `Supabase delete exception: ${err?.message || "Unknown error"}` };
       }
     }
 

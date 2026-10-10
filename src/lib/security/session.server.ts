@@ -36,7 +36,7 @@ function computeHmac(data: string, secret: string): string {
  */
 export function createAdminSessionToken(
   user: { id?: string; email?: string } = {},
-  expiresInSeconds: number = 86400
+  expiresInSeconds: number = 604800 // 7 days
 ): string {
   const now = Date.now();
   const payload: AdminSessionPayload = {

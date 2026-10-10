@@ -1612,25 +1612,32 @@ function AdminDashboard() {
       sessionStorage.getItem("mshaies_admin_token") ||
       localStorage.getItem("mshaies_admin_token");
 
-    const authed =
-      sessionStorage.getItem(AUTH_SESSION_KEY) === "true" ||
-      localStorage.getItem(AUTH_SESSION_KEY) === "true" ||
-      Boolean(storedToken);
-
-    if (authed) {
-      setIsAuthenticated(true);
-      refreshDataFromServer();
-      if (storedToken) {
-        verifyAdminStatusServerFn({ data: { authToken: storedToken } })
-          .then((res) => {
-            if (res.valid && res.user?.email) {
-              setCurrentAdminEmail(res.user.email);
-              sessionStorage.setItem("mshaies_admin_email", res.user.email);
-              localStorage.setItem("mshaies_admin_email", res.user.email);
-            }
-          })
-          .catch(() => {});
-      }
+    if (storedToken) {
+      verifyAdminStatusServerFn({ data: { authToken: storedToken } })
+        .then((res) => {
+          if (res.valid && res.user?.email) {
+            setIsAuthenticated(true);
+            setCurrentAdminEmail(res.user.email);
+            sessionStorage.setItem("mshaies_admin_email", res.user.email);
+            localStorage.setItem("mshaies_admin_email", res.user.email);
+            sessionStorage.setItem(AUTH_SESSION_KEY, "true");
+            localStorage.setItem(AUTH_SESSION_KEY, "true");
+            refreshDataFromServer();
+          } else {
+            setIsAuthenticated(false);
+            sessionStorage.removeItem("mshaies_admin_token");
+            localStorage.removeItem("mshaies_admin_token");
+            sessionStorage.removeItem(AUTH_SESSION_KEY);
+            localStorage.removeItem(AUTH_SESSION_KEY);
+          }
+        })
+        .catch(() => {
+          setIsAuthenticated(false);
+        });
+    } else {
+      setIsAuthenticated(false);
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
+      localStorage.removeItem(AUTH_SESSION_KEY);
     }
 
     // Check if browser was refreshed during an active PIN lockout
@@ -2117,14 +2124,16 @@ function AdminDashboard() {
   const totalRevenue = orders.reduce((a, b) => a + b.total, 0);
   const totalDiscountsGiven = orders.reduce((a, b) => a + (b.discountAmount || 0), 0);
 
-  const handleSaveNewProduct = (e: React.FormEvent) => {
+  const handleSaveNewProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProduct.name || !newProduct.price) {
       toast.error("Please provide a product title and price.");
       return;
     }
 
-    addProduct({
+    const toastId = toast.loading(`Saving "${newProduct.name}" to Supabase catalog...`);
+
+    const res = await addProduct({
       name: newProduct.name,
       price: Number(newProduct.price),
       category: newProduct.category,
@@ -2151,8 +2160,40 @@ function AdminDashboard() {
       availableSizes: newProduct.availableSizes,
     });
 
-    toast.success(`Successfully added ${newProduct.name} to the catalog!`);
-    setShowAddModal(false);
+    if (res.success) {
+      toast.success(`Successfully added "${newProduct.name}" to catalog!`, { id: toastId });
+      setShowAddModal(false);
+      setNewProduct({
+        name: "",
+        price: 12000,
+        category: "Attars",
+        volume: "12ml Pure Attar",
+        stock: 20,
+        tagline: "",
+        notes: "",
+        topNotes: "",
+        heartNotes: "",
+        baseNotes: "",
+        image: "/product-box.jpg",
+        images: ["/product-box.jpg"],
+        description: "",
+        isFeatured: true,
+        gender: "Unisex",
+        longevityHours: 18,
+        sillageRating: "Strong",
+        fragranceFamily: "Woody Oud",
+        inspiredBy: "",
+        samplePrice: 650,
+        batchNumber: "MSH-2026-B1",
+        availableSizes: ["6ml", "12ml", "50ml"],
+      });
+      refreshDataFromServer();
+    } else {
+      toast.error(res.error || "Failed to save product to Supabase.", { id: toastId });
+      if (res.error?.includes("token") || res.error?.includes("authorization") || res.error?.includes("Unauthorized") || res.error?.includes("sign in")) {
+        setIsAuthenticated(false);
+      }
+    }
   };
 
   // Download CSV Template for Bulk Upload
@@ -2173,7 +2214,7 @@ function AdminDashboard() {
   };
 
   // Process Bulk CSV Input
-  const handleProcessBulkCsv = () => {
+  const handleProcessBulkCsv = async () => {
     if (!bulkCsvInput.trim()) {
       toast.error("Please paste or upload CSV text.");
       return;
@@ -2250,10 +2291,15 @@ function AdminDashboard() {
         return;
       }
 
-      const count = bulkImportProducts(imported);
-      toast.success(`Successfully imported ${count} fragrances into inventory!`);
-      setBulkCsvInput("");
-      setShowBulkModal(false);
+      const res = await bulkImportProducts(imported);
+      if (res.error) {
+        toast.error(res.error);
+      } else {
+        toast.success(`Successfully imported ${res.count} fragrances into inventory!`);
+        setBulkCsvInput("");
+        setShowBulkModal(false);
+        refreshDataFromServer();
+      }
     } catch (err: any) {
       toast.error(`CSV Parsing error: ${err.message || "Invalid CSV"}`);
     }
@@ -2419,8 +2465,9 @@ function AdminDashboard() {
   };
 
   // Duplicate Fragrance Product
-  const handleDuplicateProduct = (p: Product) => {
-    addProduct({
+  const handleDuplicateProduct = async (p: Product) => {
+    const toastId = toast.loading(`Cloning ${p.name}...`);
+    const res = await addProduct({
       name: `${p.name} (Special Edition)`,
       price: p.price,
       category: p.category,
@@ -2447,7 +2494,12 @@ function AdminDashboard() {
       samplePrice: p.samplePrice,
       batchNumber: `${p.batchNumber || "MSH-2026"}-SE`,
     });
-    toast.success(`Cloned ${p.name} as a new product edition!`);
+    if (res.success) {
+      toast.success(`Cloned ${p.name} as a new product edition in Supabase!`, { id: toastId });
+      refreshDataFromServer();
+    } else {
+      toast.error(res.error || `Failed to clone ${p.name}`, { id: toastId });
+    }
   };
 
   // Customer Directory Aggregation
@@ -3987,10 +4039,16 @@ function AdminDashboard() {
                             <Copy className="size-3.5" />
                           </button>
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               if (confirm(`Are you sure you want to delete ${p.name}?`)) {
-                                deleteProduct(p.id);
-                                toast.success(`Deleted ${p.name}`);
+                                const toastId = toast.loading(`Deleting ${p.name}...`);
+                                const res = await deleteProduct(p.id);
+                                if (res.success) {
+                                  toast.success(`Deleted ${p.name}`, { id: toastId });
+                                  refreshDataFromServer();
+                                } else {
+                                  toast.error(res.error || `Failed to delete ${p.name}`, { id: toastId });
+                                }
                               }
                             }}
                             className="p-2 rounded-lg border border-border text-muted-foreground hover:text-destructive hover:bg-destructive/10"
@@ -7589,9 +7647,10 @@ function AdminDashboard() {
               </div>
 
               <form
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
-                  updateProduct(editingProduct.id, {
+                  const toastId = toast.loading(`Updating ${editingProduct.name} in Supabase...`);
+                  const res = await updateProduct(editingProduct.id, {
                     name: editingProduct.name,
                     price: Number(editingProduct.price),
                     category: editingProduct.category,
@@ -7614,8 +7673,13 @@ function AdminDashboard() {
                     batchNumber: editingProduct.batchNumber || "MSH-2026-B1",
                     availableSizes: editingProduct.availableSizes,
                   });
-                  toast.success(`Updated ${editingProduct.name} specifications & volume!`);
-                  setEditingProduct(null);
+                  if (res.success) {
+                    toast.success(`Updated ${editingProduct.name} specifications & volume!`, { id: toastId });
+                    setEditingProduct(null);
+                    refreshDataFromServer();
+                  } else {
+                    toast.error(res.error || "Failed to update product in Supabase.", { id: toastId });
+                  }
                 }}
                 className="space-y-4"
               >

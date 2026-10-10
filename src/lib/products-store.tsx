@@ -323,9 +323,9 @@ type ProductsStoreContextType = {
   coupons: Coupon[];
   orders: Order[];
   settings: StoreSettings;
-  addProduct: (product: Omit<Product, "id">) => void;
-  updateProduct: (id: string, updates: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  addProduct: (product: Omit<Product, "id">) => Promise<{ success: boolean; error?: string; product?: Product }>;
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<{ success: boolean; error?: string }>;
+  deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;
   updateStock: (id: string, newStock: number) => void;
   addCategory: (name: string) => void;
   deleteCategory: (name: string) => void;
@@ -353,7 +353,7 @@ type ProductsStoreContextType = {
   // Audit Logs & Bulk Operations
   auditLogs: AuditLogEntry[];
   addAuditLog: (action: string, category: AuditLogEntry["category"], details: string) => void;
-  bulkImportProducts: (importedList: Partial<Product>[]) => number;
+  bulkImportProducts: (importedList: Partial<Product>[]) => Promise<{ count: number; error?: string }>;
   // Career / Job Posting Methods
   jobs: JobPosting[];
   addJob: (job: Omit<JobPosting, "id" | "createdAt">) => void;
@@ -592,59 +592,100 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     setAuditLogs((prev) => [newLog, ...prev.slice(0, 99)]);
   };
 
-  const addProduct = (newProd: Omit<Product, "id">) => {
-    const slug = newProd.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const addProduct = async (newProd: Omit<Product, "id">): Promise<{ success: boolean; error?: string; product?: Product }> => {
+    const slug = newProd.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const id = `${slug}-${Date.now().toString().slice(-4)}`;
     const fullProd: Product = { ...newProd, id };
 
-    setProducts((prev) => [fullProd, ...prev]);
-    addAuditLog("Product Added", "Product", `Added new fragrance "${newProd.name}" priced at ₨ ${newProd.price.toLocaleString()}`);
-
     const token = typeof sessionStorage !== "undefined"
       ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
       : undefined;
-    saveProductServerFn({ data: { authToken: token, product: fullProd as any } }).catch((err) =>
-      console.warn("[saveProductServerFn]", err)
-    );
-  };
 
-  const updateProduct = (id: string, updates: Partial<Product>) => {
-    let updatedTarget: Product | null = null;
-    setProducts((prev) => {
-      const updatedList = prev.map((p) => {
-        if (p.id === id) {
-          updatedTarget = { ...p, ...updates };
-          return updatedTarget;
-        }
-        return p;
-      });
-      return updatedList;
-    });
+    if (!token) {
+      return { success: false, error: "Administrative authorization token missing. Please sign in to the Admin Panel to save changes." };
+    }
 
-    addAuditLog("Product Modified", "Product", `Updated configuration for "${updates.name || id}"`);
+    try {
+      const res = await saveProductServerFn({ data: { authToken: token, product: fullProd as any } });
+      if (!res.success) {
+        return { success: false, error: res.error || "Failed to save product to Supabase." };
+      }
 
-    const token = typeof sessionStorage !== "undefined"
-      ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
-      : undefined;
-    const target = updatedTarget || products.find((p) => p.id === id);
-    if (target) {
-      saveProductServerFn({ data: { authToken: token, product: { ...target, ...updates } as any } }).catch((err) =>
-        console.warn("[saveProductServerFn]", err)
-      );
+      setProducts((prev) => [fullProd, ...prev.filter((p) => p.id !== fullProd.id)]);
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify([fullProd, ...products.filter((p) => p.id !== fullProd.id)]));
+      } catch (e) {
+        console.warn(e);
+      }
+      addAuditLog("Product Added", "Product", `Added new fragrance "${newProd.name}" priced at ₨ ${newProd.price.toLocaleString()}`);
+
+      return { success: true, product: fullProd };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Network exception while saving product." };
     }
   };
 
-  const deleteProduct = (id: string) => {
-    const found = products.find((p) => p.id === id);
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-    addAuditLog("Product Removed", "Product", `Deleted item "${found?.name || id}" from catalog`);
+  const updateProduct = async (id: string, updates: Partial<Product>): Promise<{ success: boolean; error?: string }> => {
+    const target = products.find((p) => p.id === id);
+    if (!target) return { success: false, error: "Product not found." };
+    const merged: Product = { ...target, ...updates };
 
     const token = typeof sessionStorage !== "undefined"
       ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
       : undefined;
-    deleteProductServerFn({ data: { authToken: token, id } }).catch((err) =>
-      console.warn("[deleteProductServerFn]", err)
-    );
+
+    if (!token) {
+      return { success: false, error: "Administrative authorization token missing. Please sign in again." };
+    }
+
+    try {
+      const res = await saveProductServerFn({ data: { authToken: token, product: merged as any } });
+      if (!res.success) {
+        return { success: false, error: res.error || "Failed to update product in Supabase." };
+      }
+
+      setProducts((prev) => prev.map((p) => (p.id === id ? merged : p)));
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products.map((p) => (p.id === id ? merged : p))));
+      } catch (e) {
+        console.warn(e);
+      }
+      addAuditLog("Product Modified", "Product", `Updated configuration for "${updates.name || id}"`);
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Network exception while updating product." };
+    }
+  };
+
+  const deleteProduct = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    const token = typeof sessionStorage !== "undefined"
+      ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
+      : undefined;
+
+    if (!token) {
+      return { success: false, error: "Administrative authorization token missing. Please sign in again." };
+    }
+
+    try {
+      const res = await deleteProductServerFn({ data: { authToken: token, id } });
+      if (!res.success) {
+        return { success: false, error: res.error || "Failed to delete product from Supabase." };
+      }
+
+      const found = products.find((p) => p.id === id);
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products.filter((p) => p.id !== id)));
+      } catch (e) {
+        console.warn(e);
+      }
+      addAuditLog("Product Removed", "Product", `Deleted item "${found?.name || id}" from catalog`);
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Network exception while deleting product." };
+    }
   };
 
   const updateStock = (id: string, newStock: number) => {
@@ -667,7 +708,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const bulkImportProducts = (importedList: Partial<Product>[]): number => {
+  const bulkImportProducts = async (importedList: Partial<Product>[]): Promise<{ count: number; error?: string }> => {
     let count = 0;
     const cleanList: Product[] = [];
     for (const item of importedList) {
@@ -703,17 +744,30 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     }
 
     if (cleanList.length > 0) {
-      setProducts((prev) => [...cleanList, ...prev]);
-      addAuditLog("Bulk Import", "Product", `Batch imported ${cleanList.length} fragrances into inventory.`);
-
       const token = typeof sessionStorage !== "undefined"
         ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
         : undefined;
-      bulkImportProductsServerFn({ data: { authToken: token, products: cleanList as any } }).catch((err) =>
-        console.warn("[bulkImportProductsServerFn]", err)
-      );
+
+      if (!token) {
+        return { count: 0, error: "Administrative authorization token missing. Please sign in again." };
+      }
+
+      try {
+        const res = await bulkImportProductsServerFn({ data: { authToken: token, products: cleanList as any } });
+        if (!res.success) {
+          return { count: 0, error: res.error || "Failed to save imported products to Supabase." };
+        }
+
+        setProducts((prev) => [...cleanList, ...prev]);
+        try {
+          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify([...cleanList, ...products]));
+        } catch {}
+        addAuditLog("Bulk Import", "Product", `Batch imported ${cleanList.length} fragrances into inventory.`);
+      } catch (err: any) {
+        return { count: 0, error: err?.message || "Failed to bulk import products." };
+      }
     }
-    return count;
+    return { count };
   };
 
   const addCategory = (name: string) => {
