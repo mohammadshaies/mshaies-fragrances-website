@@ -32,10 +32,22 @@ function mapSupabaseProduct(row: any) {
     layeringPairId: row.layering_pair_id || row.layeringPairId || undefined,
     samplePrice: row.sample_price != null ? Number(row.sample_price) : (row.samplePrice != null ? Number(row.samplePrice) : 650),
     batchNumber: row.batch_number || row.batchNumber || "MSH-2026-B1",
+    availableSizes: Array.isArray(row.available_sizes)
+      ? row.available_sizes
+      : (Array.isArray(row.availableSizes)
+          ? row.availableSizes
+          : (typeof row.accent === "string" && row.accent.startsWith('{"sizes":')
+              ? (() => { try { return JSON.parse(row.accent).sizes; } catch { return undefined; } })()
+              : undefined)),
   };
 }
 
 function productToSupabaseRow(p: any) {
+  let accentValue = p.accent || null;
+  if (Array.isArray(p.availableSizes)) {
+    accentValue = JSON.stringify({ sizes: p.availableSizes });
+  }
+
   return {
     id: p.id,
     name: p.name,
@@ -49,7 +61,7 @@ function productToSupabaseRow(p: any) {
     heart_notes: p.heartNotes || null,
     base_notes: p.baseNotes || null,
     image: p.image || "/product-box.jpg",
-    accent: p.accent || null,
+    accent: accentValue,
     description: p.description || "",
     is_featured: Boolean(p.isFeatured),
     gender: p.gender || "Unisex",
@@ -138,6 +150,7 @@ export const saveProductServerFn = createServerFn({ method: "POST" })
         layeringPairId: z.string().optional(),
         samplePrice: z.number().optional(),
         batchNumber: z.string().optional(),
+        availableSizes: z.array(z.string()).optional(),
       }),
     })
   )

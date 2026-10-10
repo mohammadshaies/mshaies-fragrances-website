@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useProductsStore } from "@/lib/products-store";
+import { useProductsStore, DEFAULT_FLACON_SIZES } from "@/lib/products-store";
 import { useCart, formatPKR } from "@/lib/cart-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, 
@@ -39,13 +39,43 @@ export const Route = createFileRoute("/product/$id")({
 
 function ProductDetail() {
   const { id } = Route.useParams();
-  const { products, addReview, voteHelpful, getProductReviews, getProductRating } = useProductsStore();
+  const { products, settings, addReview, voteHelpful, getProductReviews, getProductRating } = useProductsStore();
   const { add, setOpen } = useCart();
   const navigate = useNavigate();
 
   const product = products.find((p) => p.id === id);
 
-  const [selectedVolume, setSelectedVolume] = useState("12ml");
+  // Dynamic Flacon Size Options from Store Settings & Product Customization
+  const allStoreSizes = (settings?.flaconSizes && settings.flaconSizes.length > 0)
+    ? settings.flaconSizes
+    : DEFAULT_FLACON_SIZES;
+
+  // Filter available sizes for this product:
+  // 1. Must be globally enabled
+  // 2. If product has custom availableSizes configured, must be included in it
+  const activeSizeOptions = allStoreSizes.filter((opt) => {
+    if (!opt.isEnabled) return false;
+    if (product?.availableSizes && Array.isArray(product.availableSizes)) {
+      if (product.availableSizes.length === 0) return false;
+      return (
+        product.availableSizes.includes(opt.label) ||
+        product.availableSizes.includes(opt.id) ||
+        product.availableSizes.includes(opt.ml)
+      );
+    }
+    return true;
+  });
+
+  const [selectedVolume, setSelectedVolume] = useState(() => {
+    return activeSizeOptions[0]?.label || "12ml";
+  });
+
+  // Keep selectedVolume valid if available sizes change
+  useEffect(() => {
+    if (activeSizeOptions.length > 0 && !activeSizeOptions.some((o) => o.label === selectedVolume)) {
+      setSelectedVolume(activeSizeOptions[0].label);
+    }
+  }, [activeSizeOptions, selectedVolume]);
   const [qty, setQty] = useState(1);
   const [addGiftWrap, setAddGiftWrap] = useState(false);
   const [giftMessage, setGiftMessage] = useState("");
@@ -122,17 +152,16 @@ function ProductDetail() {
     );
   }
 
-  // Calculate price based on selected volume
-  const getVolumeMultiplier = (vol: string) => {
-    if (vol === "3ml") return (product.samplePrice ? product.samplePrice / product.price : 0.08);
-    if (vol === "6ml") return 0.6;
-    if (vol === "50ml") return 1.4;
-    return 1.0;
-  };
+  // Calculate price dynamically from selected size option
+  const currentSizeOption = activeSizeOptions.find(
+    (o) => o.label === selectedVolume || o.id === selectedVolume || o.ml === selectedVolume
+  ) || activeSizeOptions[0];
 
-  const calculatedPrice = selectedVolume === "3ml"
-    ? (product.samplePrice || 650)
-    : Math.round(product.price * getVolumeMultiplier(selectedVolume));
+  const calculatedPrice = currentSizeOption
+    ? (currentSizeOption.label.toLowerCase().includes("3ml") || currentSizeOption.id === "3ml"
+        ? (product.samplePrice || currentSizeOption.priceOverride || 650)
+        : Math.round(product.price * (currentSizeOption.multiplier || 1.0)))
+    : product.price;
 
   const isOutOfStock = product.stock <= 0;
   const isLowStock = product.stock > 0 && product.stock <= 5;
@@ -411,39 +440,49 @@ function ProductDetail() {
             </div>
 
             {/* Volume & Sample Selector */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm uppercase tracking-[0.2em] text-ink font-bold">
-                  Select Flacon & Sample Size
-                </label>
-                <span className="text-xs text-gold-deep font-bold">
-                  {selectedVolume === "3ml" ? "Discovery Decant" : "Full Bottle Flacon"}
-                </span>
+            {activeSizeOptions.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm uppercase tracking-[0.2em] text-ink font-bold">
+                    Select Flacon & Sample Size
+                  </label>
+                  <span className="text-xs text-gold-deep font-bold">
+                    {currentSizeOption?.label.toLowerCase().includes("3ml") || currentSizeOption?.id === "3ml"
+                      ? "Discovery Decant"
+                      : (currentSizeOption?.sub || "Full Bottle Flacon")}
+                  </span>
+                </div>
+                <div className={`grid grid-cols-2 ${activeSizeOptions.length >= 4 ? "sm:grid-cols-4" : activeSizeOptions.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-2.5`}>
+                  {activeSizeOptions.map((vol) => {
+                    const isSample = vol.label.toLowerCase().includes("3ml") || vol.id === "3ml";
+                    const optionPrice = isSample
+                      ? (product.samplePrice || vol.priceOverride || 650)
+                      : Math.round(product.price * (vol.multiplier || 1.0));
+                    const subText = isSample
+                      ? `Sample (${formatPKR(optionPrice)})`
+                      : (vol.sub || formatPKR(optionPrice));
+
+                    return (
+                      <button
+                        key={vol.label}
+                        type="button"
+                        onClick={() => setSelectedVolume(vol.label)}
+                        className={`p-3.5 rounded-2xl border text-center transition-all duration-300 cursor-pointer ${
+                          selectedVolume === vol.label
+                            ? "border-gold bg-pearl shadow-md shadow-gold/15 ring-1 ring-gold"
+                            : "border-border/80 bg-card hover:border-gold/50"
+                        }`}
+                      >
+                        <p className="font-serif text-base font-bold text-ink">{vol.label}</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground uppercase tracking-wider mt-1 font-medium truncate">
+                          {subText}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {[
-                  { label: "3ml", sub: `Sample (${formatPKR(product.samplePrice || 650)})` },
-                  { label: "6ml", sub: "Pocket Attar" },
-                  { label: "12ml", sub: "Signature Crystal" },
-                  { label: "50ml", sub: "Extrait Spray" },
-                ].map((vol) => (
-                  <button
-                    key={vol.label}
-                    onClick={() => setSelectedVolume(vol.label)}
-                    className={`p-3.5 rounded-2xl border text-center transition-all duration-300 cursor-pointer ${
-                      selectedVolume === vol.label
-                        ? "border-gold bg-pearl shadow-md shadow-gold/15 ring-1 ring-gold"
-                        : "border-border/80 bg-card hover:border-gold/50"
-                    }`}
-                  >
-                    <p className="font-serif text-base font-bold text-ink">{vol.label}</p>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground uppercase tracking-wider mt-1 font-medium truncate">
-                      {vol.sub}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* SENSORY SPECS: Longevity Bar & Sillage Meter */}
             <div className="rounded-3xl border border-gold/30 bg-card p-6 space-y-4 shadow-xs">

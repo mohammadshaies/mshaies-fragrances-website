@@ -63,7 +63,54 @@ export type Product = {
   layeringPairId?: string;
   samplePrice?: number;
   batchNumber?: string;
+  availableSizes?: string[];
 };
+
+export type FlaconSizeOption = {
+  id: string;
+  ml: string;
+  label: string;
+  sub: string;
+  multiplier: number;
+  priceOverride?: number;
+  isEnabled: boolean;
+};
+
+export const DEFAULT_FLACON_SIZES: FlaconSizeOption[] = [
+  {
+    id: "3ml",
+    ml: "3ml",
+    label: "3ml",
+    sub: "Sample Decant",
+    multiplier: 0.1,
+    priceOverride: 650,
+    isEnabled: true,
+  },
+  {
+    id: "6ml",
+    ml: "6ml",
+    label: "6ml",
+    sub: "Pocket Attar",
+    multiplier: 0.6,
+    isEnabled: true,
+  },
+  {
+    id: "12ml",
+    ml: "12ml",
+    label: "12ml",
+    sub: "Signature Crystal",
+    multiplier: 1.0,
+    isEnabled: true,
+  },
+  {
+    id: "50ml",
+    ml: "50ml",
+    label: "50ml",
+    sub: "Extrait Spray",
+    multiplier: 1.4,
+    isEnabled: true,
+  },
+];
 
 export type AuditLogEntry = {
   id: string;
@@ -185,6 +232,8 @@ export type StoreSettings = {
   heroBannerTransitionEffect?: "slide" | "marquee" | "fade" | "zoom" | "flip";
   heroBannerTransitionSpeed?: number;
   heroBannerShimmer?: boolean;
+  // Flacon & Bottle Size Options Configuration
+  flaconSizes?: FlaconSizeOption[];
 };
 
 export const DEFAULT_SETTINGS: StoreSettings = {
@@ -234,6 +283,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   heroBannerTransitionEffect: "slide",
   heroBannerTransitionSpeed: 4500,
   heroBannerShimmer: true,
+  flaconSizes: DEFAULT_FLACON_SIZES,
 };
 
 export const DEFAULT_CATEGORIES: Category[] = [

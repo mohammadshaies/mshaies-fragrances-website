@@ -43,6 +43,9 @@ function mapSupabaseSettings(s: any) {
     heroBannerLink: s.hero_banner_link ?? s.heroBannerLink ?? "/shop",
     heroBannerAlt: s.hero_banner_alt ?? s.heroBannerAlt ?? "Maison Luxury Promotions",
     heroBannerAnimation: s.hero_banner_animation ?? s.heroBannerAnimation ?? "fadeIn",
+    flaconSizes: Array.isArray(s.flacon_sizes)
+      ? s.flacon_sizes
+      : (Array.isArray(s.flaconSizes) ? s.flaconSizes : undefined),
   };
 }
 
@@ -167,18 +170,23 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
     if (safeSettings.tiktokUrl !== undefined) supabasePayload.tiktok_url = safeSettings.tiktokUrl;
     if (safeSettings.autoLockMinutes !== undefined) supabasePayload.auto_lock_minutes = safeSettings.autoLockMinutes;
     if (safeSettings.adminPin !== undefined) supabasePayload.admin_pin = safeSettings.adminPin;
+    if (safeSettings.flaconSizes !== undefined) supabasePayload.flacon_sizes = safeSettings.flaconSizes;
 
     if (isSupabaseConfigured()) {
       try {
         const client = getSupabaseAdmin() || getSupabaseClient();
         if (client) {
-          await client.from("store_settings").upsert(supabasePayload);
+          const { error: upsertErr } = await client.from("store_settings").upsert(supabasePayload);
+          if (upsertErr && (upsertErr.message?.includes("flacon_sizes") || (upsertErr as any).code === "42703")) {
+            delete supabasePayload.flacon_sizes;
+            await client.from("store_settings").upsert(supabasePayload);
+          }
           await client.from("audit_logs").insert({
             id: `log-${Date.now()}`,
             timestamp: new Date().toISOString(),
             action: "Settings Updated",
             category: "Settings",
-            details: "Store parameters, shipping rates, and security rules updated in Supabase.",
+            details: "Store parameters, shipping rates, and flacon sizes updated in Supabase.",
             user: auth.user?.email || "Admin",
           });
         }
