@@ -38,11 +38,11 @@ export function DealsBanner() {
       linkTo: "/shop",
     },
     {
-      icon: Gift,
-      badge: "Complimentary Gift",
-      text: "Free 3ml discovery sampler flacon included with every purchase",
-      code: "FREE GIFT",
-      linkText: "Order Now",
+      icon: Sparkles,
+      badge: "Artisanal Luxury",
+      text: "100% Pure Alcohol-Free Attars & High-Concentration Extrait Parfums",
+      code: "AUTHENTIC",
+      linkText: "Shop Collection",
       linkTo: "/shop",
     },
   ];

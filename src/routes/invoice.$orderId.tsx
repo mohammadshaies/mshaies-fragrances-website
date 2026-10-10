@@ -500,33 +500,6 @@ function InvoicePage() {
                       </tr>
                     ))}
 
-                    {/* Complimentary Discovery Gift Line Item */}
-                    <tr className="bg-emerald-500/5">
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="size-4 text-emerald-600 shrink-0" />
-                          <div>
-                            <p className="font-serif text-xs font-bold text-emerald-800">
-                              Complimentary 3ml Discovery Flacon
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">
-                              Royal Maison Welcome Gift · Hand-poured Pure Attar Sampler
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-2 text-center text-muted-foreground font-mono text-[11px]">
-                        3ml Vial
-                      </td>
-                      <td className="py-3 px-2 text-center font-bold text-emerald-700">1</td>
-                      <td className="py-3 px-3 text-right text-emerald-600 font-bold uppercase text-[10px]">
-                        GIFT
-                      </td>
-                      <td className="py-3 px-3 text-right font-serif font-bold text-emerald-700 text-sm">
-                        ₨ 0
-                      </td>
-                    </tr>
-
                     {/* Gift Wrapped Line Item if applicable */}
                     {order.isGiftWrapped && (
                       <tr className="bg-pearl/30">

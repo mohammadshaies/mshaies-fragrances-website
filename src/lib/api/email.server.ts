@@ -278,15 +278,6 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
                 </thead>
                 <tbody>
                   ${itemsHtml}
-                  <tr>
-                    <td style="padding: 10px 14px; border-bottom: 1px solid #e8e2d5; font-size: 12px; color: #15803d;">
-                      ✨ <strong>Complimentary 3ml Discovery Flacon</strong><br>
-                      <span style="font-size: 10px; color: #78716c;">Pure Attar Sampler (Hand-Poured Gift)</span>
-                    </td>
-                    <td align="center" style="padding: 10px 14px; border-bottom: 1px solid #e8e2d5; font-size: 12px; color: #15803d;">1</td>
-                    <td align="right" style="padding: 10px 14px; border-bottom: 1px solid #e8e2d5; font-size: 12px; color: #15803d;">FREE</td>
-                    <td align="right" style="padding: 10px 14px; border-bottom: 1px solid #e8e2d5; font-size: 12px; color: #15803d; font-weight: bold;">₨ 0</td>
-                  </tr>
                 </tbody>
               </table>
             </td>

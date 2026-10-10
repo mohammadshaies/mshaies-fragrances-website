@@ -131,7 +131,7 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
   const showShimmer = settings.heroBannerShimmer !== false;
 
   // Custom primary offer configured in admin
-  const primaryTitle = props.title || settings.heroBannerTitle || "Complimentary 3ml Discovery Flacon With Every Order Over ₨ 5,000";
+  const primaryTitle = props.title || settings.heroBannerTitle || "Free Express Delivery Across Pakistan On Orders Over ₨ 5,000";
   const primaryTag = props.tag || settings.heroBannerTag || "Maison Exclusive · Limited Festive Release";
   const primarySubtitle = props.subtitle || settings.heroBannerSubtitle || "100% Alcohol-Free Pure Attar Oils & 35% Extrait Parfums. Use Code LUXE15 for Flat 15% OFF.";
   const primaryButtonText = props.buttonText || settings.heroBannerButtonText || "Claim Exclusive Offer";

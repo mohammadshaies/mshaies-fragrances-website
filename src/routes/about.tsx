@@ -104,7 +104,7 @@ function About() {
             </div>
             <h3 className="font-serif text-lg text-ink font-bold mb-2">Gift of Kindness</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Every single order is packaged as an exquisite present, including a free 3ml discovery sampler to share with loved ones.
+              Every single order is packaged as an exquisite present in our gold-embossed presentation boxes to share with loved ones.
             </p>
           </div>
 

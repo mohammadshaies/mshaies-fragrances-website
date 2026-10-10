@@ -158,9 +158,7 @@ function ProductDetail() {
   ) || activeSizeOptions[0];
 
   const calculatedPrice = currentSizeOption
-    ? (currentSizeOption.label.toLowerCase().includes("3ml") || currentSizeOption.id === "3ml"
-        ? (product.samplePrice || currentSizeOption.priceOverride || 650)
-        : Math.round(product.price * (currentSizeOption.multiplier || 1.0)))
+    ? Math.round(product.price * (currentSizeOption.multiplier || 1.0))
     : product.price;
 
   const isOutOfStock = product.stock <= 0;
@@ -439,28 +437,21 @@ function ProductDetail() {
               </p>
             </div>
 
-            {/* Volume & Sample Selector */}
+            {/* Volume & Flacon Selector */}
             {activeSizeOptions.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-sm uppercase tracking-[0.2em] text-ink font-bold">
-                    Select Flacon & Sample Size
+                    Select Flacon Size
                   </label>
                   <span className="text-xs text-gold-deep font-bold">
-                    {currentSizeOption?.label.toLowerCase().includes("3ml") || currentSizeOption?.id === "3ml"
-                      ? "Discovery Decant"
-                      : (currentSizeOption?.sub || "Full Bottle Flacon")}
+                    {currentSizeOption?.sub || "Full Bottle Flacon"}
                   </span>
                 </div>
                 <div className={`grid grid-cols-2 ${activeSizeOptions.length >= 4 ? "sm:grid-cols-4" : activeSizeOptions.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-2.5`}>
                   {activeSizeOptions.map((vol) => {
-                    const isSample = vol.label.toLowerCase().includes("3ml") || vol.id === "3ml";
-                    const optionPrice = isSample
-                      ? (product.samplePrice || vol.priceOverride || 650)
-                      : Math.round(product.price * (vol.multiplier || 1.0));
-                    const subText = isSample
-                      ? `Sample (${formatPKR(optionPrice)})`
-                      : (vol.sub || formatPKR(optionPrice));
+                    const optionPrice = Math.round(product.price * (vol.multiplier || 1.0));
+                    const subText = vol.sub || formatPKR(optionPrice);
 
                     return (
                       <button

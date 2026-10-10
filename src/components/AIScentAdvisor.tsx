@@ -118,7 +118,6 @@ export function AIScentAdvisor() {
 MAISON IDENTITY & VALUES:
 - M.shaies crafts pure alcohol-free attars and high-projection extrait de parfums (35% oil concentration) in Lahore, Pakistan.
 - Free nationwide shipping across Pakistan on orders over ₨ 5,000 via TCS and Leopards Express (2 to 4 business days).
-- Every order includes a complimentary 3ml discovery sampler flacon.
 - Official WhatsApp Concierge: +92 339 0001829 (https://wa.me/923390001829).
 - Official Promo Code: "${settings.announcementCode || "LUXE15"}" for 15% discount.
 - Payment Options: Cash on Delivery (COD), JazzCash, Easypaisa, NayaPay, and Bank Transfer.
@@ -272,17 +271,17 @@ ${catalogContext}`;
     if (lower.includes("watch") || lower.includes("ghari") || lower.includes("chronograph") || lower.includes("timepiece") || lower.includes("horology")) {
       const matched = products.filter(p => p.category === "Watches");
       return {
-        replyText: "M.shaies Horology timepieces are forged from **surgical-grade 316L stainless steel**, scratch-proof sapphire crystal glass, and Japanese precision quartz movements. Each watch comes with a 1-year warranty and a complimentary attar discovery flacon.",
+        replyText: "M.shaies Horology timepieces are forged from **surgical-grade 316L stainless steel**, scratch-proof sapphire crystal glass, and Japanese precision quartz movements. Each watch comes with a 1-year warranty and arrives in a luxury presentation box.",
         matchedProducts: matched,
         actionLink: { text: "Explore Watches Collection", to: "/watches" },
         quickReplies: ["Chronographe Or Rose", "Warranty details", "Can I pay COD?"],
       };
     }
 
-    // 9. Shipping, Delivery & Free Sampler
+    // 9. Shipping & Delivery
     if (lower.includes("delivery") || lower.includes("shipping") || lower.includes("charges") || lower.includes("tcs") || lower.includes("leopards") || lower.includes("days") || lower.includes("din") || lower.includes("karachi") || lower.includes("islamabad") || lower.includes("lahore")) {
       return {
-        replyText: "We dispatch immediately with **express delivery across all of Pakistan in 2 to 4 business days** via TCS & Leopards! Orders over ₨ 5,000 enjoy **100% Free Shipping**, and every single box includes a free 3ml discovery sampler.",
+        replyText: "We dispatch immediately with **express delivery across all of Pakistan in 2 to 4 business days** via TCS & Leopards! Orders over ₨ 5,000 enjoy **100% Free Shipping**.",
         matchedProducts: [],
         actionLink: { text: "View Customer Care & Delivery", to: "/support" },
         quickReplies: ["How do I pay COD?", "Active promo codes", "Recommend best attar"],

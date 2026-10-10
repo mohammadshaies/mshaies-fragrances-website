@@ -18,9 +18,8 @@ We have completed the implementation of the full suite of **Customer Sensory Int
 - **Season & Occasion Suitability Tags**:
   - Visual badges for season (`☀️ Summer`, `❄️ Winter`, `🌿 All-Season`) and occasion (`👑 Barat & Weddings`, `💼 Office Executive`, `🕌 Spiritual Gathering`).
 
-### 2. Discovery Sample Vials & Flacon Selection
-- Expanded volume selector with 4 dedicated options:
-  - **`3ml Discovery Sample Flacon`** (Starting at ₨ 650).
+### 2. Flacon Selection
+- Dedicated flacon volume options:
   - **`6ml Pocket Pure Attar`**.
   - **`12ml Signature Crystal Flacon`**.
   - **`50ml Extrait De Parfum Spray`**.

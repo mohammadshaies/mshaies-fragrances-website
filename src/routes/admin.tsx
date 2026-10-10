@@ -1727,7 +1727,7 @@ function AdminDashboard() {
     inspiredBy: "",
     samplePrice: 650,
     batchNumber: "MSH-2026-B1",
-    availableSizes: ["3ml", "6ml", "12ml", "50ml"] as string[],
+    availableSizes: ["6ml", "12ml", "50ml"] as string[],
   });
 
   // Gallery URL Inputs
@@ -2685,7 +2685,7 @@ function AdminDashboard() {
     },
     {
       title: "👑 VIP Shaadi / Wedding Gift Offer",
-      text: `⚜️ *M.shaies Fragrances — Luxury Wedding Edition* ⚜️\n\nLooking for an unforgettable signature fragrance for upcoming wedding festivities? Receive a complimentary 3ml discovery flacon with every handcrafted bottle.\n\n💎 100% Alcohol-Free Pure Attars & 18K Gold Watches\n📦 Arrives in gold-embossed presentation boxes\n\n👉 Discover the Collection: ${typeof window !== "undefined" ? window.location.origin : "https://mshaies.com"}/shop`,
+      text: `⚜️ *M.shaies Fragrances — Luxury Wedding Edition* ⚜️\n\nLooking for an unforgettable signature fragrance for upcoming wedding festivities? Enjoy express delivery across Pakistan with every handcrafted bottle.\n\n💎 100% Alcohol-Free Pure Attars & 18K Gold Watches\n📦 Arrives in gold-embossed presentation boxes\n\n👉 Discover the Collection: ${typeof window !== "undefined" ? window.location.origin : "https://mshaies.com"}/shop`,
     },
     {
       title: "⚡ 48-Hour Weekend Flash Deal",
@@ -5689,7 +5689,7 @@ function AdminDashboard() {
                       setSettingsForm((prev) => ({
                         ...prev,
                         heroBannerTag: "Maison Exclusive · Limited Festive Release",
-                        heroBannerTitle: "Complimentary 3ml Discovery Flacon With Every Order Over ₨ 5,000",
+                        heroBannerTitle: "Free Express Nationwide Delivery With Every Order Over ₨ 5,000",
                         heroBannerSubtitle: "100% Alcohol-Free Pure Attar Oils & 35% Extrait Parfums. Use Code LUXE15 for Flat 15% OFF.",
                         heroBannerButtonText: "Claim Exclusive Offer →",
                         heroBannerLink: "/shop",
@@ -5701,8 +5701,8 @@ function AdminDashboard() {
                     }}
                     className="p-3 text-left rounded-xl border border-border bg-background hover:border-gold hover:bg-pearl/40 transition-all cursor-pointer text-xs"
                   >
-                    <p className="font-bold text-ink">🌸 Festive Attars & Gifts</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Free 3ml discovery flacon with orders over ₨ 5k</p>
+                    <p className="font-bold text-ink">🌸 Festive Attars & Delivery</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Free express delivery with orders over ₨ 5k</p>
                   </button>
 
                   <button
@@ -5946,7 +5946,7 @@ function AdminDashboard() {
                       setSettingsForm({ ...settingsForm, heroBannerTitle: e.target.value });
                       setBannerPreviewKey((k) => k + 1);
                     }}
-                    placeholder="e.g. Complimentary 3ml Discovery Flacon With Every Order Over ₨ 5,000"
+                    placeholder="e.g. Free Express Nationwide Delivery With Every Order Over ₨ 5,000"
                     className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none font-semibold"
                   />
                 </div>
@@ -7427,19 +7427,6 @@ function AdminDashboard() {
 
                   <div>
                     <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                      Discovery Sample Price (₨)
-                    </label>
-                    <input
-                      type="number"
-                      min={200}
-                      value={newProduct.samplePrice}
-                      onChange={(e) => setNewProduct({ ...newProduct, samplePrice: Number(e.target.value) })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
                       Batch / Lot Number
                     </label>
                     <input
@@ -7476,24 +7463,24 @@ function AdminDashboard() {
                           onClick={() => {
                             setNewProduct({
                               ...newProduct,
-                              availableSizes: ["3ml", "6ml", "12ml"],
+                              availableSizes: ["6ml", "12ml"],
                             });
                           }}
                           className="px-2 py-0.5 rounded-full border border-border bg-background text-[10px] text-muted-foreground hover:text-ink cursor-pointer"
                         >
-                          Attars (3, 6, 12ml)
+                          Attars (6ml, 12ml)
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             setNewProduct({
                               ...newProduct,
-                              availableSizes: ["3ml", "50ml", "100ml"],
+                              availableSizes: ["50ml"],
                             });
                           }}
                           className="px-2 py-0.5 rounded-full border border-border bg-background text-[10px] text-muted-foreground hover:text-ink cursor-pointer"
                         >
-                          Sprays (3, 50ml)
+                          Sprays (50ml)
                         </button>
                         <button
                           type="button"
@@ -7843,19 +7830,6 @@ function AdminDashboard() {
 
                   <div>
                     <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                      Discovery Sample Price (₨)
-                    </label>
-                    <input
-                      type="number"
-                      min={200}
-                      value={editingProduct.samplePrice || 650}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, samplePrice: Number(e.target.value) })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
                       Batch / Lot Number
                     </label>
                     <input
@@ -7892,24 +7866,24 @@ function AdminDashboard() {
                           onClick={() => {
                             setEditingProduct({
                               ...editingProduct,
-                              availableSizes: ["3ml", "6ml", "12ml"],
+                              availableSizes: ["6ml", "12ml"],
                             });
                           }}
                           className="px-2 py-0.5 rounded-full border border-border bg-background text-[10px] text-muted-foreground hover:text-ink cursor-pointer"
                         >
-                          Attars (3, 6, 12ml)
+                          Attars (6ml, 12ml)
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             setEditingProduct({
                               ...editingProduct,
-                              availableSizes: ["3ml", "50ml", "100ml"],
+                              availableSizes: ["50ml"],
                             });
                           }}
                           className="px-2 py-0.5 rounded-full border border-border bg-background text-[10px] text-muted-foreground hover:text-ink cursor-pointer"
                         >
-                          Sprays (3, 50ml)
+                          Sprays (50ml)
                         </button>
                         <button
                           type="button"
