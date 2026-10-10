@@ -18,6 +18,7 @@ import {
   DollarSign,
   Boxes,
   Eye,
+  EyeOff,
   Lock,
   Unlock,
   KeyRound,
@@ -1690,6 +1691,33 @@ function AdminDashboard() {
     }
   });
 
+  const [isPackagingSectionVisible, setIsPackagingSectionVisible] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("mshaies_show_packaging_section") !== "false";
+  });
+
+  const togglePackagingSectionVisibility = () => {
+    setIsPackagingSectionVisible((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("mshaies_show_packaging_section", String(next));
+      } catch (e) {
+        console.error(e);
+      }
+      toast.info(next ? "Packaging tracker is now visible" : "Packaging tracker hidden from inventory view");
+      return next;
+    });
+  };
+
+  const savePackagingBoxesList = (next: PackagingBox[]) => {
+    setPackagingBoxes(next);
+    try {
+      localStorage.setItem("mshaies_packaging_boxes_v1", JSON.stringify(next));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const updatePackagingStock = (id: string, deltaOrExact: number, isExact = false) => {
     setPackagingBoxes((prev) => {
       const next = prev.map((box) => {
@@ -1705,6 +1733,35 @@ function AdminDashboard() {
       return next;
     });
   };
+
+  const handleDeletePackagingBox = (id: string, name: string) => {
+    if (confirm(`Are you sure you want to remove "${name}" from packaging inventory?`)) {
+      const next = packagingBoxes.filter((b) => b.id !== id);
+      savePackagingBoxesList(next);
+      toast.success(`Removed "${name}" from packaging boxes`);
+    }
+  };
+
+  const handleResetPackagingBoxes = () => {
+    if (confirm("Reset packaging boxes back to Maison default inventory?")) {
+      savePackagingBoxesList(DEFAULT_PACKAGING_BOXES);
+      toast.success("Restored default packaging boxes");
+    }
+  };
+
+  // Editing & Adding Packaging Box Modals State
+  const [editingPackagingBox, setEditingPackagingBox] = useState<PackagingBox | null>(null);
+  const [showAddPackagingModal, setShowAddPackagingModal] = useState(false);
+  const [newPackagingBox, setNewPackagingBox] = useState<PackagingBox>({
+    id: "",
+    name: "",
+    category: "attar",
+    stock: 50,
+    suitableFor: "",
+    material: "",
+    minThreshold: 20,
+    image: "/product-box.jpg",
+  });
 
   // Inventory Filter & Search State
   const [inventoryCategoryFilter, setInventoryCategoryFilter] = useState<"all" | "fragrances" | "watches" | "boxes">("all");
@@ -3760,97 +3817,189 @@ function AdminDashboard() {
 
               {/* 5. Packaging & Presentation Boxes Management Grid */}
               {(inventoryCategoryFilter === "all" || inventoryCategoryFilter === "boxes") && (
-                <div className="rounded-3xl border border-border/80 bg-card overflow-hidden shadow-sm space-y-6 p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/60">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Gift className="size-5 text-gold-deep" />
-                        <h3 className="font-serif text-xl font-bold text-ink">
-                          Luxury Presentation Boxes & Shipping Packaging
-                        </h3>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Manage stocks of gold-embossed coffrets, flacon presentation boxes, and courier transit packaging.
-                      </p>
+                !isPackagingSectionVisible && inventoryCategoryFilter !== "boxes" ? (
+                  <div className="p-4 rounded-2xl border border-dashed border-border/80 bg-pearl/30 flex items-center justify-between gap-3 text-xs text-muted-foreground shadow-xs">
+                    <div className="flex items-center gap-2">
+                      <Gift className="size-4 text-gold-deep opacity-60" />
+                      <span>Luxury Presentation Boxes & Shipping Packaging tracker is hidden.</span>
                     </div>
-
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="px-3 py-1 rounded-full bg-pearl border border-gold/30 font-bold text-gold-deep">
-                        Total Packaging: {totalBoxes} Boxes
-                      </span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={togglePackagingSectionVisibility}
+                      className="px-3.5 py-1.5 rounded-full border border-gold/40 text-gold-deep bg-gold/10 hover:bg-gold hover:text-ink font-bold transition-all cursor-pointer flex items-center gap-1.5 text-xs"
+                    >
+                      <Eye className="size-3.5" />
+                      Show Packaging Section
+                    </button>
                   </div>
+                ) : (
+                  <div className="rounded-3xl border border-border/80 bg-card overflow-hidden shadow-sm space-y-6 p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border/60">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Gift className="size-5 text-gold-deep" />
+                          <h3 className="font-serif text-xl font-bold text-ink">
+                            Luxury Presentation Boxes & Shipping Packaging
+                          </h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Manage stocks of gold-embossed coffrets, flacon presentation boxes, and courier transit packaging.
+                        </p>
+                      </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {filteredBoxes.map((box) => {
-                      const isLowBox = box.stock <= box.minThreshold;
-
-                      return (
-                        <div
-                          key={box.id}
-                          className="p-5 rounded-2xl border border-border/80 bg-background flex flex-col justify-between gap-4 shadow-xs hover:border-gold/50 transition-colors"
+                      <div className="flex items-center gap-2 text-xs flex-wrap">
+                        <span className="px-3 py-1 rounded-full bg-pearl border border-gold/30 font-bold text-gold-deep">
+                          Total Packaging: {totalBoxes} Boxes
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddPackagingModal(true)}
+                          className="px-3 py-1 rounded-full border border-gold/40 bg-gold/15 text-gold-deep hover:bg-gold hover:text-ink font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                         >
-                          <div className="space-y-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <h4 className="font-serif text-base font-bold text-ink leading-tight">
-                                  {box.name}
-                                </h4>
-                                <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-deep">
-                                  {box.category.toUpperCase()} PACKAGING
-                                </span>
-                              </div>
-                              <span
-                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                  isLowBox
-                                    ? "bg-amber-500/15 text-amber-600 border border-amber-500/30"
-                                    : "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
-                                }`}
-                              >
-                                {isLowBox ? "Low Supply" : "Adequate"}
-                              </span>
-                            </div>
+                          <Plus className="size-3.5" />
+                          Add Box
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleResetPackagingBoxes}
+                          title="Reset to default 6 packaging boxes"
+                          className="p-1.5 rounded-full border border-border bg-background text-muted-foreground hover:text-ink hover:border-gold transition-colors cursor-pointer"
+                        >
+                          <RotateCcw className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={togglePackagingSectionVisibility}
+                          title="Hide packaging tracker from inventory view"
+                          className="p-1.5 rounded-full border border-border bg-background text-muted-foreground hover:text-ink hover:border-gold transition-colors cursor-pointer"
+                        >
+                          <EyeOff className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
 
-                            <p className="text-xs text-ink font-medium">
-                              Suitable For: <strong className="text-muted-foreground font-normal">{box.suitableFor}</strong>
-                            </p>
-                            <p className="text-[11px] text-muted-foreground leading-relaxed">
-                              {box.material}
-                            </p>
-                          </div>
-
-                          <div className="pt-3 border-t border-border/40 flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                min={0}
-                                value={box.stock}
-                                onChange={(e) => updatePackagingStock(box.id, parseInt(e.target.value) || 0, true)}
-                                className="w-20 px-3 py-1 rounded-lg border border-border bg-card text-ink font-bold text-xs focus:border-gold focus:outline-none"
-                              />
-                              <span className="text-xs text-muted-foreground font-medium">boxes</span>
-                            </div>
-
-                            <div className="flex items-center gap-1">
-                              {[25, 50, 100].map((qty) => (
-                                <button
-                                  key={qty}
-                                  onClick={() => {
-                                    updatePackagingStock(box.id, qty);
-                                    toast.success(`Restocked +${qty} boxes of ${box.name}`);
-                                  }}
-                                  className="px-2 py-1 rounded-md border border-border/80 text-[10px] font-bold hover:bg-gold hover:text-ink transition-colors cursor-pointer"
-                                >
-                                  +{qty}
-                                </button>
-                              ))}
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {filteredBoxes.length === 0 ? (
+                        <div className="col-span-full py-10 text-center rounded-2xl border border-dashed border-border bg-pearl/20 space-y-3">
+                          <Package className="size-8 mx-auto text-gold-deep opacity-60" />
+                          <p className="text-sm font-serif font-bold text-ink">No packaging boxes in inventory</p>
+                          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                            All packaging boxes have been removed. You can create your own custom packaging boxes or restore the default ones below.
+                          </p>
+                          <div className="flex items-center justify-center gap-2 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => setShowAddPackagingModal(true)}
+                              className="btn-gold btn-gold-hover px-4 py-2 rounded-full text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Plus className="size-3.5" />
+                              Add Custom Box
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleResetPackagingBoxes}
+                              className="px-4 py-2 rounded-full border border-border bg-background text-xs text-muted-foreground hover:text-ink font-semibold flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <RotateCcw className="size-3.5" />
+                              Restore Defaults
+                            </button>
                           </div>
                         </div>
-                      );
-                    })}
+                      ) : (
+                        filteredBoxes.map((box) => {
+                          const isLowBox = box.stock <= box.minThreshold;
+
+                          return (
+                            <div
+                              key={box.id}
+                              className="p-5 rounded-2xl border border-border/80 bg-background flex flex-col justify-between gap-4 shadow-xs hover:border-gold/50 transition-colors"
+                            >
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <h4 className="font-serif text-base font-bold text-ink leading-tight truncate">
+                                      {box.name}
+                                    </h4>
+                                    <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-deep">
+                                      {box.category.toUpperCase()} PACKAGING
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                        isLowBox
+                                          ? "bg-amber-500/15 text-amber-600 border border-amber-500/30"
+                                          : "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
+                                      }`}
+                                    >
+                                      {isLowBox ? "Low Supply" : "Adequate"}
+                                    </span>
+
+                                    {/* Edit Box Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingPackagingBox(box)}
+                                      title={`Edit ${box.name}`}
+                                      className="p-1 rounded-lg border border-border/80 text-muted-foreground hover:text-ink hover:border-gold hover:bg-gold/10 transition-colors cursor-pointer"
+                                    >
+                                      <Edit3 className="size-3.5" />
+                                    </button>
+
+                                    {/* Delete / Remove Box Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeletePackagingBox(box.id, box.name)}
+                                      title={`Remove ${box.name}`}
+                                      className="p-1 rounded-lg border border-border/80 text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/10 transition-colors cursor-pointer"
+                                    >
+                                      <Trash2 className="size-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <p className="text-xs text-ink font-medium">
+                                  Suitable For: <strong className="text-muted-foreground font-normal">{box.suitableFor}</strong>
+                                </p>
+                                <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+                                  {box.material}
+                                </p>
+                              </div>
+
+                              <div className="pt-3 border-t border-border/40 flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={box.stock}
+                                    onChange={(e) => updatePackagingStock(box.id, parseInt(e.target.value) || 0, true)}
+                                    className="w-20 px-3 py-1 rounded-lg border border-border bg-card text-ink font-bold text-xs focus:border-gold focus:outline-none"
+                                  />
+                                  <span className="text-xs text-muted-foreground font-medium">boxes</span>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  {[25, 50, 100].map((qty) => (
+                                    <button
+                                      key={qty}
+                                      onClick={() => {
+                                        updatePackagingStock(box.id, qty);
+                                        toast.success(`Restocked +${qty} boxes of ${box.name}`);
+                                      }}
+                                      className="px-2 py-1 rounded-md border border-border/80 text-[10px] font-bold hover:bg-gold hover:text-ink transition-colors cursor-pointer"
+                                    >
+                                      +{qty}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
-                </div>
+                )
               )}
 
               {/* 6. Specific Fragrance Liquid Milliliters (ml) Reserve Table */}
@@ -8455,6 +8604,310 @@ function AdminDashboard() {
                   Parse & Import Products
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* EDIT PACKAGING BOX MODAL */}
+        {editingPackagingBox && (
+          <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-card border border-gold/40 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <Gift className="size-5 text-gold-deep" />
+                  <h3 className="font-serif text-lg font-bold text-ink">Edit Packaging Box</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingPackagingBox(null)}
+                  className="p-1 rounded-full text-muted-foreground hover:text-ink cursor-pointer"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const updated = packagingBoxes.map((b) =>
+                    b.id === editingPackagingBox.id ? editingPackagingBox : b
+                  );
+                  savePackagingBoxesList(updated);
+                  toast.success(`Updated "${editingPackagingBox.name}"`);
+                  setEditingPackagingBox(null);
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Box Title / Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingPackagingBox.name}
+                    onChange={(e) => setEditingPackagingBox({ ...editingPackagingBox, name: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none font-medium"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                      Packaging Category
+                    </label>
+                    <select
+                      value={editingPackagingBox.category}
+                      onChange={(e) => setEditingPackagingBox({ ...editingPackagingBox, category: e.target.value as any })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                    >
+                      <option value="attar">Attar Packaging</option>
+                      <option value="spray">Spray Packaging</option>
+                      <option value="watch">Watch Packaging</option>
+                      <option value="discovery">Discovery Packaging</option>
+                      <option value="shipping">Shipping Packaging</option>
+                      <option value="gift">Luxury Gift Packaging</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                      Stock Count
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editingPackagingBox.stock}
+                      onChange={(e) => setEditingPackagingBox({ ...editingPackagingBox, stock: Math.max(0, parseInt(e.target.value) || 0) })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs font-bold text-ink focus:border-gold focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Suitable For Fragrances / Items
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 12ml Crystal Flacons, 50ml Sprays, etc."
+                    value={editingPackagingBox.suitableFor}
+                    onChange={(e) => setEditingPackagingBox({ ...editingPackagingBox, suitableFor: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Material & Finish Specs
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. Gold-embossed navy velvet, magnetic closure..."
+                    value={editingPackagingBox.material}
+                    onChange={(e) => setEditingPackagingBox({ ...editingPackagingBox, material: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Low Supply Alert Threshold
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={editingPackagingBox.minThreshold}
+                    onChange={(e) => setEditingPackagingBox({ ...editingPackagingBox, minThreshold: Math.max(1, parseInt(e.target.value) || 1) })}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Box will show a "Low Supply" warning whenever stock falls at or below this number.
+                  </p>
+                </div>
+
+                <div className="pt-3 flex items-center justify-between border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDeletePackagingBox(editingPackagingBox.id, editingPackagingBox.name);
+                      setEditingPackagingBox(null);
+                    }}
+                    className="px-4 py-2 rounded-full border border-destructive/30 text-destructive hover:bg-destructive/10 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Trash2 className="size-3.5" />
+                    Delete Box
+                  </button>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingPackagingBox(null)}
+                      className="px-4 py-2 rounded-full border border-border text-xs text-muted-foreground hover:text-ink cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-gold btn-gold-hover px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ADD NEW PACKAGING BOX MODAL */}
+        {showAddPackagingModal && (
+          <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-card border border-gold/40 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <Plus className="size-5 text-gold-deep" />
+                  <h3 className="font-serif text-lg font-bold text-ink">Add Custom Packaging Box</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddPackagingModal(false)}
+                  className="p-1 rounded-full text-muted-foreground hover:text-ink cursor-pointer"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newPackagingBox.name.trim()) {
+                    toast.error("Please enter a box title");
+                    return;
+                  }
+                  const newId = `box-custom-${Date.now()}`;
+                  const created: PackagingBox = {
+                    ...newPackagingBox,
+                    id: newId,
+                  };
+                  savePackagingBoxesList([...packagingBoxes, created]);
+                  toast.success(`Added "${created.name}" to packaging inventory!`);
+                  setShowAddPackagingModal(false);
+                  setNewPackagingBox({
+                    id: "",
+                    name: "",
+                    category: "attar",
+                    stock: 50,
+                    suitableFor: "",
+                    material: "",
+                    minThreshold: 20,
+                    image: "/product-box.jpg",
+                  });
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Box Title / Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 100ml Luxury Wooden Chest"
+                    value={newPackagingBox.name}
+                    onChange={(e) => setNewPackagingBox({ ...newPackagingBox, name: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none font-medium"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                      Packaging Category
+                    </label>
+                    <select
+                      value={newPackagingBox.category}
+                      onChange={(e) => setNewPackagingBox({ ...newPackagingBox, category: e.target.value as any })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                    >
+                      <option value="attar">Attar Packaging</option>
+                      <option value="spray">Spray Packaging</option>
+                      <option value="watch">Watch Packaging</option>
+                      <option value="discovery">Discovery Packaging</option>
+                      <option value="shipping">Shipping Packaging</option>
+                      <option value="gift">Luxury Gift Packaging</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                      Initial Stock
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={newPackagingBox.stock}
+                      onChange={(e) => setNewPackagingBox({ ...newPackagingBox, stock: Math.max(0, parseInt(e.target.value) || 0) })}
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs font-bold text-ink focus:border-gold focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Suitable For Fragrances / Items
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 100ml Extrait Spray Flacons"
+                    value={newPackagingBox.suitableFor}
+                    onChange={(e) => setNewPackagingBox({ ...newPackagingBox, suitableFor: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Material & Finish Specs
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. Lacquered mahogany wood with gold inlay..."
+                    value={newPackagingBox.material}
+                    onChange={(e) => setNewPackagingBox({ ...newPackagingBox, material: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Low Supply Alert Threshold
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={newPackagingBox.minThreshold}
+                    onChange={(e) => setNewPackagingBox({ ...newPackagingBox, minThreshold: Math.max(1, parseInt(e.target.value) || 1) })}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+
+                <div className="pt-3 flex items-center justify-end gap-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddPackagingModal(false)}
+                    className="px-4 py-2 rounded-full border border-border text-xs text-muted-foreground hover:text-ink cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-gold btn-gold-hover px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer"
+                  >
+                    Add to Inventory
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
