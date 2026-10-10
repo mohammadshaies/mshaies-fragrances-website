@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useProductsStore, DEFAULT_FLACON_SIZES } from "@/lib/products-store";
+import { useProductsStore, DEFAULT_FLACON_SIZES, getCustomSizeDetails, type FlaconSizeOption } from "@/lib/products-store";
 import { useCart, formatPKR } from "@/lib/cart-context";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, 
@@ -50,21 +50,34 @@ function ProductDetail() {
     ? settings.flaconSizes
     : DEFAULT_FLACON_SIZES;
 
-  // Filter available sizes for this product:
-  // 1. Must be globally enabled
-  // 2. If product has custom availableSizes configured, must be included in it
-  const activeSizeOptions = allStoreSizes.filter((opt) => {
-    if (!opt.isEnabled) return false;
+  // Filter or generate available sizes for this product (supports custom ml)
+  const activeSizeOptions: FlaconSizeOption[] = useMemo(() => {
     if (product?.availableSizes && Array.isArray(product.availableSizes)) {
-      if (product.availableSizes.length === 0) return false;
-      return (
-        product.availableSizes.includes(opt.label) ||
-        product.availableSizes.includes(opt.id) ||
-        product.availableSizes.includes(opt.ml)
-      );
+      if (product.availableSizes.length === 0) return [];
+
+      return product.availableSizes.map((sizeName) => {
+        const found = allStoreSizes.find(
+          (opt) =>
+            opt.label.toLowerCase() === sizeName.toLowerCase() ||
+            opt.id.toLowerCase() === sizeName.toLowerCase() ||
+            opt.ml.toLowerCase() === sizeName.toLowerCase()
+        );
+        if (found) return found;
+
+        const details = getCustomSizeDetails(sizeName);
+        return {
+          id: sizeName.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+          label: sizeName,
+          ml: sizeName,
+          sub: details.sub,
+          multiplier: details.multiplier,
+          isEnabled: true,
+        };
+      });
     }
-    return true;
-  });
+
+    return allStoreSizes.filter((opt) => opt.isEnabled);
+  }, [product?.availableSizes, allStoreSizes]);
 
   const [selectedVolume, setSelectedVolume] = useState(() => {
     return activeSizeOptions[0]?.label || "12ml";

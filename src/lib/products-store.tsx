@@ -76,6 +76,38 @@ export type FlaconSizeOption = {
   isEnabled: boolean;
 };
 
+export function getCustomSizeDetails(sizeStr: string): { multiplier: number; sub: string } {
+  const clean = sizeStr.trim();
+  const lower = clean.toLowerCase();
+
+  let sub = "Custom Flacon";
+  if (lower.includes("attar")) sub = "Pure Attar";
+  else if (lower.includes("spray")) sub = "Parfum Spray";
+  else if (lower.includes("sample") || lower.includes("3ml")) sub = "Discovery Flacon";
+  else if (lower.includes("100ml")) sub = "Grand Extrait";
+  else if (lower.includes("50ml")) sub = "Parfum Spray";
+  else if (lower.includes("30ml")) sub = "Travel Spray";
+  else if (lower.includes("12ml")) sub = "Royal Flacon";
+  else if (lower.includes("6ml")) sub = "Pocket Attar";
+  else if (lower.includes("10ml")) sub = "Pocket Spray";
+  else if (lower.includes("200ml")) sub = "Jumbo Flacon";
+
+  let multiplier = 1.0;
+  const match = clean.match(/(\d+)\s*ml/i);
+  if (match) {
+    const ml = parseInt(match[1], 10);
+    if (ml <= 3) multiplier = 0.55;
+    else if (ml <= 6) multiplier = 1.0;
+    else if (ml <= 12) multiplier = 1.9;
+    else if (ml <= 30) multiplier = 2.4;
+    else if (ml <= 50) multiplier = 3.5;
+    else if (ml <= 100) multiplier = 5.5;
+    else if (ml <= 200) multiplier = 9.0;
+    else multiplier = Math.round((ml / 12) * 1.8 * 10) / 10;
+  }
+  return { multiplier, sub };
+}
+
 export const DEFAULT_FLACON_SIZES: FlaconSizeOption[] = [
   {
     id: "6ml",
@@ -99,6 +131,14 @@ export const DEFAULT_FLACON_SIZES: FlaconSizeOption[] = [
     label: "50ml",
     sub: "Parfum Spray",
     multiplier: 3.5,
+    isEnabled: true,
+  },
+  {
+    id: "100ml",
+    ml: "100ml",
+    label: "100ml",
+    sub: "Grand Extrait",
+    multiplier: 5.5,
     isEnabled: true,
   },
 ];

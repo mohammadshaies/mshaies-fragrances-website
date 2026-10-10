@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useProductsStore, type Product, type Coupon, type Order, DEFAULT_FLACON_SIZES, type FlaconSizeOption } from "@/lib/products-store";
+import { useProductsStore, type Product, type Coupon, type Order, DEFAULT_FLACON_SIZES, type FlaconSizeOption, getCustomSizeDetails } from "@/lib/products-store";
 import { formatPKR } from "@/lib/cart-context";
 import { useState, useEffect, useMemo } from "react";
 import { 
@@ -1823,6 +1823,131 @@ function AdminDashboard() {
     setSettingsForm({ ...settingsForm, flaconSizes: DEFAULT_FLACON_SIZES });
     toast.success("Reset flacon sizes to default Maison standards!");
   };
+
+  // Custom ML inputs & handlers for Add and Edit fragrance modals
+  const [newCustomMlInput, setNewCustomMlInput] = useState("");
+  const [editCustomMlInput, setEditCustomMlInput] = useState("");
+
+  const handleAddNewCustomMl = (val?: string) => {
+    const raw = (val !== undefined ? val : newCustomMlInput).trim();
+    if (!raw) return;
+    const formatted = /^\d+$/.test(raw) ? `${raw}ml` : raw;
+    const current = newProduct.availableSizes || flaconSizesList.filter(s => s.isEnabled).map(s => s.label);
+    if (!current.includes(formatted)) {
+      setNewProduct(prev => ({
+        ...prev,
+        availableSizes: [...current, formatted],
+      }));
+      if (!flaconSizesList.some(s => s.label.toLowerCase() === formatted.toLowerCase())) {
+        const details = getCustomSizeDetails(formatted);
+        const newOption: FlaconSizeOption = {
+          id: formatted.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+          label: formatted,
+          ml: formatted,
+          sub: details.sub,
+          multiplier: details.multiplier,
+          isEnabled: true,
+        };
+        setSettingsForm(prev => ({
+          ...prev,
+          flaconSizes: [...flaconSizesList, newOption],
+        }));
+      }
+      toast.success(`Added ${formatted} to size options!`);
+    } else {
+      toast.info(`${formatted} is already in the size list.`);
+    }
+    setNewCustomMlInput("");
+  };
+
+  const handleRemoveNewSizeOption = (sizeLabel: string) => {
+    const current = newProduct.availableSizes || flaconSizesList.filter(s => s.isEnabled).map(s => s.label);
+    setNewProduct(prev => ({
+      ...prev,
+      availableSizes: current.filter(s => s.toLowerCase() !== sizeLabel.toLowerCase()),
+    }));
+  };
+
+  const handleAddEditCustomMl = (val?: string) => {
+    if (!editingProduct) return;
+    const raw = (val !== undefined ? val : editCustomMlInput).trim();
+    if (!raw) return;
+    const formatted = /^\d+$/.test(raw) ? `${raw}ml` : raw;
+    const current = editingProduct.availableSizes || flaconSizesList.filter(s => s.isEnabled).map(s => s.label);
+    if (!current.includes(formatted)) {
+      setEditingProduct(prev => prev ? ({
+        ...prev,
+        availableSizes: [...current, formatted],
+      }) : null);
+      if (!flaconSizesList.some(s => s.label.toLowerCase() === formatted.toLowerCase())) {
+        const details = getCustomSizeDetails(formatted);
+        const newOption: FlaconSizeOption = {
+          id: formatted.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+          label: formatted,
+          ml: formatted,
+          sub: details.sub,
+          multiplier: details.multiplier,
+          isEnabled: true,
+        };
+        setSettingsForm(prev => ({
+          ...prev,
+          flaconSizes: [...flaconSizesList, newOption],
+        }));
+      }
+      toast.success(`Added ${formatted} to size options!`);
+    } else {
+      toast.info(`${formatted} is already in the size list.`);
+    }
+    setEditCustomMlInput("");
+  };
+
+  const handleRemoveEditSizeOption = (sizeLabel: string) => {
+    if (!editingProduct) return;
+    const current = editingProduct.availableSizes || flaconSizesList.filter(s => s.isEnabled).map(s => s.label);
+    setEditingProduct(prev => prev ? ({
+      ...prev,
+      availableSizes: current.filter(s => s.toLowerCase() !== sizeLabel.toLowerCase()),
+    }) : null);
+  };
+
+  // Display size lists for Add & Edit modals (merges store settings with product custom sizes)
+  const displaySizesForNew = useMemo(() => {
+    const map = new Map<string, FlaconSizeOption>();
+    flaconSizesList.forEach(s => map.set(s.label.toLowerCase(), s));
+    (newProduct.availableSizes || []).forEach(sz => {
+      if (sz && !map.has(sz.toLowerCase())) {
+        const details = getCustomSizeDetails(sz);
+        map.set(sz.toLowerCase(), {
+          id: sz.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+          label: sz,
+          ml: sz,
+          sub: details.sub,
+          multiplier: details.multiplier,
+          isEnabled: true,
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [flaconSizesList, newProduct.availableSizes]);
+
+  const displaySizesForEdit = useMemo(() => {
+    const map = new Map<string, FlaconSizeOption>();
+    flaconSizesList.forEach(s => map.set(s.label.toLowerCase(), s));
+    (editingProduct?.availableSizes || []).forEach(sz => {
+      if (sz && !map.has(sz.toLowerCase())) {
+        const details = getCustomSizeDetails(sz);
+        map.set(sz.toLowerCase(), {
+          id: sz.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+          label: sz,
+          ml: sz,
+          sub: details.sub,
+          multiplier: details.multiplier,
+          isEnabled: true,
+        });
+      }
+    });
+    return Array.from(map.values());
+  }, [flaconSizesList, editingProduct?.availableSizes]);
 
   const [currentPinInput, setCurrentPinInput] = useState("");
   const [newPinInput, setNewPinInput] = useState("");
@@ -7510,11 +7635,16 @@ function AdminDashboard() {
                   </div>
 
                   {/* Flacon Sizes Selector for This Product */}
-                  <div className="sm:col-span-2 p-4 rounded-2xl bg-pearl border border-gold/30 space-y-2.5">
+                  <div className="sm:col-span-2 p-4 rounded-2xl bg-pearl border border-gold/30 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                      <label className="block text-xs uppercase tracking-wider text-ink font-bold">
-                        Flacon Sizes for this Fragrance (Select which options to show)
-                      </label>
+                      <div>
+                        <label className="block text-xs uppercase tracking-wider text-ink font-bold">
+                          Flacon Sizes for this Fragrance
+                        </label>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Select sizes or write your own custom ml. Checked sizes will show on the product page.
+                        </p>
+                      </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           type="button"
@@ -7533,19 +7663,19 @@ function AdminDashboard() {
                           onClick={() => {
                             setNewProduct({
                               ...newProduct,
-                              availableSizes: ["50ml"],
+                              availableSizes: ["50ml", "100ml"],
                             });
                           }}
                           className="px-2 py-0.5 rounded-full border border-border bg-background text-[10px] text-muted-foreground hover:text-ink cursor-pointer"
                         >
-                          Sprays (50ml)
+                          Sprays (50ml, 100ml)
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             setNewProduct({
                               ...newProduct,
-                              availableSizes: flaconSizesList.filter(s => s.isEnabled).map(s => s.label),
+                              availableSizes: displaySizesForNew.filter(s => s.isEnabled).map(s => s.label),
                             });
                           }}
                           className="px-2 py-0.5 rounded-full border border-border bg-background text-[10px] text-muted-foreground hover:text-ink cursor-pointer"
@@ -7567,44 +7697,131 @@ function AdminDashboard() {
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-muted-foreground">
-                      Check each size option that customers can choose on this product's page. Unchecked sizes will be completely hidden.
-                    </p>
+                    {/* Write Custom ML Input + Quick Add Buttons */}
+                    <div className="bg-card/90 p-3 rounded-xl border border-gold/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-gold-deep uppercase tracking-wider flex items-center gap-1.5">
+                          <Plus className="size-3.5" />
+                          Write Custom ML / Add Size
+                        </label>
+                        <span className="text-[10px] text-muted-foreground">e.g. 100ml, 30ml, 10ml, 3ml</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder='Type custom size (e.g. "100ml", "30ml", "3ml")...'
+                          value={newCustomMlInput}
+                          onChange={(e) => setNewCustomMlInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddNewCustomMl();
+                            }
+                          }}
+                          className="flex-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-semibold text-ink placeholder:text-muted-foreground/60 focus:border-gold focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddNewCustomMl()}
+                          className="px-3.5 py-1.5 rounded-xl bg-gold/20 text-gold-deep border border-gold hover:bg-gold hover:text-ink text-xs font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1"
+                        >
+                          <Plus className="size-3.5" />
+                          Add ML
+                        </button>
+                      </div>
 
+                      {/* Quick Presets Pills */}
+                      <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                        <span className="text-[10px] text-muted-foreground font-medium mr-1">Quick Add:</span>
+                        {["3ml", "6ml", "10ml", "12ml", "30ml", "50ml", "100ml", "200ml"].map((quickMl) => {
+                          const isAlreadyAdded = (newProduct.availableSizes || []).includes(quickMl);
+                          return (
+                            <button
+                              key={quickMl}
+                              type="button"
+                              onClick={() => handleAddNewCustomMl(quickMl)}
+                              className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors cursor-pointer ${
+                                isAlreadyAdded
+                                  ? "bg-gold/15 text-gold-deep border-gold/40 font-semibold"
+                                  : "border-border bg-background text-muted-foreground hover:text-ink hover:border-gold"
+                              }`}
+                            >
+                              {isAlreadyAdded ? `✓ ${quickMl}` : `+ ${quickMl}`}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Active Size Checkboxes Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                      {flaconSizesList.map((size) => {
+                      {displaySizesForNew.map((size) => {
                         const isChecked = newProduct.availableSizes 
                           ? newProduct.availableSizes.includes(size.label) || newProduct.availableSizes.includes(size.id)
                           : size.isEnabled;
 
                         return (
-                          <label
+                          <div
                             key={size.id}
-                            className={`p-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition-all ${
+                            className={`p-2.5 rounded-xl border flex items-center justify-between gap-1.5 transition-all ${
                               isChecked
                                 ? "border-gold bg-card shadow-xs ring-1 ring-gold/40"
                                 : "border-border bg-background/50 opacity-60"
                             }`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                const current = newProduct.availableSizes || flaconSizesList.filter(s => s.isEnabled).map(s => s.label);
-                                const next = e.target.checked
-                                  ? [...current, size.label]
-                                  : current.filter((l) => l !== size.label && l !== size.id);
-                                setNewProduct({ ...newProduct, availableSizes: next });
-                              }}
-                              className="size-4 accent-gold cursor-pointer"
-                            />
-                            <div className="min-w-0">
-                              <p className="font-serif text-xs font-bold text-ink truncate">{size.label}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{size.sub}</p>
-                            </div>
-                          </label>
+                            <label className="flex items-center gap-2 cursor-pointer min-w-0 flex-1">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const current = newProduct.availableSizes || displaySizesForNew.filter(s => s.isEnabled).map(s => s.label);
+                                  const next = e.target.checked
+                                    ? [...current, size.label]
+                                    : current.filter((l) => l !== size.label && l !== size.id);
+                                  setNewProduct({ ...newProduct, availableSizes: next });
+                                }}
+                                className="size-4 accent-gold cursor-pointer shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <p className="font-serif text-xs font-bold text-ink truncate">{size.label}</p>
+                                <p className="text-[10px] text-muted-foreground truncate">{size.sub}</p>
+                              </div>
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveNewSizeOption(size.label)}
+                              title={`Remove ${size.label}`}
+                              className="text-muted-foreground/60 hover:text-destructive p-1 rounded-md transition-colors cursor-pointer shrink-0"
+                            >
+                              <X className="size-3" />
+                            </button>
+                          </div>
                         );
                       })}
+                    </div>
+
+                    {/* Direct Comma-Separated Text Input */}
+                    <div className="pt-2 border-t border-border/40">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+                          Directly Edit All Sizes (Text):
+                        </label>
+                        <span className="text-[10px] text-muted-foreground">Comma-separated</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={(newProduct.availableSizes || []).join(", ")}
+                        onChange={(e) => {
+                          const parsed = e.target.value
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean);
+                          setNewProduct({ ...newProduct, availableSizes: parsed });
+                        }}
+                        placeholder="e.g. 6ml, 12ml, 50ml, 100ml"
+                        className="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                      />
                     </div>
                   </div>
                 </div>
@@ -7919,11 +8136,16 @@ function AdminDashboard() {
                   </div>
 
                   {/* Flacon Sizes Selector for This Product */}
-                  <div className="sm:col-span-2 p-4 rounded-2xl bg-pearl border border-gold/30 space-y-2.5">
+                  <div className="sm:col-span-2 p-4 rounded-2xl bg-pearl border border-gold/30 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                      <label className="block text-xs uppercase tracking-wider text-ink font-bold">
-                        Flacon Sizes for this Fragrance (Select which options to show)
-                      </label>
+                      <div>
+                        <label className="block text-xs uppercase tracking-wider text-ink font-bold">
+                          Flacon Sizes for this Fragrance
+                        </label>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Select sizes or write your own custom ml. Checked sizes will show on the product page.
+                        </p>
+                      </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           type="button"
@@ -7942,19 +8164,19 @@ function AdminDashboard() {
                           onClick={() => {
                             setEditingProduct({
                               ...editingProduct,
-                              availableSizes: ["50ml"],
+                              availableSizes: ["50ml", "100ml"],
                             });
                           }}
                           className="px-2 py-0.5 rounded-full border border-border bg-background text-[10px] text-muted-foreground hover:text-ink cursor-pointer"
                         >
-                          Sprays (50ml)
+                          Sprays (50ml, 100ml)
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             setEditingProduct({
                               ...editingProduct,
-                              availableSizes: flaconSizesList.filter(s => s.isEnabled).map(s => s.label),
+                              availableSizes: displaySizesForEdit.filter(s => s.isEnabled).map(s => s.label),
                             });
                           }}
                           className="px-2 py-0.5 rounded-full border border-border bg-background text-[10px] text-muted-foreground hover:text-ink cursor-pointer"
@@ -7976,44 +8198,131 @@ function AdminDashboard() {
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-muted-foreground">
-                      Check each size option that customers can choose on this product's page. Unchecked sizes will be completely hidden.
-                    </p>
+                    {/* Write Custom ML Input + Quick Add Buttons */}
+                    <div className="bg-card/90 p-3 rounded-xl border border-gold/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-gold-deep uppercase tracking-wider flex items-center gap-1.5">
+                          <Plus className="size-3.5" />
+                          Write Custom ML / Add Size
+                        </label>
+                        <span className="text-[10px] text-muted-foreground">e.g. 100ml, 30ml, 10ml, 3ml</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder='Type custom size (e.g. "100ml", "30ml", "3ml")...'
+                          value={editCustomMlInput}
+                          onChange={(e) => setEditCustomMlInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddEditCustomMl();
+                            }
+                          }}
+                          className="flex-1 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-semibold text-ink placeholder:text-muted-foreground/60 focus:border-gold focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddEditCustomMl()}
+                          className="px-3.5 py-1.5 rounded-xl bg-gold/20 text-gold-deep border border-gold hover:bg-gold hover:text-ink text-xs font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1"
+                        >
+                          <Plus className="size-3.5" />
+                          Add ML
+                        </button>
+                      </div>
 
+                      {/* Quick Presets Pills */}
+                      <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                        <span className="text-[10px] text-muted-foreground font-medium mr-1">Quick Add:</span>
+                        {["3ml", "6ml", "10ml", "12ml", "30ml", "50ml", "100ml", "200ml"].map((quickMl) => {
+                          const isAlreadyAdded = (editingProduct.availableSizes || []).includes(quickMl);
+                          return (
+                            <button
+                              key={quickMl}
+                              type="button"
+                              onClick={() => handleAddEditCustomMl(quickMl)}
+                              className={`px-2 py-0.5 rounded-full border text-[10px] transition-colors cursor-pointer ${
+                                isAlreadyAdded
+                                  ? "bg-gold/15 text-gold-deep border-gold/40 font-semibold"
+                                  : "border-border bg-background text-muted-foreground hover:text-ink hover:border-gold"
+                              }`}
+                            >
+                              {isAlreadyAdded ? `✓ ${quickMl}` : `+ ${quickMl}`}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Active Size Checkboxes Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                      {flaconSizesList.map((size) => {
+                      {displaySizesForEdit.map((size) => {
                         const isChecked = editingProduct.availableSizes 
                           ? editingProduct.availableSizes.includes(size.label) || editingProduct.availableSizes.includes(size.id)
                           : size.isEnabled;
 
                         return (
-                          <label
+                          <div
                             key={size.id}
-                            className={`p-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition-all ${
+                            className={`p-2.5 rounded-xl border flex items-center justify-between gap-1.5 transition-all ${
                               isChecked
                                 ? "border-gold bg-card shadow-xs ring-1 ring-gold/40"
                                 : "border-border bg-background/50 opacity-60"
                             }`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                const current = editingProduct.availableSizes || flaconSizesList.filter(s => s.isEnabled).map(s => s.label);
-                                const next = e.target.checked
-                                  ? [...current, size.label]
-                                  : current.filter((l) => l !== size.label && l !== size.id);
-                                setEditingProduct({ ...editingProduct, availableSizes: next });
-                              }}
-                              className="size-4 accent-gold cursor-pointer"
-                            />
-                            <div className="min-w-0">
-                              <p className="font-serif text-xs font-bold text-ink truncate">{size.label}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{size.sub}</p>
-                            </div>
-                          </label>
+                            <label className="flex items-center gap-2 cursor-pointer min-w-0 flex-1">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const current = editingProduct.availableSizes || displaySizesForEdit.filter(s => s.isEnabled).map(s => s.label);
+                                  const next = e.target.checked
+                                    ? [...current, size.label]
+                                    : current.filter((l) => l !== size.label && l !== size.id);
+                                  setEditingProduct({ ...editingProduct, availableSizes: next });
+                                }}
+                                className="size-4 accent-gold cursor-pointer shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <p className="font-serif text-xs font-bold text-ink truncate">{size.label}</p>
+                                <p className="text-[10px] text-muted-foreground truncate">{size.sub}</p>
+                              </div>
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveEditSizeOption(size.label)}
+                              title={`Remove ${size.label}`}
+                              className="text-muted-foreground/60 hover:text-destructive p-1 rounded-md transition-colors cursor-pointer shrink-0"
+                            >
+                              <X className="size-3" />
+                            </button>
+                          </div>
                         );
                       })}
+                    </div>
+
+                    {/* Direct Comma-Separated Text Input */}
+                    <div className="pt-2 border-t border-border/40">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+                          Directly Edit All Sizes (Text):
+                        </label>
+                        <span className="text-[10px] text-muted-foreground">Comma-separated</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={(editingProduct.availableSizes || []).join(", ")}
+                        onChange={(e) => {
+                          const parsed = e.target.value
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean);
+                          setEditingProduct({ ...editingProduct, availableSizes: parsed });
+                        }}
+                        placeholder="e.g. 6ml, 12ml, 50ml, 100ml"
+                        className="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                      />
                     </div>
                   </div>
                 </div>
