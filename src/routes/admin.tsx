@@ -7354,20 +7354,46 @@ function AdminDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                      Fragrance Family
-                    </label>
-                    <select
-                      value={newProduct.fragranceFamily}
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-medium">
+                        Fragrance Family
+                      </label>
+                      <span className="text-[10px] text-muted-foreground">Editable Text</span>
+                    </div>
+                    <input
+                      type="text"
+                      list="fragrance-family-suggestions"
+                      placeholder="e.g. Woody Oud, Floral Taif, Gourmand Vanilla..."
+                      value={newProduct.fragranceFamily || ""}
                       onChange={(e) => setNewProduct({ ...newProduct, fragranceFamily: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                    >
-                      <option value="Woody Oud">Woody Oud</option>
-                      <option value="Floral Amber">Floral Amber</option>
-                      <option value="Fresh Citrus">Fresh Citrus</option>
-                      <option value="Oriental Spice">Oriental Spice</option>
-                      <option value="Leather Smoke">Leather Smoke</option>
-                    </select>
+                    />
+                    <datalist id="fragrance-family-suggestions">
+                      <option value="Woody Oud" />
+                      <option value="Floral Amber" />
+                      <option value="Fresh Citrus" />
+                      <option value="Oriental Spice" />
+                      <option value="Leather Smoke" />
+                      <option value="Gourmand Vanilla" />
+                      <option value="Aquatic Fresh" />
+                      <option value="Chypre Floral" />
+                    </datalist>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {["Woody Oud", "Floral Amber", "Fresh Citrus", "Oriental Spice", "Leather Smoke", "Gourmand"].map((fam) => (
+                        <button
+                          key={fam}
+                          type="button"
+                          onClick={() => setNewProduct({ ...newProduct, fragranceFamily: fam })}
+                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+                            newProduct.fragranceFamily === fam
+                              ? "bg-gold/20 border-gold text-gold-deep font-bold"
+                              : "border-border bg-pearl/40 text-muted-foreground hover:text-ink"
+                          }`}
+                        >
+                          {fam}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div>
@@ -7744,20 +7770,46 @@ function AdminDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                      Fragrance Family
-                    </label>
-                    <select
-                      value={editingProduct.fragranceFamily || "Woody Oud"}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, fragranceFamily: e.target.value as any })}
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
+                        Fragrance Family
+                      </label>
+                      <span className="text-[10px] text-muted-foreground">Editable Text</span>
+                    </div>
+                    <input
+                      type="text"
+                      list="fragrance-family-suggestions-edit"
+                      placeholder="e.g. Woody Oud, Floral Taif, Gourmand Vanilla..."
+                      value={editingProduct.fragranceFamily || ""}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, fragranceFamily: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                    >
-                      <option value="Woody Oud">Woody Oud</option>
-                      <option value="Floral Amber">Floral Amber</option>
-                      <option value="Fresh Citrus">Fresh Citrus</option>
-                      <option value="Oriental Spice">Oriental Spice</option>
-                      <option value="Leather Smoke">Leather Smoke</option>
-                    </select>
+                    />
+                    <datalist id="fragrance-family-suggestions-edit">
+                      <option value="Woody Oud" />
+                      <option value="Floral Amber" />
+                      <option value="Fresh Citrus" />
+                      <option value="Oriental Spice" />
+                      <option value="Leather Smoke" />
+                      <option value="Gourmand Vanilla" />
+                      <option value="Aquatic Fresh" />
+                      <option value="Chypre Floral" />
+                    </datalist>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {["Woody Oud", "Floral Amber", "Fresh Citrus", "Oriental Spice", "Leather Smoke", "Gourmand"].map((fam) => (
+                        <button
+                          key={fam}
+                          type="button"
+                          onClick={() => setEditingProduct({ ...editingProduct, fragranceFamily: fam })}
+                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+                            editingProduct.fragranceFamily === fam
+                              ? "bg-gold/20 border-gold text-gold-deep font-bold"
+                              : "border-border bg-pearl/40 text-muted-foreground hover:text-ink"
+                          }`}
+                        >
+                          {fam}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div>

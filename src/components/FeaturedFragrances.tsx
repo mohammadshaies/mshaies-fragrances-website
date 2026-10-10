@@ -367,26 +367,45 @@ export function FeaturedFragrances({
                   Fragrance Family Accord
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    { id: "All", label: "All Families" },
-                    { id: "Woody Oud", label: "🪵 Woody Oud" },
-                    { id: "Floral Amber", label: "🌹 Floral Amber" },
-                    { id: "Fresh Citrus", label: "🍋 Fresh Citrus" },
-                    { id: "Oriental Spice", label: "✨ Oriental Spice" },
-                    { id: "Leather Smoke", label: "🔥 Leather Smoke" },
-                  ].map((fam) => (
-                    <button
-                      key={fam.id}
-                      onClick={() => setSelectedFamily(fam.id)}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                        selectedFamily === fam.id
-                          ? "bg-ink text-gold font-bold shadow-xs"
-                          : "bg-background text-muted-foreground hover:text-ink border border-border/60"
-                      }`}
-                    >
-                      {fam.label}
-                    </button>
-                  ))}
+                  {(() => {
+                    const presetMap: Record<string, string> = {
+                      "Woody Oud": "🪵 Woody Oud",
+                      "Floral Amber": "🌹 Floral Amber",
+                      "Fresh Citrus": "🍋 Fresh Citrus",
+                      "Oriental Spice": "✨ Oriental Spice",
+                      "Leather Smoke": "🔥 Leather Smoke",
+                    };
+                    const productFamilies = Array.from(
+                      new Set(
+                        products
+                          .map((p) => p.fragranceFamily)
+                          .filter((f): f is string => Boolean(f && f.trim()))
+                      )
+                    );
+                    const allKeys = Array.from(
+                      new Set([...Object.keys(presetMap), ...productFamilies])
+                    );
+                    const list = [
+                      { id: "All", label: "All Families" },
+                      ...allKeys.map((k) => ({
+                        id: k,
+                        label: presetMap[k] || `✨ ${k}`,
+                      })),
+                    ];
+                    return list.map((fam) => (
+                      <button
+                        key={fam.id}
+                        onClick={() => setSelectedFamily(fam.id)}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                          selectedFamily === fam.id
+                            ? "bg-ink text-gold font-bold shadow-xs"
+                            : "bg-background text-muted-foreground hover:text-ink border border-border/60"
+                        }`}
+                      >
+                        {fam.label}
+                      </button>
+                    ));
+                  })()}
                 </div>
               </div>
 

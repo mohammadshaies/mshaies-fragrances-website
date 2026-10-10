@@ -59,7 +59,7 @@ export type Product = {
   seasonSuitability?: ("Summer" | "Winter" | "All-Season" | "Autumn" | "Spring")[];
   occasionSuitability?: ("Wedding / Barat" | "Daily Office" | "Evening Gala" | "Jummah / Spiritual")[];
   inspiredBy?: string;
-  fragranceFamily?: "Woody Oud" | "Floral Amber" | "Fresh Citrus" | "Oriental Spice" | "Leather Smoke";
+  fragranceFamily?: string;
   layeringPairId?: string;
   samplePrice?: number;
   batchNumber?: string;
