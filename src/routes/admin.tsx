@@ -6326,7 +6326,7 @@ function AdminDashboard() {
                     value={settingsForm.whatsappNumber}
                     onChange={(e) => setSettingsForm({ ...settingsForm, whatsappNumber: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                    placeholder="+923390001826"
+                    placeholder="+923390001829"
                   />
                 </div>
 
@@ -6440,10 +6440,10 @@ function AdminDashboard() {
                     </label>
                     <input
                       type="text"
-                      value={settingsForm.paymentWhatsapp || "+923325568922"}
+                      value={settingsForm.paymentWhatsapp || "+923390001829"}
                       onChange={(e) => setSettingsForm({ ...settingsForm, paymentWhatsapp: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none font-mono"
-                      placeholder="+923325568922"
+                      placeholder="+923390001829"
                     />
                   </div>
                 </div>

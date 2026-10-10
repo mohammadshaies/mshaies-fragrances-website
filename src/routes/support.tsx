@@ -93,7 +93,7 @@ function SupportPage() {
         {/* Quick Contact Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-10 sm:mb-16">
           <a
-            href="https://wa.me/923390001826"
+            href="https://wa.me/923390001829"
             target="_blank"
             rel="noopener noreferrer"
             className="p-6 rounded-3xl border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 transition-all text-center flex flex-col items-center group"
@@ -104,7 +104,7 @@ function SupportPage() {
             <h3 className="font-serif text-xl text-ink">WhatsApp Concierge</h3>
             <p className="text-xs text-muted-foreground mt-1">Instant order assistance & advice</p>
             <span className="text-xs text-emerald-600 font-semibold mt-3 flex items-center gap-1">
-              Chat on WhatsApp (+92 339 0001826) →
+              Chat on WhatsApp (+92 339 0001829) →
             </span>
           </a>
 

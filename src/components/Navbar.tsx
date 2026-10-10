@@ -132,7 +132,7 @@ export function Navbar() {
                   Bag ({count})
                 </button>
                 <a
-                  href="https://wa.me/923390001826?text=Assalam-o-Alaikum!%20I%20would%20like%20to%20inquire%20about%20M.shaies%20fragrances."
+                  href="https://wa.me/923390001829?text=Assalam-o-Alaikum!%20I%20would%20like%20to%20inquire%20about%20M.shaies%20fragrances."
                   target="_blank"
                   rel="noreferrer"
                   className="flex-1 py-3 rounded-full bg-emerald-600 text-white text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 shadow-xs hover:bg-emerald-700 transition-colors min-h-[44px]"

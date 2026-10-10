@@ -670,7 +670,7 @@ function CheckoutPage() {
                 const accountTitle = settings?.paymentAccountTitle || "Muhammad Shees";
                 const accountNumber = settings?.paymentAccountNumber || "03325568922";
                 const accountFormatted = settings?.paymentAccountFormatted || "0332 5568922";
-                const cleanWhatsApp = (settings?.paymentWhatsapp || "+923325568922").replace(/[^0-9]/g, "");
+                const cleanWhatsApp = (settings?.paymentWhatsapp || "+923390001829").replace(/[^0-9]/g, "");
 
                 const whatsappMsg = encodeURIComponent(
                   `Assalam-o-Alaikum Muhammad Shees! I am placing an order on M.Shaies Fragrances for ${formatPKR(finalTotal)} via ${gatewayData.title}.\nCustomer: ${name || 'Customer'}\nContact: ${phone || 'N/A'}\n${transactionId ? `TID: ${transactionId}` : 'I am sharing the payment receipt screenshot here.'}`
@@ -824,7 +824,7 @@ function CheckoutPage() {
                       <div className="flex items-center gap-2">
                         <MessageCircle className="size-4 text-emerald-600 shrink-0" />
                         <span className="text-[11px] text-ink">
-                          Need instant confirmation? Send screenshot to <strong>{accountTitle}</strong> ({accountFormatted}):
+                          Need instant confirmation? Send screenshot on WhatsApp (<strong>+92 339 0001829</strong>):
                         </span>
                       </div>
                       <a

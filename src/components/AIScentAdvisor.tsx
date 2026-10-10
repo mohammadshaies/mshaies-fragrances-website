@@ -119,7 +119,7 @@ MAISON IDENTITY & VALUES:
 - M.shaies crafts pure alcohol-free attars and high-projection extrait de parfums (35% oil concentration) in Lahore, Pakistan.
 - Free nationwide shipping across Pakistan on orders over ₨ 5,000 via TCS and Leopards Express (2 to 4 business days).
 - Every order includes a complimentary 3ml discovery sampler flacon.
-- Official WhatsApp Concierge: +92 339 0001826 (https://wa.me/923390001826).
+- Official WhatsApp Concierge: +92 339 0001829 (https://wa.me/923390001829).
 - Official Promo Code: "${settings.announcementCode || "LUXE15"}" for 15% discount.
 - Payment Options: Cash on Delivery (COD), JazzCash, Easypaisa, NayaPay, and Bank Transfer.
 - 7-Day hassle-free return and exchange policy on sealed bottles.
@@ -164,7 +164,7 @@ ${catalogContext}`;
         },
         actionLink: {
           text: "Open WhatsApp Tracking Support",
-          href: `https://wa.me/923390001826?text=${encodeURIComponent(`Assalam-o-Alaikum! Please provide tracking status for my order ${found.id}`)}`,
+          href: `https://wa.me/923390001829?text=${encodeURIComponent(`Assalam-o-Alaikum! Please provide tracking status for my order ${found.id}`)}`,
           isExternal: true,
         },
       };
@@ -174,8 +174,8 @@ ${catalogContext}`;
       return {
         replyText: `I checked our active dispatch ledger for "${searchId}", but couldn't find a matching record. Please verify your Order ID (e.g. MSH-1001) or send your phone number to our WhatsApp Concierge for instant lookup.`,
         actionLink: {
-          text: "WhatsApp Tracking Helpline (+92 339 0001826)",
-          href: `https://wa.me/923390001826?text=${encodeURIComponent(`Assalam-o-Alaikum, I need help tracking order ${searchId}`)}`,
+          text: "WhatsApp Tracking Helpline (+92 339 0001829)",
+          href: `https://wa.me/923390001829?text=${encodeURIComponent(`Assalam-o-Alaikum, I need help tracking order ${searchId}`)}`,
           isExternal: true,
         },
       };
@@ -191,11 +191,11 @@ ${catalogContext}`;
     // 1. WhatsApp or Direct Contact Request
     if (lower.includes("whatsapp") || lower.includes("phone") || lower.includes("contact") || lower.includes("number") || lower.includes("human") || lower.includes("call")) {
       return {
-        replyText: "You can speak directly with our Master Perfumer and Customer Concierge on WhatsApp at **+92 339 0001826**. We assist with bespoke orders, bulk wedding gifting, and immediate nationwide tracking!",
+        replyText: "You can speak directly with our Master Perfumer and Customer Concierge on WhatsApp at **+92 339 0001829**. We assist with bespoke orders, bulk wedding gifting, and immediate nationwide tracking!",
         matchedProducts: [],
         actionLink: {
-          text: "Chat on WhatsApp (+92 339 0001826)",
-          href: "https://wa.me/923390001826?text=Assalam-o-Alaikum!%20I%20would%20like%20perfume%20advice%20from%20the%20Maison.",
+          text: "Chat on WhatsApp (+92 339 0001829)",
+          href: "https://wa.me/923390001829?text=Assalam-o-Alaikum!%20I%20would%20like%20perfume%20advice%20from%20the%20Maison.",
           isExternal: true,
         },
         quickReplies: ["Tell me about pure attars", "Longest lasting perfume", "Wedding recommendations"],
@@ -359,7 +359,7 @@ ${catalogContext}`;
         return {
           replyText: reply,
           matchedProducts: matchedProducts.length > 0 ? matchedProducts : products.slice(0, 2),
-          quickReplies: ["Tell me more", "Longest lasting fragrance", "Chat on WhatsApp (+92 339 0001826)"],
+          quickReplies: ["Tell me more", "Longest lasting fragrance", "Chat on WhatsApp (+92 339 0001829)"],
         };
       }
     } catch (e) {
@@ -523,7 +523,7 @@ ${catalogContext}`;
                 <div className="flex items-center gap-1.5 shrink-0">
                   {/* WhatsApp Direct Escalation Button */}
                   <a
-                    href="https://wa.me/923390001826?text=Assalam-o-Alaikum!%20I%20would%20like%20perfume%20assistance%20from%20M.shaies."
+                    href="https://wa.me/923390001829?text=Assalam-o-Alaikum!%20I%20would%20like%20perfume%20assistance%20from%20M.shaies."
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-2.5 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider hidden xs:flex items-center gap-1 transition-colors"

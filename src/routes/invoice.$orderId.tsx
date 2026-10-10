@@ -122,15 +122,15 @@ function InvoicePage() {
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-1 pl-8">
               <a
-                href={`https://wa.me/923325568922?text=${encodeURIComponent(
-                  `Assalam-o-Alaikum Muhammad Shees! Here is the payment receipt screenshot for M.Shaies Order #${order.id} of ${formatPKR(order.total)} via ${order.paymentMethod.toUpperCase()}.${order.transactionId ? ` TID: ${order.transactionId}` : ''}`
+                href={`https://wa.me/923390001829?text=${encodeURIComponent(
+                  `Assalam-o-Alaikum! Here is the payment receipt screenshot for M.Shaies Order #${order.id} of ${formatPKR(order.total)} via ${order.paymentMethod.toUpperCase()}.${order.transactionId ? ` TID: ${order.transactionId}` : ''}`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5 transition-colors shadow-sm"
               >
                 <MessageCircle className="size-3.5" />
-                Send Receipt Screenshot to Muhammad Shees (+92 332 5568922)
+                Send Receipt Screenshot on WhatsApp (+92 339 0001829)
                 <ExternalLink className="size-3" />
               </a>
             </div>
@@ -324,12 +324,12 @@ function InvoicePage() {
           <p className="mt-1">
             For shipping updates or order modifications, contact WhatsApp concierge at{" "}
             <a
-              href="https://wa.me/923325568922"
+              href="https://wa.me/923390001829"
               target="_blank"
               rel="noopener noreferrer"
               className="text-emerald-600 font-bold hover:underline inline-flex items-center gap-1"
             >
-              +92 332 5568922 ↗
+              +92 339 0001829 ↗
             </a>
           </p>
         </div>

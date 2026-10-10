@@ -111,13 +111,13 @@ export function Footer() {
               </li>
               <li>
                 <a 
-                  href="https://wa.me/923390001826" 
+                  href="https://wa.me/923390001829" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="text-emerald-600 hover:underline font-medium inline-flex items-center gap-1.5"
                 >
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  WhatsApp (+92 339 0001826)
+                  WhatsApp (+92 339 0001829)
                 </a>
               </li>
             </ul>
@@ -168,11 +168,11 @@ export function Footer() {
                 </svg>
               </a>
               <a
-                href="https://wa.me/923390001826"
+                href="https://wa.me/923390001829"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="size-8 rounded-full border border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10 grid place-items-center transition-all shadow-xs"
-                title="Chat on WhatsApp (+92 339 0001826)"
+                title="Chat on WhatsApp (+92 339 0001829)"
                 aria-label="WhatsApp"
               >
                 <svg className="size-3.5 fill-current" viewBox="0 0 24 24">

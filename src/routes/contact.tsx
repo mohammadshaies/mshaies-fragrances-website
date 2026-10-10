@@ -81,11 +81,11 @@ function Contact() {
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-600 font-bold">Official WhatsApp & Call</p>
                   <div className="flex flex-wrap items-center gap-2 gap-y-1.5 mt-1">
-                    <a href="tel:+923390001826" className="text-sm font-semibold text-ink hover:text-gold-deep transition-colors">
-                      +92 339 0001826
+                    <a href="tel:+923390001829" className="text-sm font-semibold text-ink hover:text-gold-deep transition-colors">
+                      +92 339 0001829
                     </a>
                     <a
-                      href="https://wa.me/923390001826"
+                      href="https://wa.me/923390001829"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-500/25 transition-colors"
@@ -166,7 +166,7 @@ function Contact() {
                   </a>
 
                   <a
-                    href="https://wa.me/923390001826"
+                    href="https://wa.me/923390001829"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-3 rounded-2xl border border-emerald-500/30 hover:border-emerald-500 bg-emerald-500/5 flex items-center gap-2.5 transition-all group"
@@ -178,7 +178,7 @@ function Contact() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-xs text-ink truncate">WhatsApp</p>
-                      <p className="text-[10px] text-emerald-600 font-medium truncate">+92 339 0001826</p>
+                      <p className="text-[10px] text-emerald-600 font-medium truncate">+92 339 0001829</p>
                     </div>
                   </a>
                 </div>

@@ -135,7 +135,7 @@ const ORGANIZATION_JSON_LD = {
       logo: "https://mshaies.com/logo-wordmark.png",
       image: "https://mshaies.com/logo-wordmark.png",
       description: "Purveyor of artisanal pure attars, concentrated extrait de parfums, and horological timepieces in Pakistan.",
-      telephone: "+923390001826",
+      telephone: "+923390001829",
       email: "concierge@mshaies.com",
       priceRange: "₨₨₨",
       address: {
@@ -153,7 +153,7 @@ const ORGANIZATION_JSON_LD = {
       },
       sameAs: [
         "https://www.instagram.com/mshaiesfragrances",
-        "https://wa.me/923390001826",
+        "https://wa.me/923390001829",
       ],
       currenciesAccepted: "PKR",
       paymentAccepted: "Cash on Delivery, Bank Transfer, Online Card",
