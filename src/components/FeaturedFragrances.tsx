@@ -124,9 +124,8 @@ export function FeaturedFragrances({
         {/* =================================================================== */}
         {/* SECTION HEADER                                                      */}
         {/* =================================================================== */}
-        <div className="text-center max-w-2xl mx-auto mb-4 sm:mb-8">
-          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.25em] sm:tracking-[0.3em] text-gold-deep mb-1.5 sm:mb-3 flex items-center justify-center gap-1.5 font-semibold">
-            <Sparkles className="size-3 sm:size-3.5" />
+        <div className="text-center max-w-2xl mx-auto mb-4 sm:mb-8 px-2">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-gold-deep mb-1.5 sm:mb-3 font-semibold leading-relaxed">
             {subtitle}
           </p>
           <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl tracking-tight text-ink">
