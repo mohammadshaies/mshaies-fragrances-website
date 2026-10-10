@@ -69,7 +69,7 @@ function About() {
               Formulated Specifically for the Warmth & Galas of Pakistan
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-              Standard commercial perfumes are blended for cool European climates, fading away within hours in Karachi's humidity or Lahore's bustling summer evenings.
+              Standard commercial perfumes are blended for cool European climates, fading away within hours in humid weather and warm summer evenings.
             </p>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
               We took a radically different path: blending aged Cambodian agarwood, dawn-harvested Turkish Rosa Damascena, and golden ambers at an intense <strong>35% oil concentration</strong>. The result is a scent trail that endures through entire wedding ceremonies, executive boardrooms, and intimate evenings.

@@ -203,7 +203,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
           <tr>
             <td style="background-color: #12100e; padding: 32px 30px; text-align: center; border-bottom: 3px solid #d4af37;">
               <h1 style="margin: 0; font-family: Georgia, serif; font-size: 26px; letter-spacing: 3px; color: #f5eedc; text-transform: uppercase;">M.SHAIES</h1>
-              <p style="margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; color: #d4af37; text-transform: uppercase;">Haute Parfumerie · Lahore, Pakistan</p>
+              <p style="margin: 6px 0 0; font-size: 11px; letter-spacing: 2px; color: #d4af37; text-transform: uppercase;">Haute Parfumerie · In Stock & Dispatched Nationwide</p>
               <div style="margin-top: 16px; display: inline-block; padding: 4px 16px; background-color: rgba(212,175,55,0.15); border: 1px solid #d4af37; border-radius: 20px;">
                 <span style="font-size: 11px; font-weight: bold; letter-spacing: 1px; color: #d4af37; text-transform: uppercase;">Official Tax Invoice & Order Receipt</span>
               </div>
@@ -217,7 +217,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
                 Assalam-o-Alaikum, ${order.customerName}!
               </h2>
               <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #57534e;">
-                Thank you for patronizing <strong>M.shaies Fragrances</strong>. Your signature order <strong style="color: #111;">#${order.id}</strong> has been received and is being prepared with artisanal care at our atelier in Lahore.
+                Thank you for patronizing <strong>M.shaies Fragrances</strong>. Your signature order <strong style="color: #111;">#${order.id}</strong> has been received and is prepared with artisanal care at our atelier. All items are in stock and ready for prompt courier dispatch.
               </p>
             </td>
           </tr>
@@ -360,7 +360,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
           <tr>
             <td style="background-color: #faf7f2; border-top: 1px solid #e8e2d5; padding: 24px 30px; text-align: center; font-size: 11px; color: #78716c; line-height: 1.6;">
               <p style="margin: 0 0 6px;">
-                <strong>M.shaies Haute Parfumerie</strong> · Gulberg III, Lahore, Pakistan · Delivering Nationwide
+                <strong>M.shaies Haute Parfumerie</strong> · 100% In Stock · Delivering Nationwide Across Pakistan
               </p>
               <p style="margin: 0;">
                 WhatsApp Helpline: <a href="https://wa.me/923390001829" style="color: #15803d; font-weight: bold; text-decoration: none;">+92 339 0001829</a> · Email: <a href="mailto:${ADMIN_EMAIL}" style="color: #1c1917; text-decoration: none;">${ADMIN_EMAIL}</a>
@@ -450,7 +450,7 @@ export function generateAdminOrderAlertHtml(order: OrderEmailData): string {
           </tr>
           <tr>
             <td><strong>Assigned Courier:</strong></td>
-            <td>${order.courierName || (order.city.toLowerCase() === "lahore" ? "Rider Hand Delivery" : "TCS Express")}</td>
+            <td>${order.courierName || "TCS Express"}</td>
           </tr>
         </table>
       </td>

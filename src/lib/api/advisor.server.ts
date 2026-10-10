@@ -68,7 +68,7 @@ async function fetchOllamaReply(
 }
 
 const AUTHORITATIVE_SYSTEM_PROMPT =
-  "You are Sentry, the Master Scent Sommelier & Luxury Concierge for M.shaies Haute Parfumerie in Lahore, Pakistan.\n" +
+  "You are Sentry, the Master Scent Sommelier & Luxury Concierge for M.shaies Haute Parfumerie in Pakistan. All items are in stock and ready to dispatch.\n" +
   "You assist clients with bespoke attar choices, Extrait perfumes, olfactory notes breakdown, and gift pairings.\n" +
   "Tone: Warm, dignified, poetic, knowledgeable, hospitable (Pakistani luxury fragrance house etiquette). Provide elegant, helpful guidance in 2-4 sentences.";
 
@@ -122,7 +122,7 @@ export const chatAdvisorServerFn = createServerFn({ method: "POST" })
                   role: "user",
                   parts: [
                     {
-                      text: `You are Sentry, the Master Scent Sommelier & Luxury Concierge for M.shaies Haute Parfumerie in Lahore, Pakistan.
+                      text: `You are Sentry, the Master Scent Sommelier & Luxury Concierge for M.shaies Haute Parfumerie in Pakistan. All items are in stock and ready to dispatch nationwide.
 You assist clients with bespoke attar choices, Extrait perfumes, notes breakdown, and gift pairings.
 Tone: Warm, dignified, poetic, knowledgeable, hospitable (Pakistani luxury fragrance house etiquette).
 

@@ -156,7 +156,7 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
       id: "slide-shipping",
       tag: "Nationwide Expedited Logistics",
       title: "Free Express Shipping Across All Pakistan On Orders Over ₨ 5,000",
-      subtitle: "Hand-poured in Lahore and safely dispatched via TCS Express & Leopards with luxury packaging seal.",
+      subtitle: "100% in stock and safely dispatched via TCS Express & Leopards with luxury packaging seal.",
       code: "FREESHIP",
       buttonText: "Shop Collection",
       linkUrl: "/shop",

@@ -4192,8 +4192,8 @@ function AdminDashboard() {
                     <div className="p-5 rounded-3xl border border-border/80 bg-card space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-border">
                         <div>
-                          <h4 className="font-serif text-base text-ink font-bold">Lahore Local City Rate</h4>
-                          <p className="text-[10px] text-muted-foreground">Same-day rider dispatch from Gulberg studio</p>
+                          <h4 className="font-serif text-base text-ink font-bold">Local City Rider Rate</h4>
+                          <p className="text-[10px] text-muted-foreground">Same-day rider dispatch for local city deliveries</p>
                         </div>
                         <input
                           type="checkbox"
@@ -4205,7 +4205,7 @@ function AdminDashboard() {
 
                       <div>
                         <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
-                          Lahore Rider Fee (PKR)
+                          Local Rider Fee (PKR)
                         </label>
                         <div className="relative">
                           <span className="absolute left-3 top-2 text-xs text-muted-foreground font-serif">₨</span>
@@ -4285,8 +4285,8 @@ function AdminDashboard() {
 
                       <div className="p-3 rounded-2xl bg-pearl border border-border flex items-center justify-between">
                         <div>
-                          <p className="font-semibold text-ink">Lahore Local Bike Dispatch</p>
-                          <p className="text-[10px] text-muted-foreground">Same-Day Studio Rider</p>
+                          <p className="font-semibold text-ink">Local City Bike Dispatch</p>
+                          <p className="text-[10px] text-muted-foreground">Same-Day Local Rider</p>
                         </div>
                         <span className="font-serif font-bold text-ink">{formatPKR(settingsForm.lahoreLocalFee || 150)}</span>
                       </div>
@@ -4826,7 +4826,7 @@ function AdminDashboard() {
                         <option value="PostEx">PostEx Courier</option>
                         <option value="M&P Express">M&P Express Logistics</option>
                         <option value="Call Courier">Call Courier</option>
-                        <option value="Rider Hand Delivery">Rider Hand Delivery (Karachi/Lahore)</option>
+                        <option value="Rider Hand Delivery">Rider Hand Delivery (Local)</option>
                       </select>
                     </div>
 
@@ -7093,7 +7093,7 @@ function AdminDashboard() {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Lahore Studio / Nationwide"
+                      placeholder="e.g. Remote / Nationwide"
                       value={jobForm.location}
                       onChange={(e) => setJobForm({ ...jobForm, location: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"

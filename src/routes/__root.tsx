@@ -140,16 +140,7 @@ const ORGANIZATION_JSON_LD = {
       priceRange: "₨₨₨",
       address: {
         "@type": "PostalAddress",
-        streetAddress: "Gulberg III",
-        addressLocality: "Lahore",
-        addressRegion: "Punjab",
-        postalCode: "54000",
         addressCountry: "PK",
-      },
-      geo: {
-        "@type": "GeoCoordinates",
-        latitude: "31.5204",
-        longitude: "74.3587",
       },
       sameAs: [
         "https://www.instagram.com/mshaiesfragrances",

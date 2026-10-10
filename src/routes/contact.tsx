@@ -8,7 +8,7 @@ export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
       { title: "Contact Us — M.shaies Fragrances" },
-      { name: "description", content: "Get in touch with the M.shaies Maison. Send us an inquiry or visit our studio in Lahore, Pakistan." }
+      { name: "description", content: "Get in touch with M.shaies Maison. Send us an inquiry or reach our concierge helpline." }
     ]
   }),
   component: Contact,
@@ -101,9 +101,9 @@ function Contact() {
                   <MapPin className="size-4 text-gold-deep" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-gold-deep font-semibold">Lahore Studio</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-gold-deep font-semibold">Customer Concierge</p>
                   <p className="text-sm text-ink leading-relaxed mt-1">
-                    Gulberg III, Lahore, Pakistan · Delivering Nationwide
+                    Delivering Nationwide Across Pakistan · 100% In Stock
                   </p>
                 </div>
               </div>

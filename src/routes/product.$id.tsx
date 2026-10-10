@@ -379,7 +379,9 @@ function ProductDetail() {
                   M.shaies Maison
                 </span>
                 <span className="size-1 rounded-full bg-gold" />
-                <span className="text-sm text-muted-foreground font-medium">Hand-Poured in Lahore</span>
+                <span className="text-sm text-emerald-600 font-semibold flex items-center gap-1">
+                  In Stock
+                </span>
               </div>
 
               <h1 className="font-serif text-2xl xs:text-3xl sm:text-5xl lg:text-6xl text-ink mt-2 tracking-tight">
@@ -422,7 +424,7 @@ function ProductDetail() {
                 ) : isLowStock ? (
                   <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm uppercase tracking-wider font-semibold px-3.5 py-1.5 rounded-full bg-amber-500/15 text-amber-600 border border-amber-500/30 animate-pulse">
                     <Flame className="size-4" />
-                    Only {product.stock} bottles left in Lahore studio
+                    Only {product.stock} bottles left in stock
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm uppercase tracking-wider font-semibold px-3.5 py-1.5 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">

@@ -476,11 +476,11 @@ function CheckoutPage() {
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold text-ink">Lahore Same-Day Rider Delivery</span>
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-gold/30 text-ink font-bold uppercase">Local Studio</span>
+                        <span className="text-sm font-semibold text-ink">Same-Day Local Rider Delivery</span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-gold/30 text-ink font-bold uppercase">In Stock</span>
                       </div>
                       <p className="text-[11px] font-normal text-muted-foreground">
-                        Direct bike courier from Gulberg III Studio
+                        Direct express bike rider for prompt local delivery
                       </p>
                     </div>
                     <span className="font-serif text-xs font-bold text-ink shrink-0 ml-2">
@@ -1041,7 +1041,7 @@ function CheckoutPage() {
                     {shippingMethod === "express" 
                       ? "VIP Express Air Dispatch" 
                       : shippingMethod === "lahoreLocal" 
-                        ? "Lahore Same-Day Rider" 
+                        ? "Same-Day Local Rider" 
                         : "Nationwide Courier Delivery"}
                   </span>
                   <span>{shippingFee === 0 ? <strong className="text-emerald-600 uppercase text-[11px]">Free Shipping</strong> : formatPKR(shippingFee)}</span>

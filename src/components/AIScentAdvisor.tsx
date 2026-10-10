@@ -116,7 +116,7 @@ export function AIScentAdvisor() {
   const systemPrompt = `You are Sentry, the Master Scent Sommelier and Senior Luxury Concierge at M.shaies Fragrances in Pakistan. Your name "Sentry" originates from the art of "Scent" and guarding the royal heritage of fine perfumery.
 
 MAISON IDENTITY & VALUES:
-- M.shaies crafts pure alcohol-free attars and high-projection extrait de parfums (35% oil concentration) in Lahore, Pakistan.
+- M.shaies crafts pure alcohol-free attars and high-projection extrait de parfums (35% oil concentration) in Pakistan. All items are in stock and ready to ship nationwide.
 - Free nationwide shipping across Pakistan on orders over ₨ 5,000 via TCS and Leopards Express (2 to 4 business days).
 - Official WhatsApp Concierge: +92 339 0001829 (https://wa.me/923390001829).
 - Official Promo Code: "${settings.announcementCode || "LUXE15"}" for 15% discount.
@@ -241,7 +241,7 @@ ${catalogContext}`;
         replyText: "All M.shaies Pure Attar Oils are **100% alcohol-free, halal, and pure distillates** of natural agarwood, amber, and florals—following the revered oriental tradition. They are pristine for Jummah, prayers, and daily spiritual peace.",
         matchedProducts: matched.slice(0, 3),
         actionLink: { text: "Explore Pure Halal Attars", to: "/attars" },
-        quickReplies: ["12ml Pure Attars", "Dehn Al Oudh", "Delivery in Lahore"],
+        quickReplies: ["12ml Pure Attars", "Dehn Al Oudh", "Check in stock"],
       };
     }
 

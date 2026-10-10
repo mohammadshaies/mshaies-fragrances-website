@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "M.shaies Fragrances — The Essence of Luxury" },
       {
         property: "og:description",
-        content: "Signature scents that define your presence. Hand-poured in Lahore.",
+        content: "Signature scents that define your presence. In Stock & Ready to Dispatch.",
       },
     ],
   }),

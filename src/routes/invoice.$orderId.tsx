@@ -338,10 +338,10 @@ function InvoicePage() {
                 </div>
                 <p className="text-xs font-serif text-ink">M.shaies Luxury Fragrances & Horology Atelier</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Gulberg III Studio · Lahore, Pakistan · Delivering Nationwide
+                  Delivering Nationwide Across Pakistan · 100% In Stock
                 </p>
                 <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
-                  Reg ID: PK-LHR-2026-MSH · Helpline: +92 339 0001829 · m.shaiesfragrances@gmail.com
+                  Helpline: +92 339 0001829 · m.shaiesfragrances@gmail.com
                 </p>
               </div>
 
@@ -392,7 +392,7 @@ function InvoicePage() {
                   Dispatch Logistics
                 </span>
                 <p className="font-serif text-sm font-bold text-ink">
-                  {order.courierName || (order.city.toLowerCase() === "lahore" ? "Studio Rider Delivery" : "TCS Nationwide Express")}
+                  {order.courierName || "TCS Nationwide Express"}
                 </p>
                 <p className="text-muted-foreground">
                   Transit Time: <strong className="text-ink">2–4 Business Days</strong>
@@ -402,7 +402,7 @@ function InvoicePage() {
                 </p>
                 <div className="pt-2">
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-bold border border-emerald-500/25">
-                    ● Dispatched From Lahore Atelier
+                    ● In Stock & Ready for Courier Dispatch
                   </span>
                 </div>
               </div>
@@ -616,7 +616,7 @@ function InvoicePage() {
                     Official Studio Seal
                   </p>
                   <p className="font-mono text-[10px] text-muted-foreground">
-                    PK-LAHORE-STUDIO-VERIFIED
+                    PK-IN-STOCK-VERIFIED
                   </p>
                   <p className="text-[9px] text-emerald-700 font-semibold mt-0.5">
                     AUTHENTICITY CERTIFIED
