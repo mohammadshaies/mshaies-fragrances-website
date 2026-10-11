@@ -144,6 +144,110 @@ export const DEFAULT_FLACON_SIZES: FlaconSizeOption[] = [
   },
 ];
 
+export type PromotionalSlide = {
+  id: string;
+  tag: string;
+  title: string;
+  subtitle: string;
+  code?: string;
+  buttonText: string;
+  linkUrl: string;
+  icon?: "sparkles" | "truck" | "flame" | "watch" | "gift" | "shield" | "tag" | "gem";
+  imageUrl?: string;
+  isEnabled: boolean;
+};
+
+export const DEFAULT_PROMOTIONAL_SLIDES: PromotionalSlide[] = [
+  {
+    id: "slide-primary",
+    tag: "Maison Exclusive · Limited Festive Release",
+    title: "Free Express Nationwide Delivery With Every Order Over ₨ 5,000",
+    subtitle: "100% Alcohol-Free Pure Attar Oils & 35% Extrait Parfums. Use Code LUXE15 for Flat 15% OFF.",
+    code: "LUXE15",
+    buttonText: "Claim Exclusive Offer →",
+    linkUrl: "/shop",
+    icon: "sparkles",
+    isEnabled: true,
+  },
+  {
+    id: "slide-shipping",
+    tag: "Nationwide Expedited Logistics",
+    title: "Free Express Shipping Across All Pakistan On Orders Over ₨ 5,000",
+    subtitle: "100% in stock and safely dispatched via TCS Express & Leopards with luxury packaging seal.",
+    code: "FREESHIP",
+    buttonText: "Shop Collection",
+    linkUrl: "/shop",
+    icon: "truck",
+    isEnabled: true,
+  },
+  {
+    id: "slide-attars",
+    tag: "Pure Attar Oils · 35% Concentration",
+    title: "Flat 15% OFF Aged Cambodian Oud, Midnight Rose & Royal Ambergris",
+    subtitle: "Alcohol-free concentrated oil flacons engineered for 16+ hours longevity in Pakistan's climate.",
+    code: "LUXE15",
+    buttonText: "Explore Attars",
+    linkUrl: "/attars",
+    icon: "flame",
+    isEnabled: true,
+  },
+  {
+    id: "slide-watches",
+    tag: "Maison Horology & Fine Fragrances",
+    title: "Complimentary Velvet Saffron EDP with Luxury Chronograph Watches",
+    subtitle: "Automatic skeleton movements and sapphire crystal timepieces delivered nationwide.",
+    code: "MAISON1000",
+    buttonText: "View Watches",
+    linkUrl: "/watches",
+    icon: "watch",
+    isEnabled: true,
+  },
+];
+
+export type AnnouncementItem = {
+  id: string;
+  badge: string;
+  text: string;
+  code?: string;
+  linkText: string;
+  linkTo: string;
+  icon?: "tag" | "truck" | "sparkles" | "gift" | "flame" | "shield";
+  isEnabled: boolean;
+};
+
+export const DEFAULT_ANNOUNCEMENT_ITEMS: AnnouncementItem[] = [
+  {
+    id: "item-offer",
+    badge: "Active Offer",
+    text: "Flat 15% OFF on all Pure Attar Oils — Use code",
+    code: "LUXE15",
+    linkText: "Shop Deal",
+    linkTo: "/shop",
+    icon: "tag",
+    isEnabled: true,
+  },
+  {
+    id: "item-shipping",
+    badge: "Nationwide Express",
+    text: "Free Delivery across Pakistan on all orders over ₨ 5,000",
+    code: "AUTOMATIC",
+    linkText: "Explore",
+    linkTo: "/shop",
+    icon: "truck",
+    isEnabled: true,
+  },
+  {
+    id: "item-luxury",
+    badge: "Artisanal Luxury",
+    text: "100% Pure Alcohol-Free Attars & High-Concentration Extrait Parfums",
+    code: "AUTHENTIC",
+    linkText: "Shop Collection",
+    linkTo: "/shop",
+    icon: "sparkles",
+    isEnabled: true,
+  },
+];
+
 export type AuditLogEntry = {
   id: string;
   timestamp: string;
@@ -266,6 +370,9 @@ export type StoreSettings = {
   heroBannerShimmer?: boolean;
   // Flacon & Bottle Size Options Configuration
   flaconSizes?: FlaconSizeOption[];
+  // Dynamic Banner & Announcement Deck
+  promotionalSlides?: PromotionalSlide[];
+  announcementItems?: AnnouncementItem[];
 };
 
 export const DEFAULT_SETTINGS: StoreSettings = {
@@ -316,6 +423,8 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   heroBannerTransitionSpeed: 4500,
   heroBannerShimmer: true,
   flaconSizes: DEFAULT_FLACON_SIZES,
+  promotionalSlides: DEFAULT_PROMOTIONAL_SLIDES,
+  announcementItems: DEFAULT_ANNOUNCEMENT_ITEMS,
 };
 
 export const DEFAULT_CATEGORIES: Category[] = [

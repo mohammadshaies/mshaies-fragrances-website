@@ -44,10 +44,50 @@ function mapSupabaseSettings(s: any) {
     heroBannerLink: s.hero_banner_link ?? s.heroBannerLink ?? "/shop",
     heroBannerAlt: s.hero_banner_alt ?? s.heroBannerAlt ?? "Maison Luxury Promotions",
     heroBannerAnimation: s.hero_banner_animation ?? s.heroBannerAnimation ?? "fadeIn",
+    heroBannerTag: s.hero_banner_tag ?? s.heroBannerTag,
+    heroBannerTitle: s.hero_banner_title ?? s.heroBannerTitle,
+    heroBannerSubtitle: s.hero_banner_subtitle ?? s.heroBannerSubtitle,
+    heroBannerButtonText: s.hero_banner_button_text ?? s.heroBannerButtonText,
+    heroBannerTransitionEffect: s.hero_banner_transition_effect ?? s.heroBannerTransitionEffect,
+    heroBannerTransitionSpeed: s.hero_banner_transition_speed ?? s.heroBannerTransitionSpeed,
+    heroBannerShimmer: s.hero_banner_shimmer ?? s.heroBannerShimmer,
     flaconSizes: Array.isArray(s.flacon_sizes)
       ? s.flacon_sizes
       : (Array.isArray(s.flaconSizes) ? s.flaconSizes : undefined),
+    promotionalSlides: Array.isArray(s.promotional_slides)
+      ? s.promotional_slides
+      : (Array.isArray(s.promotionalSlides) ? s.promotionalSlides : undefined),
+    announcementItems: Array.isArray(s.announcement_items)
+      ? s.announcement_items
+      : (Array.isArray(s.announcementItems) ? s.announcementItems : undefined),
   };
+}
+
+async function enrichBannerConfig(client: any, mapped: any) {
+  try {
+    const { data: bannerLog } = await client
+      .from("audit_logs")
+      .select("details")
+      .eq("id", "system-config-banners")
+      .maybeSingle();
+    if (bannerLog?.details) {
+      const parsed = JSON.parse(bannerLog.details);
+      if (Array.isArray(parsed.promotionalSlides)) mapped.promotionalSlides = parsed.promotionalSlides;
+      if (Array.isArray(parsed.announcementItems)) mapped.announcementItems = parsed.announcementItems;
+      if (parsed.heroBannerActive !== undefined) mapped.heroBannerActive = parsed.heroBannerActive;
+      if (parsed.heroBannerTag !== undefined) mapped.heroBannerTag = parsed.heroBannerTag;
+      if (parsed.heroBannerTitle !== undefined) mapped.heroBannerTitle = parsed.heroBannerTitle;
+      if (parsed.heroBannerSubtitle !== undefined) mapped.heroBannerSubtitle = parsed.heroBannerSubtitle;
+      if (parsed.heroBannerButtonText !== undefined) mapped.heroBannerButtonText = parsed.heroBannerButtonText;
+      if (parsed.heroBannerLink !== undefined) mapped.heroBannerLink = parsed.heroBannerLink;
+      if (parsed.heroBannerImage !== undefined) mapped.heroBannerImage = parsed.heroBannerImage;
+      if (parsed.heroBannerTransitionEffect !== undefined) mapped.heroBannerTransitionEffect = parsed.heroBannerTransitionEffect;
+      if (parsed.heroBannerTransitionSpeed !== undefined) mapped.heroBannerTransitionSpeed = parsed.heroBannerTransitionSpeed;
+      if (parsed.heroBannerShimmer !== undefined) mapped.heroBannerShimmer = parsed.heroBannerShimmer;
+    }
+  } catch (err) {
+    // Ignore
+  }
 }
 
 export const getPublicSettingsServerFn = createServerFn({ method: "GET" })
@@ -62,6 +102,7 @@ export const getPublicSettingsServerFn = createServerFn({ method: "GET" })
               const { data, error } = await client.from("store_settings").select("*").limit(1).maybeSingle();
               if (!error && data) {
                 const mapped = mapSupabaseSettings(data);
+                await enrichBannerConfig(client, mapped);
                 const { adminPin, ...publicSettings } = mapped;
                 return {
                   success: true,
@@ -117,7 +158,9 @@ export const getAdminSettingsServerFn = createServerFn({ method: "POST" })
         if (client) {
           const { data: s, error } = await client.from("store_settings").select("*").limit(1).maybeSingle();
           if (!error && s) {
-            return { success: true, settings: mapSupabaseSettings(s), source: "supabase" };
+            const mapped = mapSupabaseSettings(s);
+            await enrichBannerConfig(client, mapped);
+            return { success: true, settings: mapped, source: "supabase" };
           }
         }
       } catch (err) {
@@ -180,6 +223,23 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
     if (safeSettings.adminPin !== undefined) supabasePayload.admin_pin = safeSettings.adminPin;
     if (safeSettings.flaconSizes !== undefined) supabasePayload.flacon_sizes = safeSettings.flaconSizes;
 
+    const bannerPayload = {
+      promotionalSlides: safeSettings.promotionalSlides,
+      announcementItems: safeSettings.announcementItems,
+      heroBannerActive: safeSettings.heroBannerActive,
+      heroBannerTag: safeSettings.heroBannerTag,
+      heroBannerTitle: safeSettings.heroBannerTitle,
+      heroBannerSubtitle: safeSettings.heroBannerSubtitle,
+      heroBannerButtonText: safeSettings.heroBannerButtonText,
+      heroBannerLink: safeSettings.heroBannerLink,
+      heroBannerImage: safeSettings.heroBannerImage,
+      heroBannerTransitionEffect: safeSettings.heroBannerTransitionEffect,
+      heroBannerTransitionSpeed: safeSettings.heroBannerTransitionSpeed,
+      heroBannerShimmer: safeSettings.heroBannerShimmer,
+    };
+
+    const hasBannerUpdates = Object.values(bannerPayload).some((v) => v !== undefined);
+
     if (isSupabaseConfigured()) {
       try {
         const client = getSupabaseAdmin() || getSupabaseClient();
@@ -189,12 +249,24 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
             delete supabasePayload.flacon_sizes;
             await client.from("store_settings").upsert(supabasePayload);
           }
+
+          if (hasBannerUpdates) {
+            await client.from("audit_logs").upsert({
+              id: "system-config-banners",
+              timestamp: new Date().toISOString(),
+              action: "BANNER_CONFIG_SYNC",
+              category: "Settings",
+              details: JSON.stringify(bannerPayload),
+              user: auth.user?.email || "Admin",
+            });
+          }
+
           await client.from("audit_logs").insert({
             id: `log-${Date.now()}`,
             timestamp: new Date().toISOString(),
             action: "Settings Updated",
             category: "Settings",
-            details: "Store parameters, shipping rates, and flacon sizes updated in Supabase.",
+            details: "Store parameters, shipping rates, and banner configurations updated in Supabase.",
             user: auth.user?.email || "Admin",
           });
         }

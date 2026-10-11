@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Sparkles, ArrowRight, Tag, Truck, Gift, X } from "lucide-react";
+import { Sparkles, ArrowRight, Tag, Truck, Gift, Flame, ShieldCheck, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useProductsStore } from "@/lib/products-store";
+import { useProductsStore, DEFAULT_ANNOUNCEMENT_ITEMS, AnnouncementItem } from "@/lib/products-store";
 import { formatPKR } from "@/lib/cart-context";
 
 // ============================================================================
@@ -19,44 +19,59 @@ export function DealsBanner() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 
-  // Dynamic list of active store offers and policies
-  const deals = [
-    ...(settings.announcementActive ? [{
-      icon: Tag,
-      badge: "Active Offer",
-      text: settings.announcementText,
-      code: settings.announcementCode,
-      linkText: "Shop Deal",
-      linkTo: "/shop",
-    }] : []),
-    {
-      icon: Truck,
-      badge: "Nationwide Express",
-      text: `Free Delivery across Pakistan on all orders over ${formatPKR(settings.freeShippingThreshold)}`,
-      code: "AUTOMATIC",
-      linkText: "Explore",
-      linkTo: "/shop",
-    },
-    {
-      icon: Sparkles,
-      badge: "Artisanal Luxury",
-      text: "100% Pure Alcohol-Free Attars & High-Concentration Extrait Parfums",
-      code: "AUTHENTIC",
-      linkText: "Shop Collection",
-      linkTo: "/shop",
-    },
-  ];
+  // If announcement ticker is globally disabled in admin or dismissed by user, do not show
+  if (!settings.announcementActive || !isVisible) return null;
+
+  // Icon mapping helper
+  const resolveIcon = (iconName?: string) => {
+    switch (iconName) {
+      case "truck":
+        return Truck;
+      case "gift":
+        return Gift;
+      case "sparkles":
+        return Sparkles;
+      case "flame":
+        return Flame;
+      case "shield":
+        return ShieldCheck;
+      case "tag":
+      default:
+        return Tag;
+    }
+  };
+
+  const configuredItems: AnnouncementItem[] =
+    settings.announcementItems && settings.announcementItems.length > 0
+      ? settings.announcementItems
+      : DEFAULT_ANNOUNCEMENT_ITEMS;
+
+  const deals = configuredItems
+    .filter((item) => item.isEnabled !== false)
+    .map((item, idx) => {
+      // If first item matches legacy announcementText, keep in sync if updated
+      const isOffer = item.id === "item-offer" || idx === 0;
+      return {
+        id: item.id,
+        icon: resolveIcon(item.icon),
+        badge: item.badge,
+        text: isOffer && settings.announcementText ? settings.announcementText : item.text,
+        code: isOffer && settings.announcementCode ? settings.announcementCode : item.code,
+        linkText: item.linkText || "Shop Deal",
+        linkTo: item.linkTo || "/shop",
+      };
+    });
 
   // Auto-rotate deals every 5 seconds
   useEffect(() => {
-    if (!isVisible || deals.length === 0) return;
+    if (deals.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % deals.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [isVisible, deals.length]);
+  }, [deals.length]);
 
-  if (!isVisible || deals.length === 0) return null;
+  if (deals.length === 0) return null;
 
   const safeIndex = currentIndex % deals.length;
   const currentDeal = deals[safeIndex];

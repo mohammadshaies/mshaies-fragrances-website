@@ -1,5 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useProductsStore, type Product, type Coupon, type Order, DEFAULT_FLACON_SIZES, type FlaconSizeOption, getCustomSizeDetails } from "@/lib/products-store";
+import { 
+  useProductsStore, 
+  type Product, 
+  type Coupon, 
+  type Order, 
+  DEFAULT_FLACON_SIZES, 
+  type FlaconSizeOption, 
+  getCustomSizeDetails,
+  DEFAULT_PROMOTIONAL_SLIDES,
+  type PromotionalSlide,
+  DEFAULT_ANNOUNCEMENT_ITEMS,
+  type AnnouncementItem
+} from "@/lib/products-store";
 import { formatPKR } from "@/lib/cart-context";
 import { useState, useEffect, useMemo } from "react";
 import { 
@@ -71,6 +83,10 @@ import {
   ShoppingBag,
   ShieldCheck,
   Loader2,
+  Watch,
+  Gem,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminLoginServerFn, adminVerifyPinServerFn, verifyAdminStatusServerFn } from "@/lib/api/auth.server";
@@ -2134,6 +2150,104 @@ function AdminDashboard() {
   const handleResetFlaconSizes = () => {
     setSettingsForm({ ...settingsForm, flaconSizes: DEFAULT_FLACON_SIZES });
     toast.success("Reset flacon sizes to default Maison standards!");
+  };
+
+  // Banner Deck & Announcement Ticker Helpers
+  const promotionalSlidesList: PromotionalSlide[] = (settingsForm.promotionalSlides && settingsForm.promotionalSlides.length > 0)
+    ? settingsForm.promotionalSlides
+    : DEFAULT_PROMOTIONAL_SLIDES;
+
+  const [editingSlideIndex, setEditingSlideIndex] = useState<number | null>(null);
+
+  const handleUpdatePromotionalSlide = (index: number, updates: Partial<PromotionalSlide>) => {
+    const updated = promotionalSlidesList.map((item, i) => (i === index ? { ...item, ...updates } : item));
+    setSettingsForm({ ...settingsForm, promotionalSlides: updated });
+    setBannerPreviewKey((k) => k + 1);
+  };
+
+  const handleAddPromotionalSlide = () => {
+    const newSlide: PromotionalSlide = {
+      id: `slide-custom-${Date.now().toString().slice(-4)}`,
+      tag: "Maison Exclusive · New Release",
+      title: "Handcrafted Luxury Fragrances For Discerning Connoisseurs",
+      subtitle: "Experience alcohol-free attars & high-concentration extrait perfumes with nationwide delivery.",
+      code: "LUXE15",
+      buttonText: "Shop Collection",
+      linkUrl: "/shop",
+      icon: "sparkles",
+      isEnabled: true,
+    };
+    const updated = [...promotionalSlidesList, newSlide];
+    setSettingsForm({ ...settingsForm, promotionalSlides: updated });
+    setEditingSlideIndex(updated.length - 1);
+    setBannerPreviewKey((k) => k + 1);
+    toast.success("Added new banner slide! Configure its details below.");
+  };
+
+  const handleRemovePromotionalSlide = (index: number) => {
+    if (promotionalSlidesList.length <= 1) {
+      toast.error("You must have at least one slide in the deck. You can toggle it off instead.");
+      return;
+    }
+    const updated = promotionalSlidesList.filter((_, i) => i !== index);
+    setSettingsForm({ ...settingsForm, promotionalSlides: updated });
+    if (editingSlideIndex === index) setEditingSlideIndex(null);
+    else if (editingSlideIndex !== null && editingSlideIndex > index) setEditingSlideIndex(editingSlideIndex - 1);
+    setBannerPreviewKey((k) => k + 1);
+    toast.info("Slide removed from promotional carousel.");
+  };
+
+  const handleResetPromotionalSlides = () => {
+    setSettingsForm({ ...settingsForm, promotionalSlides: DEFAULT_PROMOTIONAL_SLIDES });
+    setEditingSlideIndex(null);
+    setBannerPreviewKey((k) => k + 1);
+    toast.success("Promotional slides reset to default Maison collection!");
+  };
+
+  const announcementItemsList: AnnouncementItem[] = (settingsForm.announcementItems && settingsForm.announcementItems.length > 0)
+    ? settingsForm.announcementItems
+    : DEFAULT_ANNOUNCEMENT_ITEMS;
+
+  const [editingTickerIndex, setEditingTickerIndex] = useState<number | null>(null);
+
+  const handleUpdateAnnouncementItem = (index: number, updates: Partial<AnnouncementItem>) => {
+    const updated = announcementItemsList.map((item, i) => (i === index ? { ...item, ...updates } : item));
+    setSettingsForm({ ...settingsForm, announcementItems: updated });
+  };
+
+  const handleAddAnnouncementItem = () => {
+    const newItem: AnnouncementItem = {
+      id: `item-custom-${Date.now().toString().slice(-4)}`,
+      badge: "Special Promotion",
+      text: "Enjoy complimentary velvet gift pouches on orders over Rs 5,000",
+      code: "FREEGIFT",
+      linkText: "Explore",
+      linkTo: "/shop",
+      icon: "sparkles",
+      isEnabled: true,
+    };
+    const updated = [...announcementItemsList, newItem];
+    setSettingsForm({ ...settingsForm, announcementItems: updated });
+    setEditingTickerIndex(updated.length - 1);
+    toast.success("Added new announcement ticker item!");
+  };
+
+  const handleRemoveAnnouncementItem = (index: number) => {
+    if (announcementItemsList.length <= 1) {
+      toast.error("You must have at least one ticker item. You can disable the ticker entirely instead.");
+      return;
+    }
+    const updated = announcementItemsList.filter((_, i) => i !== index);
+    setSettingsForm({ ...settingsForm, announcementItems: updated });
+    if (editingTickerIndex === index) setEditingTickerIndex(null);
+    else if (editingTickerIndex !== null && editingTickerIndex > index) setEditingTickerIndex(editingTickerIndex - 1);
+    toast.info("Announcement item removed from ticker.");
+  };
+
+  const handleResetAnnouncementItems = () => {
+    setSettingsForm({ ...settingsForm, announcementItems: DEFAULT_ANNOUNCEMENT_ITEMS });
+    setEditingTickerIndex(null);
+    toast.success("Announcement items reset to default Maison offers!");
   };
 
   // Custom ML inputs & handlers for Add and Edit fragrance modals
@@ -6541,158 +6655,327 @@ function AdminDashboard() {
                     className="size-5 accent-gold cursor-pointer"
                   />
                 </div>
+              </div>
 
-                {/* Headline */}
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                    Main Headline
-                  </label>
-                  <input
-                    type="text"
-                    value={settingsForm.heroBannerTitle || ""}
-                    onChange={(e) => {
-                      setSettingsForm({ ...settingsForm, heroBannerTitle: e.target.value });
-                      setBannerPreviewKey((k) => k + 1);
-                    }}
-                    placeholder="e.g. Free Express Nationwide Delivery With Every Order Over ₨ 5,000"
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none font-semibold"
-                  />
-                </div>
-
-                {/* Subtitle */}
-                <div className="sm:col-span-2">
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                    Offer Description / Subtitle
-                  </label>
-                  <input
-                    type="text"
-                    value={settingsForm.heroBannerSubtitle || ""}
-                    onChange={(e) => {
-                      setSettingsForm({ ...settingsForm, heroBannerSubtitle: e.target.value });
-                      setBannerPreviewKey((k) => k + 1);
-                    }}
-                    placeholder="e.g. 100% Alcohol-Free Pure Attar Oils & 35% Extrait Parfums. Use Code LUXE15 for Flat 15% OFF."
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                  />
-                </div>
-
-                {/* Button Text */}
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                    Action Button Label
-                  </label>
-                  <input
-                    type="text"
-                    value={settingsForm.heroBannerButtonText || ""}
-                    onChange={(e) => {
-                      setSettingsForm({ ...settingsForm, heroBannerButtonText: e.target.value });
-                      setBannerPreviewKey((k) => k + 1);
-                    }}
-                    placeholder="e.g. Claim Offer →"
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                  />
-                </div>
-
-                {/* Click Destination URL */}
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                    Click Destination Link
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. /shop, /attars, or /perfumes"
-                    value={settingsForm.heroBannerLink || ""}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, heroBannerLink: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none font-mono"
-                  />
-                </div>
-
-                {/* Image Upload & URL Input (Optional) */}
-                <div className="sm:col-span-2 space-y-3 pt-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
-                      Custom Graphic Banner Image (Optional · Replaces Text Slide)
-                    </label>
-                    <span className="text-[10px] text-muted-foreground">
-                      Optimal size: <strong className="text-gold-deep">1600 × 260 px (6:1)</strong>
-                    </span>
-                  </div>
-
-                  {/* Quick-Spec Badges */}
-                  <div className="p-3 rounded-2xl bg-pearl/70 border border-gold/30 space-y-2 text-xs">
-                    <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                      <span className="font-bold text-ink mr-1">Recommended Details:</span>
-                      <span className="px-2 py-0.5 rounded-md bg-gold/20 text-gold-deep font-bold border border-gold/40">
-                        📐 1600 × 260 px (6:1 Ratio)
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-800 font-semibold border border-emerald-500/30">
-                        📱 Safe Center: 900 × 200 px
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-800 font-semibold border border-blue-500/30">
-                        🖼️ WebP / PNG / JPG
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-800 font-semibold border border-purple-500/30">
-                        ⚡ Under 500 KB (Max 1 MB)
+              {/* Slides Deck Carousel Manager */}
+              <div className="space-y-4 pt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-border pt-6">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-serif text-lg font-bold text-ink">
+                        Carousel Slides Deck ({promotionalSlidesList.length} Slides)
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold-deep text-[10px] font-bold">
+                        {promotionalSlidesList.filter((s) => s.isEnabled !== false).length} Active on site
                       </span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      💡 <em>Tip:</em> Keep text & logos centered within the 900px safe zone so mobile screens (375px–768px) don't clip your message. The client-side processor automatically compresses high-res files for optimal 4G page-load speeds.
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Edit text, links, promo codes, custom graphic images, or remove any slide from rotation.
                     </p>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <label className="flex-1 px-4 py-3 rounded-xl border-2 border-dashed border-gold/50 bg-pearl/40 hover:bg-pearl/80 transition-colors flex items-center justify-center gap-2 text-xs font-semibold text-gold-deep cursor-pointer">
-                      <Upload className="size-4" />
-                      <span>Upload Banner File (Auto-Optimized to 1600px WebP)</span>
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/gif"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          try {
-                            const dataUrl = await compressImageFile(file, 1600, 320, 0.88);
-                            setSettingsForm((prev) => ({ ...prev, heroBannerImage: dataUrl }));
-                            setBannerPreviewKey((k) => k + 1);
-                            toast.success("Custom banner image uploaded and optimized successfully!");
-                          } catch (err) {
-                            toast.error("Failed to process banner image.");
-                          }
-                        }}
-                      />
-                    </label>
-
-                    <div className="flex-1 flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Or enter custom image URL"
-                        value={settingsForm.heroBannerImage || ""}
-                        onChange={(e) => {
-                          setSettingsForm({ ...settingsForm, heroBannerImage: e.target.value });
-                          setBannerPreviewKey((k) => k + 1);
-                        }}
-                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs font-mono text-ink focus:border-gold focus:outline-none"
-                      />
-                      {settingsForm.heroBannerImage && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSettingsForm({ ...settingsForm, heroBannerImage: "" });
-                            setBannerPreviewKey((k) => k + 1);
-                            toast.info("Switched to Luxury Dynamic Text Banner.");
-                          }}
-                          className="px-3 py-1 rounded-xl border border-destructive/40 text-destructive hover:bg-destructive/10 text-xs shrink-0 cursor-pointer"
-                        >
-                          Clear Image
-                        </button>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleAddPromotionalSlide}
+                      className="px-3.5 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
+                    >
+                      <Plus className="size-3.5" />
+                      <span>Add New Slide</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetPromotionalSlides}
+                      className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-pearl text-muted-foreground hover:text-ink text-xs transition-colors cursor-pointer"
+                      title="Reset slides to factory Maison defaults"
+                    >
+                      <RotateCcw className="size-3.5" />
+                    </button>
                   </div>
+                </div>
+
+                {/* Slides List */}
+                <div className="space-y-3">
+                  {promotionalSlidesList.map((slide, sIndex) => {
+                    const isEditing = editingSlideIndex === sIndex;
+                    const isEnabled = slide.isEnabled !== false;
+
+                    return (
+                      <div
+                        key={slide.id || sIndex}
+                        className={`rounded-2xl border transition-all ${
+                          isEnabled
+                            ? "border-gold/40 bg-card shadow-xs"
+                            : "border-border/60 bg-muted/30 opacity-75"
+                        } overflow-hidden`}
+                      >
+                        {/* Slide Card Header */}
+                        <div className="p-4 flex items-center justify-between gap-3 bg-pearl/40">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="size-6 rounded-full bg-gold/20 text-gold-deep text-xs font-bold flex items-center justify-center shrink-0">
+                              #{sIndex + 1}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                    isEnabled
+                                      ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                                      : "bg-zinc-500/15 text-zinc-600 border border-zinc-500/30"
+                                  }`}
+                                >
+                                  {isEnabled ? "Live on Store" : "Disabled / Hidden"}
+                                </span>
+                                <span className="text-xs font-bold text-ink truncate max-w-[240px] sm:max-w-md">
+                                  {slide.title || "Untitled Slide"}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground truncate max-w-[280px] sm:max-w-lg mt-0.5">
+                                <strong className="text-gold-deep">{slide.tag || "Maison Offer"}</strong> · {slide.subtitle || "No subtitle"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Toggle Live / Hidden */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleUpdatePromotionalSlide(sIndex, { isEnabled: !isEnabled });
+                                toast.info(isEnabled ? `Slide #${sIndex + 1} hidden from site.` : `Slide #${sIndex + 1} is now live!`);
+                              }}
+                              className={`p-2 rounded-lg border transition-colors cursor-pointer ${
+                                isEnabled
+                                  ? "border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10"
+                                  : "border-border text-muted-foreground hover:bg-muted"
+                              }`}
+                              title={isEnabled ? "Click to hide slide from storefront" : "Click to enable slide"}
+                            >
+                              {isEnabled ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                            </button>
+
+                            {/* Edit Button */}
+                            <button
+                              type="button"
+                              onClick={() => setEditingSlideIndex(isEditing ? null : sIndex)}
+                              className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer ${
+                                isEditing
+                                  ? "border-gold bg-gold/20 text-gold-deep font-bold"
+                                  : "border-border hover:border-gold hover:bg-pearl text-ink"
+                              }`}
+                            >
+                              <Edit3 className="size-3.5" />
+                              <span>{isEditing ? "Close" : "Edit"}</span>
+                            </button>
+
+                            {/* Delete Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePromotionalSlide(sIndex)}
+                              className="p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                              title="Delete this slide"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Collapsed Slide Info Chips */}
+                        {!isEditing && (
+                          <div className="px-4 py-2.5 border-t border-border/40 bg-card/60 flex flex-wrap items-center gap-2 text-[11px]">
+                            {slide.code && (
+                              <span className="px-2 py-0.5 rounded-md bg-gold/15 text-gold-deep font-mono font-bold text-[10px]">
+                                Code: {slide.code}
+                              </span>
+                            )}
+                            <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 text-[10px]">
+                              Button: {slide.buttonText || "Shop"} → {slide.linkUrl}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 text-[10px] capitalize">
+                              Icon: {slide.icon || "sparkles"}
+                            </span>
+                            {slide.imageUrl && (
+                              <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-800 border border-blue-500/20 text-[10px] font-semibold">
+                                🖼️ Custom Graphic Attached
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Expanded Inline Editor for this Slide */}
+                        {isEditing && (
+                          <div className="p-4 sm:p-5 border-t border-gold/30 bg-background space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                              {/* Slide Tagline */}
+                              <div>
+                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                  Top Pill / Tagline
+                                </label>
+                                <input
+                                  type="text"
+                                  value={slide.tag || ""}
+                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { tag: e.target.value })}
+                                  placeholder="e.g. Nationwide Expedited Logistics"
+                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                                />
+                              </div>
+
+                              {/* Promo Code */}
+                              <div>
+                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                  Promo Coupon Code (Optional)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={slide.code || ""}
+                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { code: e.target.value.toUpperCase() })}
+                                  placeholder="e.g. LUXE15 or FREESHIP"
+                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono font-bold text-ink uppercase focus:border-gold focus:outline-none"
+                                />
+                              </div>
+
+                              {/* Main Headline */}
+                              <div className="sm:col-span-2">
+                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                  Main Headline / Title
+                                </label>
+                                <input
+                                  type="text"
+                                  value={slide.title || ""}
+                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { title: e.target.value })}
+                                  placeholder="e.g. Free Express Shipping Across All Pakistan On Orders Over ₨ 5,000"
+                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-semibold text-ink focus:border-gold focus:outline-none"
+                                />
+                              </div>
+
+                              {/* Subtitle / Description */}
+                              <div className="sm:col-span-2">
+                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                  Subtitle / Description
+                                </label>
+                                <textarea
+                                  rows={2}
+                                  value={slide.subtitle || ""}
+                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { subtitle: e.target.value })}
+                                  placeholder="e.g. 100% in stock and safely dispatched via TCS Express & Leopards with luxury packaging seal."
+                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none resize-none"
+                                />
+                              </div>
+
+                              {/* Button Label */}
+                              <div>
+                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                  Action Button Label
+                                </label>
+                                <input
+                                  type="text"
+                                  value={slide.buttonText || ""}
+                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { buttonText: e.target.value })}
+                                  placeholder="e.g. Shop Collection →"
+                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                                />
+                              </div>
+
+                              {/* Link URL */}
+                              <div>
+                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                  Click Link Destination
+                                </label>
+                                <input
+                                  type="text"
+                                  value={slide.linkUrl || ""}
+                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { linkUrl: e.target.value })}
+                                  placeholder="e.g. /shop, /attars, /perfumes, or /watches"
+                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                                />
+                              </div>
+
+                              {/* Icon Selector */}
+                              <div>
+                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                  Pill Icon
+                                </label>
+                                <select
+                                  value={slide.icon || "sparkles"}
+                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { icon: e.target.value as any })}
+                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none cursor-pointer"
+                                >
+                                  <option value="sparkles">✨ Sparkles (Luxury / General)</option>
+                                  <option value="truck">🚚 Truck (Nationwide Express Shipping)</option>
+                                  <option value="flame">🔥 Flame (Pure Attar Oils / Hot Release)</option>
+                                  <option value="watch">⌚ Watch (Horology / Timepieces)</option>
+                                  <option value="gift">🎁 Gift (Complimentary Offer)</option>
+                                  <option value="tag">🏷️ Tag (Discount / Sale)</option>
+                                  <option value="shield">🛡️ Shield (Authenticity Guarantee)</option>
+                                  <option value="gem">💎 Gem (Royal Extrait Parfums)</option>
+                                </select>
+                              </div>
+
+                              {/* Custom Graphic Banner Image */}
+                              <div>
+                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                  Custom Graphic Image (Optional)
+                                </label>
+                                <div className="flex gap-2">
+                                  <label className="px-3 py-2 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0">
+                                    <Upload className="size-3.5" />
+                                    <span>Upload</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        try {
+                                          const dataUrl = await compressImageFile(file, 1600, 320, 0.88);
+                                          handleUpdatePromotionalSlide(sIndex, { imageUrl: dataUrl });
+                                          toast.success("Slide image uploaded & compressed!");
+                                        } catch {
+                                          toast.error("Failed to process image.");
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={slide.imageUrl || ""}
+                                    onChange={(e) => handleUpdatePromotionalSlide(sIndex, { imageUrl: e.target.value })}
+                                    placeholder="Or paste image URL"
+                                    className="flex-1 px-3 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                                  />
+                                  {slide.imageUrl && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdatePromotionalSlide(sIndex, { imageUrl: "" })}
+                                      className="px-2.5 py-1 text-destructive hover:bg-destructive/10 rounded-lg text-xs"
+                                      title="Remove image"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end pt-1">
+                              <button
+                                type="button"
+                                onClick={() => setEditingSlideIndex(null)}
+                                className="px-4 py-1.5 rounded-full bg-gold/20 hover:bg-gold text-ink font-bold text-xs transition-colors cursor-pointer"
+                              >
+                                ✓ Done Editing Slide #{sIndex + 1}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 border-t border-border">
                 <button
                   type="button"
                   onClick={handleSaveSettings}
@@ -6706,71 +6989,299 @@ function AdminDashboard() {
 
             {/* Section B: Top Deals Announcement Bar */}
             <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-sm space-y-6">
-              <div>
-                <h2 className="font-serif text-2xl text-ink font-bold flex items-center gap-2">
-                  <Megaphone className="size-5 text-gold-deep" />
-                  Top Ticker Announcement Bar
-                </h2>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Customize the scrolling announcement bar pinned at the very top of the navigation header.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-serif text-2xl text-ink font-bold flex items-center gap-2">
+                    <Megaphone className="size-5 text-gold-deep" />
+                    Top Ticker Announcement Bar
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Manage the scrolling announcements and policy highlights pinned at the very top of your store navigation.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleAddAnnouncementItem}
+                    className="px-3.5 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
+                  >
+                    <Plus className="size-3.5" />
+                    <span>Add Ticker Item</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetAnnouncementItems}
+                    className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-pearl text-muted-foreground hover:text-ink text-xs transition-colors cursor-pointer"
+                    title="Reset ticker items to defaults"
+                  >
+                    <RotateCcw className="size-3.5" />
+                  </button>
+                </div>
               </div>
 
+              {/* Master Announcement Toggle */}
+              <div className="flex items-center justify-between p-4 rounded-2xl border border-border bg-background">
+                <div>
+                  <p className="text-xs font-bold text-ink">Enable Top Ticker Announcement Across Header</p>
+                  <p className="text-[11px] text-muted-foreground">When turned off, the top announcement bar is completely hidden</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.announcementActive}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, announcementActive: e.target.checked })}
+                  className="size-5 accent-gold cursor-pointer"
+                />
+              </div>
+
+              {/* Live Ticker Preview */}
               <div className="p-4 rounded-2xl bg-pearl border border-gold/40 space-y-2">
-                <p className="text-[11px] uppercase tracking-wider text-gold-deep font-bold">Live Ticker Preview:</p>
-                <div className="p-3 rounded-xl bg-[#1c160c] text-pearl text-xs flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-[10px] font-bold uppercase">Active Campaign</span>
-                  <span className="truncate">{settingsForm.announcementText}</span>
-                  <span className="font-mono bg-gold text-ink font-bold px-1.5 py-0.5 rounded text-[10px]">{settingsForm.announcementCode}</span>
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] uppercase tracking-wider text-gold-deep font-bold">Live Ticker Items Preview:</p>
+                  <span className="text-[10px] text-muted-foreground">{announcementItemsList.filter(i => i.isEnabled !== false).length} Active Items</span>
+                </div>
+                <div className="space-y-1.5">
+                  {announcementItemsList.filter(i => i.isEnabled !== false).map((item, idx) => (
+                    <div key={item.id || idx} className="p-2.5 rounded-xl bg-[#1c160c] text-pearl text-xs flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-[10px] font-bold uppercase shrink-0">
+                        {item.badge}
+                      </span>
+                      <span className="truncate flex-1 text-white/90">{item.text}</span>
+                      {item.code && (
+                        <span className="font-mono bg-gold text-ink font-bold px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                          {item.code}
+                        </span>
+                      )}
+                      <span className="text-gold text-[10px] underline shrink-0">{item.linkText || "Shop"} →</span>
+                    </div>
+                  ))}
+                  {announcementItemsList.filter(i => i.isEnabled !== false).length === 0 && (
+                    <p className="text-xs text-muted-foreground italic text-center py-2">No active ticker items. All items are disabled.</p>
+                  )}
                 </div>
               </div>
 
-              <form onSubmit={handleSaveSettings} className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-2xl border border-border bg-background">
-                  <div>
-                    <p className="text-xs font-bold text-ink">Enable Top Ticker Announcement</p>
-                    <p className="text-[11px] text-muted-foreground">Show promotional banner to all site visitors</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={settingsForm.announcementActive}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, announcementActive: e.target.checked })}
-                    className="size-5 accent-gold cursor-pointer"
-                  />
-                </div>
+              {/* Ticker Items List */}
+              <div className="space-y-3">
+                {announcementItemsList.map((item, tIndex) => {
+                  const isEditing = editingTickerIndex === tIndex;
+                  const isEnabled = item.isEnabled !== false;
 
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                    Announcement Text
-                  </label>
-                  <input
-                    type="text"
-                    value={settingsForm.announcementText}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, announcementText: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                  />
-                </div>
+                  return (
+                    <div
+                      key={item.id || tIndex}
+                      className={`rounded-2xl border transition-all ${
+                        isEnabled
+                          ? "border-gold/40 bg-card shadow-xs"
+                          : "border-border/60 bg-muted/30 opacity-75"
+                      } overflow-hidden`}
+                    >
+                      {/* Header */}
+                      <div className="p-4 flex items-center justify-between gap-3 bg-pearl/40">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="size-6 rounded-full bg-gold/20 text-gold-deep text-xs font-bold flex items-center justify-center shrink-0">
+                            #{tIndex + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                  isEnabled
+                                    ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                                    : "bg-zinc-500/15 text-zinc-600 border border-zinc-500/30"
+                                }`}
+                              >
+                                {isEnabled ? "Live in Ticker" : "Hidden"}
+                              </span>
+                              <span className="text-xs font-bold text-ink truncate max-w-[200px] sm:max-w-md">
+                                {item.badge}: {item.text}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                    Featured Promo Code
-                  </label>
-                  <input
-                    type="text"
-                    value={settingsForm.announcementCode}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, announcementCode: e.target.value.toUpperCase() })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-mono font-bold text-ink focus:border-gold focus:outline-none uppercase"
-                  />
-                </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Toggle Active */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleUpdateAnnouncementItem(tIndex, { isEnabled: !isEnabled });
+                              toast.info(isEnabled ? `Ticker item #${tIndex + 1} hidden.` : `Ticker item #${tIndex + 1} is now live!`);
+                            }}
+                            className={`p-2 rounded-lg border transition-colors cursor-pointer ${
+                              isEnabled
+                                ? "border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10"
+                                : "border-border text-muted-foreground hover:bg-muted"
+                            }`}
+                            title={isEnabled ? "Click to hide item" : "Click to enable item"}
+                          >
+                            {isEnabled ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                          </button>
 
+                          {/* Edit Button */}
+                          <button
+                            type="button"
+                            onClick={() => setEditingTickerIndex(isEditing ? null : tIndex)}
+                            className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer ${
+                              isEditing
+                                ? "border-gold bg-gold/20 text-gold-deep font-bold"
+                                : "border-border hover:border-gold hover:bg-pearl text-ink"
+                            }`}
+                          >
+                            <Edit3 className="size-3.5" />
+                            <span>{isEditing ? "Close" : "Edit"}</span>
+                          </button>
+
+                          {/* Delete Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAnnouncementItem(tIndex)}
+                            className="p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                            title="Delete this ticker item"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Collapsed Item Info */}
+                      {!isEditing && (
+                        <div className="px-4 py-2 border-t border-border/40 bg-card/60 flex flex-wrap items-center gap-2 text-[11px]">
+                          <span className="px-2 py-0.5 rounded-md bg-gold/15 text-gold-deep font-bold text-[10px]">
+                            Badge: {item.badge}
+                          </span>
+                          {item.code && (
+                            <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 font-mono font-bold text-[10px]">
+                              Code: {item.code}
+                            </span>
+                          )}
+                          <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 text-[10px]">
+                            Link: {item.linkText || "Shop"} → {item.linkTo || "/shop"}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Expanded Inline Editor for this Item */}
+                      {isEditing && (
+                        <div className="p-4 sm:p-5 border-t border-gold/30 bg-background space-y-3.5">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {/* Badge */}
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Tag / Badge Label
+                              </label>
+                              <input
+                                type="text"
+                                value={item.badge || ""}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { badge: e.target.value })}
+                                placeholder="e.g. Active Offer, Nationwide Express, Artisanal Luxury"
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                              />
+                            </div>
+
+                            {/* Promo Code */}
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Featured Coupon Code (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                value={item.code || ""}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { code: e.target.value.toUpperCase() })}
+                                placeholder="e.g. LUXE15, AUTOMATIC"
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono font-bold text-ink uppercase focus:border-gold focus:outline-none"
+                              />
+                            </div>
+
+                            {/* Message Text */}
+                            <div className="sm:col-span-2">
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Announcement Message Text
+                              </label>
+                              <input
+                                type="text"
+                                value={item.text || ""}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { text: e.target.value })}
+                                placeholder="e.g. Free Delivery across Pakistan on all orders over Rs 5,000"
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                              />
+                            </div>
+
+                            {/* Link Text */}
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Action Link Text
+                              </label>
+                              <input
+                                type="text"
+                                value={item.linkText || ""}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { linkText: e.target.value })}
+                                placeholder="e.g. Shop Deal, Explore, Shop Collection"
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                              />
+                            </div>
+
+                            {/* Link URL */}
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Link Destination URL
+                              </label>
+                              <input
+                                type="text"
+                                value={item.linkTo || ""}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { linkTo: e.target.value })}
+                                placeholder="e.g. /shop, /attars, or /perfumes"
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                              />
+                            </div>
+
+                            {/* Icon */}
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Ticker Icon
+                              </label>
+                              <select
+                                value={item.icon || "tag"}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { icon: e.target.value as any })}
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none cursor-pointer"
+                              >
+                                <option value="tag">🏷️ Tag (Deal / Offer)</option>
+                                <option value="truck">🚚 Truck (Shipping / Delivery)</option>
+                                <option value="sparkles">✨ Sparkles (Luxury / Collection)</option>
+                                <option value="gift">🎁 Gift (Free Gift / Coffret)</option>
+                                <option value="flame">🔥 Flame (Hot / Trending)</option>
+                                <option value="shield">🛡️ Shield (Guaranteed Authentic)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setEditingTickerIndex(null)}
+                              className="px-4 py-1.5 rounded-full bg-gold/20 hover:bg-gold text-ink font-bold text-xs transition-colors cursor-pointer"
+                            >
+                              ✓ Done Editing Item #{tIndex + 1}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Master Save Button */}
+              <div className="pt-2 border-t border-border">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleSaveSettings}
                   className="btn-gold btn-gold-hover px-6 py-3 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2"
                 >
                   <Check className="size-4" />
-                  Save & Update Ticker
+                  Save & Update All Banners & Announcements
                 </button>
-              </form>
+              </div>
             </div>
           </div>
         )}

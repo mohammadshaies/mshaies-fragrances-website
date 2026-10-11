@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { Sparkles, ArrowRight, Tag, ChevronLeft, ChevronRight, Truck, Flame, Watch } from "lucide-react";
-import { useProductsStore } from "@/lib/products-store";
+import { Sparkles, ArrowRight, Tag, ChevronLeft, ChevronRight, Truck, Flame, Watch, Gift, ShieldCheck, Gem } from "lucide-react";
+import { useProductsStore, DEFAULT_PROMOTIONAL_SLIDES, PromotionalSlide } from "@/lib/products-store";
 
 // Transition Variants for Animated Slide Changes
 const slideTransitionVariants = {
@@ -89,7 +89,7 @@ export interface BannerSlide {
   code?: string;
   buttonText: string;
   linkUrl: string;
-  icon?: "sparkles" | "truck" | "flame" | "watch";
+  icon?: "sparkles" | "truck" | "flame" | "watch" | "gift" | "shield" | "tag" | "gem";
   imageUrl?: string;
 }
 
@@ -139,50 +139,40 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
   const customImage = props.imageUrl !== undefined ? props.imageUrl : settings.heroBannerImage;
   const hasCustomGraphic = Boolean(customImage && customImage.length > 30 && (customImage.startsWith("data:") || customImage.startsWith("http") || customImage.startsWith("/uploads")));
 
-  // Rotating slide deck
-  const slides: BannerSlide[] = [
-    {
-      id: "slide-primary",
-      tag: primaryTag,
-      title: primaryTitle,
-      subtitle: primarySubtitle,
-      code: "LUXE15",
-      buttonText: primaryButtonText,
-      linkUrl: primaryLink,
-      icon: "sparkles",
-      imageUrl: hasCustomGraphic ? customImage : undefined,
-    },
-    {
-      id: "slide-shipping",
-      tag: "Nationwide Expedited Logistics",
-      title: "Free Express Shipping Across All Pakistan On Orders Over ₨ 5,000",
-      subtitle: "100% in stock and safely dispatched via TCS Express & Leopards with luxury packaging seal.",
-      code: "FREESHIP",
-      buttonText: "Shop Collection",
-      linkUrl: "/shop",
-      icon: "truck",
-    },
-    {
-      id: "slide-attars",
-      tag: "Pure Attar Oils · 35% Concentration",
-      title: "Flat 15% OFF Aged Cambodian Oud, Midnight Rose & Royal Ambergris",
-      subtitle: "Alcohol-free concentrated oil flacons engineered for 16+ hours longevity in Pakistan's climate.",
-      code: "LUXE15",
-      buttonText: "Explore Attars",
-      linkUrl: "/attars",
-      icon: "flame",
-    },
-    {
-      id: "slide-watches",
-      tag: "Maison Horology & Fine Fragrances",
-      title: "Complimentary Velvet Saffron EDP with Luxury Chronograph Watches",
-      subtitle: "Automatic skeleton movements and sapphire crystal timepieces delivered nationwide.",
-      code: "MAISON1000",
-      buttonText: "View Watches",
-      linkUrl: "/watches",
-      icon: "watch",
-    },
-  ];
+  // User-configurable slides from store settings (falling back to DEFAULT_PROMOTIONAL_SLIDES)
+  const configuredSlides: PromotionalSlide[] =
+    settings.promotionalSlides && settings.promotionalSlides.length > 0
+      ? settings.promotionalSlides
+      : DEFAULT_PROMOTIONAL_SLIDES;
+
+  const slides: BannerSlide[] = configuredSlides
+    .filter((s) => s.isEnabled !== false)
+    .map((s, idx) => {
+      if (s.id === "slide-primary" || idx === 0) {
+        return {
+          id: s.id,
+          tag: props.tag || settings.heroBannerTag || s.tag || primaryTag,
+          title: props.title || settings.heroBannerTitle || s.title || primaryTitle,
+          subtitle: props.subtitle || settings.heroBannerSubtitle || s.subtitle || primarySubtitle,
+          code: s.code || "LUXE15",
+          buttonText: props.buttonText || settings.heroBannerButtonText || s.buttonText || primaryButtonText,
+          linkUrl: props.linkUrl || settings.heroBannerLink || s.linkUrl || primaryLink,
+          icon: s.icon || "sparkles",
+          imageUrl: s.imageUrl || (hasCustomGraphic ? customImage : undefined),
+        };
+      }
+      return {
+        id: s.id,
+        tag: s.tag,
+        title: s.title,
+        subtitle: s.subtitle,
+        code: s.code,
+        buttonText: s.buttonText,
+        linkUrl: s.linkUrl,
+        icon: s.icon,
+        imageUrl: s.imageUrl,
+      };
+    });
 
   const [[currentIndex, direction], setPage] = useState<[number, number]>([0, 0]);
   const [isHovered, setIsHovered] = useState(false);
@@ -190,11 +180,13 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
 
   // Advance to next slide
   const nextSlide = useCallback(() => {
+    if (slides.length <= 1) return;
     setPage(([curr]) => [(curr + 1) % slides.length, 1]);
   }, [slides.length]);
 
   // Previous slide
   const prevSlide = useCallback(() => {
+    if (slides.length <= 1) return;
     setPage(([curr]) => [(curr - 1 + slides.length) % slides.length, -1]);
   }, [slides.length]);
 
@@ -205,12 +197,15 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
 
   // Auto-slide transition timer (pauses on hover)
   useEffect(() => {
-    if (isHovered || speed <= 0 || transitionEffect === "marquee") return;
+    if (isHovered || speed <= 0 || transitionEffect === "marquee" || slides.length <= 1) return;
     const interval = setInterval(nextSlide, speed);
     return () => clearInterval(interval);
-  }, [isHovered, nextSlide, speed, transitionEffect]);
+  }, [isHovered, nextSlide, speed, transitionEffect, slides.length]);
 
-  const currentSlide = slides[currentIndex];
+  if (slides.length === 0) return null;
+
+  const safeIndex = currentIndex >= slides.length ? 0 : currentIndex;
+  const currentSlide = slides[safeIndex];
   const isExternal = currentSlide.linkUrl.startsWith("http://") || currentSlide.linkUrl.startsWith("https://");
 
   const renderIcon = (iconName?: string) => {
@@ -221,6 +216,14 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
         return <Flame className="size-3 text-amber-400" />;
       case "watch":
         return <Watch className="size-3 text-amber-300" />;
+      case "gift":
+        return <Gift className="size-3 text-gold" />;
+      case "tag":
+        return <Tag className="size-3 text-gold" />;
+      case "shield":
+        return <ShieldCheck className="size-3 text-emerald-400" />;
+      case "gem":
+        return <Gem className="size-3 text-amber-300" />;
       default:
         return <Sparkles className="size-3 text-gold animate-pulse" />;
     }
@@ -379,7 +382,7 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
       {!isHovered && speed > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-[2px] sm:h-[2.5px] bg-white/10 overflow-hidden">
           <motion.div
-            key={`progress-${currentIndex}`}
+            key={`progress-${safeIndex}`}
             initial={{ width: "0%" }}
             animate={{ width: "100%" }}
             transition={{ duration: speed / 1000, ease: "linear" }}
@@ -400,7 +403,7 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
       <div className="relative overflow-hidden rounded-xl sm:rounded-2xl min-h-[44px] xs:min-h-[48px] sm:min-h-[110px]">
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
-            key={`slide-${currentSlide.id}-${currentIndex}`}
+            key={`slide-${currentSlide.id}-${safeIndex}`}
             custom={direction}
             variants={slideTransitionVariants[transitionEffect] as any}
             initial="enter"
@@ -492,7 +495,7 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
               onClick={() => goToSlide(idx)}
               aria-label={`Go to slide ${idx + 1}`}
               className={`transition-all rounded-full cursor-pointer ${
-                idx === currentIndex
+                idx === safeIndex
                   ? "w-4 sm:w-6 h-1 sm:h-1.5 bg-gold"
                   : "w-1 sm:w-1.5 h-1 sm:h-1.5 bg-border/80 hover:bg-gold/60"
               }`}
