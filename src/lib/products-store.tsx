@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
 import {
   getProductsServerFn,
   saveProductServerFn,
@@ -34,6 +34,7 @@ import {
   exportDatabaseBackupServerFn,
   restoreDatabaseBackupServerFn,
 } from "./api/backup.server";
+import { purgeServerCacheFn } from "./api/cache.server";
 
 export type Product = {
   id: string;
@@ -400,7 +401,8 @@ type ProductsStoreContextType = {
   updateJob: (id: string, updates: Partial<JobPosting>) => void;
   deleteJob: (id: string) => void;
   toggleJobStatus: (id: string) => void;
-  refreshDataFromServer: () => Promise<void>;
+  refreshDataFromServer: (force?: boolean) => Promise<void>;
+  purgeCache: () => Promise<void>;
 };
 
 const ProductsStoreContext = createContext<ProductsStoreContextType | null>(null);
@@ -528,8 +530,17 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [jobs]);
 
+  // Client-side cache synchronization throttle (2 minutes TTL)
+  const lastSyncRef = useRef<number>(0);
+
   // Initial and on-demand Data Synchronization with Server Database (Supabase)
-  const refreshDataFromServer = async () => {
+  const refreshDataFromServer = async (force = false) => {
+    const now = Date.now();
+    if (!force && lastSyncRef.current > 0 && now - lastSyncRef.current < 120_000 && products.length > 0) {
+      return;
+    }
+    lastSyncRef.current = now;
+
     try {
       const [prodRes, settingsRes, reviewsRes] = await Promise.all([
         getProductsServerFn(),
@@ -595,6 +606,19 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.warn("[ProductsStoreProvider] Failed to load data from server, using local store:", err);
     }
+  };
+
+  const purgeCache = async () => {
+    try {
+      const adminToken = typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+        : null;
+      await purgeServerCacheFn({ data: { authToken: adminToken || undefined } });
+    } catch (e) {
+      console.warn("[purgeCache] server purge error:", e);
+    }
+    lastSyncRef.current = 0;
+    await refreshDataFromServer(true);
   };
 
   useEffect(() => {
@@ -1255,6 +1279,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
         deleteJob,
         toggleJobStatus,
         refreshDataFromServer,
+        purgeCache,
       }}
     >
       {children}

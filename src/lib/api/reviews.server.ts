@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured } from "../supabase.server";
 import { eq, sql } from "drizzle-orm";
+import { serverCache } from "../cache.server";
 
 function mapSupabaseReview(r: any) {
   return {
@@ -26,37 +27,45 @@ export const getReviewsServerFn = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ data }) => {
-    if (isSupabaseConfigured()) {
-      try {
-        const client = getSupabaseAdmin() || getSupabaseClient();
-        if (client) {
-          let query = client.from("product_reviews").select("*");
-          if (data.productId) {
-            query = query.eq("product_id", data.productId);
-          }
-          const { data: rows, error } = await query;
-          if (!error && Array.isArray(rows)) {
-            return { success: true, reviews: rows.map(mapSupabaseReview), source: "supabase" };
+    const cacheKey = `reviews:${data.productId || "all"}`;
+    return serverCache.getOrSet(
+      cacheKey,
+      async () => {
+        if (isSupabaseConfigured()) {
+          try {
+            const client = getSupabaseAdmin() || getSupabaseClient();
+            if (client) {
+              let query = client.from("product_reviews").select("*");
+              if (data.productId) {
+                query = query.eq("product_id", data.productId);
+              }
+              const { data: rows, error } = await query;
+              if (!error && Array.isArray(rows)) {
+                return { success: true, reviews: rows.map(mapSupabaseReview), source: "supabase" };
+              }
+            }
+          } catch (err) {
+            console.warn("[getReviewsServerFn] Supabase read error:", err);
           }
         }
-      } catch (err) {
-        console.warn("[getReviewsServerFn] Supabase read error:", err);
-      }
-    }
 
-    if (isDatabaseConfigured() && db) {
-      try {
-        if (data.productId) {
-          const rows = await db.select().from(schema.productReviews).where(eq(schema.productReviews.productId, data.productId));
-          return { success: true, reviews: rows, source: "database" };
+        if (isDatabaseConfigured() && db) {
+          try {
+            if (data.productId) {
+              const rows = await db.select().from(schema.productReviews).where(eq(schema.productReviews.productId, data.productId));
+              return { success: true, reviews: rows, source: "database" };
+            }
+            const rows = await db.select().from(schema.productReviews);
+            return { success: true, reviews: rows, source: "database" };
+          } catch (err: any) {
+            return { success: false, error: err?.message };
+          }
         }
-        const rows = await db.select().from(schema.productReviews);
-        return { success: true, reviews: rows, source: "database" };
-      } catch (err: any) {
-        return { success: false, error: err?.message };
-      }
-    }
-    return { success: true, reviews: [], source: "none" };
+        return { success: true, reviews: [], source: "none" };
+      },
+      300,
+      ["reviews"]
+    );
   });
 
 export const addReviewServerFn = createServerFn({ method: "POST" })
@@ -114,6 +123,7 @@ export const addReviewServerFn = createServerFn({ method: "POST" })
       }
     }
 
+    serverCache.invalidateTags("reviews");
     return { success: true, review: newRecord };
   });
 
@@ -147,5 +157,6 @@ export const voteHelpfulServerFn = createServerFn({ method: "POST" })
       }
     }
 
+    serverCache.invalidateTags("reviews");
     return { success: true };
   });

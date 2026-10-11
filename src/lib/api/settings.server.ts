@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { eq } from "drizzle-orm";
+import { serverCache } from "../cache.server";
 
 function mapSupabaseSettings(s: any) {
   return {
@@ -51,48 +52,55 @@ function mapSupabaseSettings(s: any) {
 
 export const getPublicSettingsServerFn = createServerFn({ method: "GET" })
   .handler(async () => {
-    if (isSupabaseConfigured()) {
-      try {
-        const client = getSupabaseAdmin() || getSupabaseClient();
-        if (client) {
-          const { data, error } = await client.from("store_settings").select("*").limit(1).maybeSingle();
-          if (!error && data) {
-            const mapped = mapSupabaseSettings(data);
-            const { adminPin, ...publicSettings } = mapped;
-            return {
-              success: true,
-              settings: publicSettings,
-              source: "supabase",
-            };
+    return serverCache.getOrSet(
+      "settings:public",
+      async () => {
+        if (isSupabaseConfigured()) {
+          try {
+            const client = getSupabaseAdmin() || getSupabaseClient();
+            if (client) {
+              const { data, error } = await client.from("store_settings").select("*").limit(1).maybeSingle();
+              if (!error && data) {
+                const mapped = mapSupabaseSettings(data);
+                const { adminPin, ...publicSettings } = mapped;
+                return {
+                  success: true,
+                  settings: publicSettings,
+                  source: "supabase",
+                };
+              }
+            }
+          } catch (err) {
+            console.warn("[getPublicSettingsServerFn] Supabase settings error:", err);
           }
         }
-      } catch (err) {
-        console.warn("[getPublicSettingsServerFn] Supabase settings error:", err);
-      }
-    }
 
-    if (isDatabaseConfigured() && db) {
-      try {
-        const rows = await db.select().from(schema.storeSettings).limit(1);
-        if (rows.length > 0) {
-          const mapped = mapSupabaseSettings(rows[0]);
-          const { adminPin, ...publicSettings } = mapped;
-          return {
-            success: true,
-            settings: publicSettings,
-            source: "database",
-          };
+        if (isDatabaseConfigured() && db) {
+          try {
+            const rows = await db.select().from(schema.storeSettings).limit(1);
+            if (rows.length > 0) {
+              const mapped = mapSupabaseSettings(rows[0]);
+              const { adminPin, ...publicSettings } = mapped;
+              return {
+                success: true,
+                settings: publicSettings,
+                source: "database",
+              };
+            }
+          } catch (err) {
+            console.warn("[getPublicSettingsServerFn] DB read failed:", err);
+          }
         }
-      } catch (err) {
-        console.warn("[getPublicSettingsServerFn] DB read failed:", err);
-      }
-    }
 
-    return {
-      success: true,
-      settings: null,
-      source: "none",
-    };
+        return {
+          success: true,
+          settings: null,
+          source: "none",
+        };
+      },
+      600,
+      ["settings"]
+    );
   });
 
 export const getAdminSettingsServerFn = createServerFn({ method: "POST" })
@@ -209,5 +217,6 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
       }
     }
 
+    serverCache.invalidateTags("settings");
     return { success: true };
   });

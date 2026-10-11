@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { eq } from "drizzle-orm";
+import { serverCache } from "../cache.server";
 
 function mapSupabaseProduct(row: any) {
   return {
@@ -80,43 +81,50 @@ function productToSupabaseRow(p: any) {
 
 export const getProductsServerFn = createServerFn({ method: "GET" })
   .handler(async () => {
-    // 1. Supabase REST API (Primary for Cloud & Vercel)
-    if (isSupabaseConfigured()) {
-      try {
-        const client = getSupabaseAdmin() || getSupabaseClient();
-        if (client) {
-          const { data: rows, error } = await client.from("products").select("*").order("name");
-          if (!error && Array.isArray(rows)) {
+    return serverCache.getOrSet(
+      "products:all",
+      async () => {
+        // 1. Supabase REST API (Primary for Cloud & Vercel)
+        if (isSupabaseConfigured()) {
+          try {
+            const client = getSupabaseAdmin() || getSupabaseClient();
+            if (client) {
+              const { data: rows, error } = await client.from("products").select("*").order("name");
+              if (!error && Array.isArray(rows)) {
+                return {
+                  success: true,
+                  products: rows.map(mapSupabaseProduct),
+                  source: "supabase",
+                };
+              }
+              if (error) {
+                console.warn("[getProductsServerFn] Supabase read error:", error);
+              }
+            }
+          } catch (err) {
+            console.warn("[getProductsServerFn] Supabase client exception:", err);
+          }
+        }
+
+        // 2. PostgreSQL Direct DB (Drizzle fallback)
+        if (isDatabaseConfigured() && db) {
+          try {
+            const rows = await db.select().from(schema.products);
             return {
               success: true,
               products: rows.map(mapSupabaseProduct),
-              source: "supabase",
+              source: "database",
             };
-          }
-          if (error) {
-            console.warn("[getProductsServerFn] Supabase read error:", error);
+          } catch (err) {
+            console.warn("[getProductsServerFn] DB read failed:", err);
           }
         }
-      } catch (err) {
-        console.warn("[getProductsServerFn] Supabase client exception:", err);
-      }
-    }
 
-    // 2. PostgreSQL Direct DB (Drizzle fallback)
-    if (isDatabaseConfigured() && db) {
-      try {
-        const rows = await db.select().from(schema.products);
-        return {
-          success: true,
-          products: rows.map(mapSupabaseProduct),
-          source: "database",
-        };
-      } catch (err) {
-        console.warn("[getProductsServerFn] DB read failed:", err);
-      }
-    }
-
-    return { success: true, products: [], source: "none" };
+        return { success: true, products: [], source: "none" };
+      },
+      300,
+      ["products"]
+    );
   });
 
 export const saveProductServerFn = createServerFn({ method: "POST" })
@@ -209,6 +217,7 @@ export const saveProductServerFn = createServerFn({ method: "POST" })
       }
     }
 
+    serverCache.invalidateTags("products");
     return { success: true, product: productRecord };
   });
 
@@ -258,6 +267,7 @@ export const deleteProductServerFn = createServerFn({ method: "POST" })
       }
     }
 
+    serverCache.invalidateTags("products");
     return { success: true };
   });
 
@@ -336,5 +346,6 @@ export const bulkImportProductsServerFn = createServerFn({ method: "POST" })
       }
     }
 
+    serverCache.invalidateTags("products");
     return { success: true, count: records.length };
   });

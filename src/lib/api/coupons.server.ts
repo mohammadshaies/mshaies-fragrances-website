@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { eq } from "drizzle-orm";
+import { serverCache } from "../cache.server";
 
 function mapSupabaseCoupon(c: any) {
   return {
@@ -115,29 +116,36 @@ export const getCouponsServerFn = createServerFn({ method: "POST" })
       return { success: false, error: auth.error || "Unauthorized admin access." };
     }
 
-    if (isSupabaseConfigured()) {
-      try {
-        const client = getSupabaseAdmin() || getSupabaseClient();
-        if (client) {
-          const { data: rows, error } = await client.from("coupons").select("*");
-          if (!error && Array.isArray(rows)) {
-            return { success: true, coupons: rows.map(mapSupabaseCoupon), source: "supabase" };
+    return serverCache.getOrSet(
+      "coupons:admin",
+      async () => {
+        if (isSupabaseConfigured()) {
+          try {
+            const client = getSupabaseAdmin() || getSupabaseClient();
+            if (client) {
+              const { data: rows, error } = await client.from("coupons").select("*");
+              if (!error && Array.isArray(rows)) {
+                return { success: true, coupons: rows.map(mapSupabaseCoupon), source: "supabase" };
+              }
+            }
+          } catch (err) {
+            console.warn("[getCouponsServerFn] Supabase read error:", err);
           }
         }
-      } catch (err) {
-        console.warn("[getCouponsServerFn] Supabase read error:", err);
-      }
-    }
 
-    if (isDatabaseConfigured() && db) {
-      try {
-        const rows = await db.select().from(schema.coupons);
-        return { success: true, coupons: rows, source: "database" };
-      } catch (err: any) {
-        return { success: false, error: err?.message || "Failed to fetch coupons from database." };
-      }
-    }
-    return { success: true, coupons: [], source: "none" };
+        if (isDatabaseConfigured() && db) {
+          try {
+            const rows = await db.select().from(schema.coupons);
+            return { success: true, coupons: rows, source: "database" };
+          } catch (err: any) {
+            return { success: false, error: err?.message || "Failed to fetch coupons from database." };
+          }
+        }
+        return { success: true, coupons: [], source: "none" };
+      },
+      300,
+      ["coupons"]
+    );
   });
 
 export const saveCouponServerFn = createServerFn({ method: "POST" })
@@ -218,6 +226,7 @@ export const saveCouponServerFn = createServerFn({ method: "POST" })
       }
     }
 
+    serverCache.invalidateTags("coupons");
     return { success: true, coupon: couponRecord };
   });
 
@@ -261,5 +270,6 @@ export const deleteCouponServerFn = createServerFn({ method: "POST" })
       }
     }
 
+    serverCache.invalidateTags("coupons");
     return { success: true };
   });
