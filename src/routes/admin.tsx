@@ -6945,7 +6945,7 @@ function AdminDashboard() {
                     </label>
                     <input
                       type="number"
-                      value={settingsForm.codFee ?? 400}
+                      value={settingsForm.codFee ?? 0}
                       onChange={(e) => setSettingsForm({ ...settingsForm, codFee: Number(e.target.value) })}
                       className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none font-semibold text-amber-700"
                     />

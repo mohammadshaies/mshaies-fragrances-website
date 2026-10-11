@@ -176,7 +176,7 @@ export const storeSettings = pgTable("store_settings", {
   announcementCode: text("announcement_code").default("LUXE15"),
   announcementActive: boolean("announcement_active").default(true),
   freeShippingThreshold: integer("free_shipping_threshold").default(5000),
-  standardShippingFee: integer("standard_shipping_fee").default(250),
+  standardShippingFee: integer("standard_shipping_fee").default(400),
   expressShippingFee: integer("express_shipping_fee").default(450),
   expressShippingActive: boolean("express_shipping_active").default(true),
   lahoreLocalFee: integer("lahore_local_fee").default(150),

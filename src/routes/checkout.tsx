@@ -92,7 +92,7 @@ function CheckoutPage() {
   const freeThreshold = settings?.freeShippingThreshold ?? 5000;
   const isFreeEligible = (settings?.freeShippingEnabled !== false && subtotal >= freeThreshold) || appliedCoupon?.freeShipping;
 
-  let baseShippingRate = settings?.standardShippingFee ?? 250;
+  let baseShippingRate = settings?.standardShippingFee ?? 400;
   if (shippingMethod === "express" && settings?.expressShippingActive !== false) {
     baseShippingRate = settings?.expressShippingFee ?? 450;
   } else if (shippingMethod === "lahoreLocal" && city.toLowerCase() === "lahore" && settings?.lahoreLocalActive !== false) {
@@ -102,11 +102,11 @@ function CheckoutPage() {
   const shippingFee = items.length === 0 
     ? 0 
     : isFreeEligible 
-      ? (shippingMethod === "express" ? Math.max(0, (settings?.expressShippingFee ?? 450) - (settings?.standardShippingFee ?? 250)) : 0)
+      ? (shippingMethod === "express" ? Math.max(0, (settings?.expressShippingFee ?? 450) - (settings?.standardShippingFee ?? 400)) : 0)
       : baseShippingRate;
 
-  // COD Handling Surcharge (₨ 400 default)
-  const codSurcharge = paymentMethod === "cod" ? (settings?.codFee ?? 400) : 0;
+  // COD Handling Surcharge (₨ 0 default)
+  const codSurcharge = paymentMethod === "cod" ? (settings?.codFee ?? 0) : 0;
   
   // Calculate Final Total
   const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
@@ -430,7 +430,7 @@ function CheckoutPage() {
                     </p>
                   </div>
                   <span className="font-serif text-xs font-bold text-ink shrink-0 ml-2">
-                    {isFreeEligible ? <span className="text-emerald-600 uppercase">FREE</span> : formatPKR(settings?.standardShippingFee ?? 250)}
+                    {isFreeEligible ? <span className="text-emerald-600 uppercase">FREE</span> : formatPKR(settings?.standardShippingFee ?? 400)}
                   </span>
                 </button>
 
@@ -456,7 +456,7 @@ function CheckoutPage() {
                     </div>
                     <span className="font-serif text-xs font-bold text-gold-deep shrink-0 ml-2">
                       {isFreeEligible 
-                        ? formatPKR(Math.max(0, (settings?.expressShippingFee ?? 450) - (settings?.standardShippingFee ?? 250)))
+                        ? formatPKR(Math.max(0, (settings?.expressShippingFee ?? 450) - (settings?.standardShippingFee ?? 400)))
                         : formatPKR(settings?.expressShippingFee ?? 450)
                       }
                     </span>
@@ -513,12 +513,20 @@ function CheckoutPage() {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <Banknote className="size-4 text-emerald-600 shrink-0" />
                       <span className="text-sm font-semibold">Cash on Delivery (COD)</span>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded">
-                        +₨ {settings?.codFee ?? 400} Fee
-                      </span>
+                      {(settings?.codFee ?? 0) > 0 ? (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                          +₨ {settings?.codFee} Fee
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                          No Extra Fee
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] font-normal text-muted-foreground">
-                      Pay cash at doorstep anywhere in Pakistan (₨ {settings?.codFee ?? 400} courier fee)
+                      {(settings?.codFee ?? 0) > 0 
+                        ? `Pay cash at doorstep anywhere in Pakistan (+₨ ${settings?.codFee} COD fee)`
+                        : "Pay cash at doorstep anywhere in Pakistan"}
                     </p>
                   </div>
                   {paymentMethod === "cod" && <CheckCircle2 className="size-4 text-gold-deep shrink-0" />}
@@ -619,25 +627,41 @@ function CheckoutPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-border/60">
                     <div className="flex items-center gap-2">
                       <Banknote className="size-4 text-emerald-600" />
-                      <h4 className="font-serif text-sm font-bold text-ink">Cash on Delivery (COD) Terms</h4>
+                      <h4 className="font-serif text-sm font-bold text-ink">Cash on Delivery (COD)</h4>
                     </div>
-                    <span className="text-[10px] font-bold text-amber-800 bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 rounded-full w-fit">
-                      COD Courier Collection Fee: +{formatPKR(settings?.codFee ?? 400)}
-                    </span>
+                    {(settings?.codFee ?? 0) > 0 ? (
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 rounded-full w-fit">
+                        COD Collection Fee: +{formatPKR(settings?.codFee ?? 0)}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 rounded-full w-fit">
+                        Zero Extra COD Fee
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    A fixed COD cash-handling surcharge of <strong className="text-ink font-semibold">₨ {settings?.codFee ?? 400}</strong> applies to cash collection orders across Pakistan. Total cash payable to rider at doorstep: <strong className="text-ink font-serif font-bold text-sm">{formatPKR(finalTotal)}</strong>.
+                    {(settings?.codFee ?? 0) > 0 ? (
+                      <>
+                        A fixed COD cash-handling surcharge of <strong className="text-ink font-semibold">₨ {settings?.codFee}</strong> applies to cash collection orders across Pakistan. Total cash payable to rider at doorstep: <strong className="text-ink font-serif font-bold text-sm">{formatPKR(finalTotal)}</strong>.
+                      </>
+                    ) : (
+                      <>
+                        Pay safely upon arrival. Exact cash payable to rider at doorstep: <strong className="text-ink font-serif font-bold text-sm">{formatPKR(finalTotal)}</strong>.
+                      </>
+                    )}
                   </p>
-                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-emerald-800">
-                    <span>💡 <strong>Save ₨ {settings?.codFee ?? 400}:</strong> Switch to JazzCash, Easypaisa, or NayaPay for zero COD surcharge!</span>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("jazzcash")}
-                      className="font-bold underline text-emerald-700 hover:text-emerald-900 shrink-0 self-start sm:self-auto"
-                    >
-                      Pay Online →
-                    </button>
-                  </div>
+                  {(settings?.codFee ?? 0) > 0 && (
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-emerald-800">
+                      <span>💡 <strong>Save ₨ {settings?.codFee}:</strong> Switch to JazzCash, Easypaisa, or NayaPay for zero COD surcharge!</span>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("jazzcash")}
+                        className="font-bold underline text-emerald-700 hover:text-emerald-900 shrink-0 self-start sm:self-auto"
+                      >
+                        Pay Online →
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
