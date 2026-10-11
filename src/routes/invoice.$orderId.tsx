@@ -279,7 +279,7 @@ function InvoicePage() {
                     Cash on Delivery (COD) Doorstep Packing Confirmed
                   </h3>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-800 border border-emerald-500/30">
-                    ₨ 400 Collection Surcharge Included
+                    {order.shipping > 0 ? "Standard Delivery: ₨ 400" : "Free Delivery Eligible"}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">

@@ -70,10 +70,13 @@ import {
   Box,
   ShoppingBag,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminLoginServerFn, adminVerifyPinServerFn, verifyAdminStatusServerFn } from "@/lib/api/auth.server";
 import { getCacheStatsServerFn, purgeServerCacheFn } from "@/lib/api/cache.server";
+import { getEmailConfigServerFn, saveEmailConfigServerFn, testEmailServerFn } from "@/lib/api/email.server";
+import { resendOrderNotificationServerFn } from "@/lib/api/orders.server";
 import type { JobPosting } from "@/lib/products-store";
 import { PromotionalBanner } from "@/components/PromotionalBanner";
 import {
@@ -1838,9 +1841,166 @@ function AdminDashboard() {
     }
   };
 
+  // Email Notification & SMTP Dispatcher State
+  const [emailConfig, setEmailConfig] = useState<{
+    provider: "resend" | "gmail" | "smtp";
+    resendApiKey: string;
+    hasResendApiKey?: boolean;
+    emailFrom: string;
+    gmailUser: string;
+    gmailAppPassword: string;
+    hasGmailPassword?: boolean;
+    smtpHost: string;
+    smtpPort: number;
+    smtpUser: string;
+    smtpPass: string;
+    hasSmtpPass?: boolean;
+    smtpSecure?: boolean;
+    adminEmail: string;
+    isConfigured?: boolean;
+  }>({
+    provider: "resend",
+    resendApiKey: "",
+    hasResendApiKey: false,
+    emailFrom: "",
+    gmailUser: "m.shaiesfragrances@gmail.com",
+    gmailAppPassword: "",
+    hasGmailPassword: false,
+    smtpHost: "smtp.gmail.com",
+    smtpPort: 465,
+    smtpUser: "m.shaiesfragrances@gmail.com",
+    smtpPass: "",
+    hasSmtpPass: false,
+    smtpSecure: true,
+    adminEmail: "m.shaiesfragrances@gmail.com",
+    isConfigured: false,
+  });
+  const [isSavingEmailConfig, setIsSavingEmailConfig] = useState(false);
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
+  const [testRecipient, setTestRecipient] = useState("m.shaiesfragrances@gmail.com");
+  const [resendingOrderId, setResendingOrderId] = useState<string | null>(null);
+
+  const fetchEmailConfig = async () => {
+    try {
+      const adminToken =
+        typeof sessionStorage !== "undefined"
+          ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+          : null;
+      if (!adminToken) return;
+      const res = await getEmailConfigServerFn({ data: { authToken: adminToken } });
+      if (res.success && res.config) {
+        setEmailConfig((prev) => ({
+          provider: (res.config?.provider as any) || prev.provider || "resend",
+          resendApiKey: res.config?.resendApiKey || "",
+          hasResendApiKey: Boolean(res.config?.hasResendApiKey),
+          emailFrom: res.config?.emailFrom || prev.emailFrom || "",
+          gmailUser: res.config?.gmailUser || prev.gmailUser || "m.shaiesfragrances@gmail.com",
+          gmailAppPassword: res.config?.hasGmailPassword ? "••••••••••••••••" : "",
+          hasGmailPassword: Boolean(res.config?.hasGmailPassword),
+          smtpHost: res.config?.smtpHost || prev.smtpHost || "smtp.gmail.com",
+          smtpPort: res.config?.smtpPort || prev.smtpPort || 465,
+          smtpUser: res.config?.smtpUser || prev.smtpUser || "m.shaiesfragrances@gmail.com",
+          smtpPass: res.config?.hasSmtpPass ? "••••••••••••••••" : "",
+          hasSmtpPass: Boolean(res.config?.hasSmtpPass),
+          smtpSecure: res.config?.smtpSecure ?? prev.smtpSecure ?? true,
+          adminEmail: res.config?.adminEmail || prev.adminEmail || "m.shaiesfragrances@gmail.com",
+          isConfigured: Boolean(res.config?.isConfigured),
+        }));
+        if (res.config.adminEmail) {
+          setTestRecipient(res.config.adminEmail);
+        }
+      }
+    } catch {}
+  };
+
+  const handleSaveEmailConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingEmailConfig(true);
+    const toastId = toast.loading("Saving email dispatcher settings to database...");
+    try {
+      const adminToken =
+        typeof sessionStorage !== "undefined"
+          ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+          : null;
+      const res = await saveEmailConfigServerFn({
+        data: {
+          authToken: adminToken || undefined,
+          ...emailConfig,
+        },
+      });
+      if (res.success) {
+        toast.success(res.message || "Email dispatcher settings saved successfully!", { id: toastId });
+        await fetchEmailConfig();
+      } else {
+        toast.error(res.error || "Failed to save email settings.", { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save email settings.", { id: toastId });
+    } finally {
+      setIsSavingEmailConfig(false);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!testRecipient || !testRecipient.includes("@")) {
+      toast.error("Please enter a valid recipient email address for testing.");
+      return;
+    }
+    setIsTestingEmail(true);
+    const toastId = toast.loading(`Dispatching test verification email to ${testRecipient}...`);
+    try {
+      const adminToken =
+        typeof sessionStorage !== "undefined"
+          ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+          : null;
+      const res = await testEmailServerFn({
+        data: {
+          authToken: adminToken || undefined,
+          targetEmail: testRecipient,
+        },
+      });
+      if (res.success) {
+        toast.success(res.message || "Test email delivered successfully! Please check your inbox.", { id: toastId });
+      } else {
+        toast.error(res.error || "Failed to dispatch test verification email.", { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to dispatch test email.", { id: toastId });
+    } finally {
+      setIsTestingEmail(false);
+    }
+  };
+
+  const handleResendOrderEmail = async (orderId: string) => {
+    setResendingOrderId(orderId);
+    const toastId = toast.loading(`Dispatching confirmation & invoice email for Order #${orderId}...`);
+    try {
+      const adminToken =
+        typeof sessionStorage !== "undefined"
+          ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+          : null;
+      const res = await resendOrderNotificationServerFn({
+        data: {
+          authToken: adminToken || undefined,
+          orderId,
+        },
+      });
+      if (res.success) {
+        toast.success(res.message || `Order #${orderId} email dispatched successfully!`, { id: toastId });
+      } else {
+        toast.error(res.error || `Failed to dispatch Order #${orderId} emails. Check Email Settings.`, { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to resend order email.", { id: toastId });
+    } finally {
+      setResendingOrderId(null);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "settings" && isAuthenticated) {
       fetchCacheStats();
+      fetchEmailConfig();
     }
   }, [activeTab, isAuthenticated]);
 
@@ -5211,6 +5371,19 @@ function AdminDashboard() {
                               >
                                 <Receipt className="size-4" />
                               </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleResendOrderEmail(o.id)}
+                                disabled={resendingOrderId === o.id}
+                                className="p-1.5 rounded-lg border border-sky-500/30 text-sky-600 hover:bg-sky-500/10 transition-colors disabled:opacity-50 cursor-pointer"
+                                title={`Send / Resend Order #${o.id} Invoice & Confirmation Email`}
+                              >
+                                {resendingOrderId === o.id ? (
+                                  <Loader2 className="size-4 animate-spin text-sky-600" />
+                                ) : (
+                                  <Mail className="size-4" />
+                                )}
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -7050,6 +7223,373 @@ function AdminDashboard() {
                   <div className="p-2.5 rounded-xl bg-pearl/40 border border-border/60">
                     <strong className="text-ink block mb-0.5">3. Client &amp; HTTP Cache</strong>
                     Browser localStorage caches state to prevent layout shifts. Media and images are delivered with immutable CDN caching headers.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card: Automated Order Notifications & Email Transporter */}
+            <div className="rounded-3xl border border-border/80 bg-card p-6 sm:p-8 space-y-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-full bg-gold/15 border border-gold/40 grid place-items-center shrink-0">
+                    <Mail className="size-5 text-gold-deep" />
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-serif text-xl sm:text-2xl text-ink font-bold">
+                        Automated Order Notifications &amp; Invoices
+                      </h3>
+                      <span
+                        className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                          emailConfig.isConfigured
+                            ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+                            : "bg-amber-500/15 text-amber-700 border-amber-500/30"
+                        }`}
+                      >
+                        {emailConfig.isConfigured
+                          ? `✓ Active (${emailConfig.provider.toUpperCase()})`
+                          : "⚠ Configuration Required"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Dispatches official branded PDF-ready tax invoices to customers and instant order alerts to management upon checkout.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={fetchEmailConfig}
+                    className="px-3.5 py-2 rounded-full border border-border bg-background text-xs text-muted-foreground hover:text-ink font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Reload email settings from database"
+                  >
+                    <RotateCcw className="size-3.5" />
+                    Refresh Status
+                  </button>
+                </div>
+              </div>
+
+              {/* Provider Selection Bar */}
+              <div className="space-y-3">
+                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
+                  Select Email Dispatch Provider
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEmailConfig({ ...emailConfig, provider: "resend" })}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                      emailConfig.provider === "resend"
+                        ? "border-gold bg-gold/10 shadow-xs ring-1 ring-gold"
+                        : "border-border bg-background hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <strong className="text-sm text-ink font-bold">Resend API</strong>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700">
+                        Recommended
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Cloud REST API. Free 3,000 emails/month. 100% reliable on Vercel with zero SMTP port blocks.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEmailConfig({ ...emailConfig, provider: "gmail" })}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                      emailConfig.provider === "gmail"
+                        ? "border-gold bg-gold/10 shadow-xs ring-1 ring-gold"
+                        : "border-border bg-background hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <strong className="text-sm text-ink font-bold">Gmail SMTP</strong>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pearl border border-border text-ink">
+                        Google App Pass
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Send directly from your Google account using a 16-character Google App Password with 2FA.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEmailConfig({ ...emailConfig, provider: "smtp" })}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                      emailConfig.provider === "smtp"
+                        ? "border-gold bg-gold/10 shadow-xs ring-1 ring-gold"
+                        : "border-border bg-background hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <strong className="text-sm text-ink font-bold">Custom SMTP</strong>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pearl border border-border text-ink">
+                        Dedicated Relay
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Connect your own corporate mail server or transactional relay (SendGrid, Mailgun, Brevo).
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Provider Quick Setup Guidance Banner */}
+              {emailConfig.provider === "resend" && (
+                <div className="p-4 rounded-2xl bg-pearl/60 border border-gold/30 text-xs text-muted-foreground space-y-1.5">
+                  <p className="font-semibold text-ink flex items-center gap-1.5">
+                    <Sparkles className="size-4 text-gold-deep" />
+                    How to Setup Resend in 30 Seconds (Free):
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 text-[11px] pl-1">
+                    <li>
+                      Create a free account at{" "}
+                      <a
+                        href="https://resend.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-gold-deep underline font-semibold"
+                      >
+                        resend.com
+                      </a>
+                    </li>
+                    <li>Generate an API Key (starts with <code className="font-mono bg-pearl px-1 rounded">re_</code>) and paste it below.</li>
+                    <li>
+                      For testing, leave sender as <code className="font-mono bg-pearl px-1 rounded">onboarding@resend.dev</code> or add your domain to dispatch to all customers.
+                    </li>
+                  </ol>
+                </div>
+              )}
+
+              {emailConfig.provider === "gmail" && (
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-muted-foreground space-y-1.5">
+                  <p className="font-semibold text-amber-900 flex items-center gap-1.5">
+                    <KeyRound className="size-4 text-amber-600" />
+                    Important: Google Requires a 16-Character App Password (Not your normal password):
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 text-[11px] text-amber-950 pl-1">
+                    <li>Enable <strong>2-Step Verification (2FA)</strong> on your Google Account if not already active.</li>
+                    <li>
+                      Go directly to{" "}
+                      <a
+                        href="https://myaccount.google.com/apppasswords"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-amber-800 underline font-bold"
+                      >
+                        myaccount.google.com/apppasswords
+                      </a>
+                    </li>
+                    <li>Name it &quot;Mshaies Store&quot; and generate the 16-character code. Paste the 16 letters below.</li>
+                  </ol>
+                </div>
+              )}
+
+              {/* Form Controls */}
+              <form onSubmit={handleSaveEmailConfig} className="space-y-4">
+                {/* Resend Fields */}
+                {emailConfig.provider === "resend" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Resend API Key *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="re_xxxxxxxxxxxxxxxxxxxx"
+                        value={emailConfig.resendApiKey}
+                        onChange={(e) => setEmailConfig({ ...emailConfig, resendApiKey: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-background font-mono text-xs text-ink focus:border-gold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        From Sender Address
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="M.shaies Fragrances <onboarding@resend.dev>"
+                        value={emailConfig.emailFrom}
+                        onChange={(e) => setEmailConfig({ ...emailConfig, emailFrom: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Gmail Fields */}
+                {emailConfig.provider === "gmail" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Gmail Account Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="m.shaiesfragrances@gmail.com"
+                        value={emailConfig.gmailUser}
+                        onChange={(e) => setEmailConfig({ ...emailConfig, gmailUser: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        16-Character Google App Password *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="e.g. abcd efgh ijkl mnop"
+                        value={emailConfig.gmailAppPassword}
+                        onChange={(e) => setEmailConfig({ ...emailConfig, gmailAppPassword: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-background font-mono text-xs text-ink focus:border-gold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom SMTP Fields */}
+                {emailConfig.provider === "smtp" && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                          SMTP Host *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="smtp.example.com"
+                          value={emailConfig.smtpHost}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, smtpHost: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                          SMTP Port *
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          placeholder="465 or 587"
+                          value={emailConfig.smtpPort}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, smtpPort: Number(e.target.value) })}
+                          className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                          SMTP Username *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="user@example.com"
+                          value={emailConfig.smtpUser}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, smtpUser: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                          SMTP Password *
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          placeholder="SMTP Password"
+                          value={emailConfig.smtpPass}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, smtpPass: e.target.value })}
+                          className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Management Notification Recipient */}
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Store Management Alert Recipient (Receives copies of every new customer order) *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="m.shaiesfragrances@gmail.com"
+                    value={emailConfig.adminEmail}
+                    onChange={(e) => setEmailConfig({ ...emailConfig, adminEmail: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-[11px] text-muted-foreground">
+                    Settings are stored in your secure Supabase database and take effect immediately across all servers.
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={isSavingEmailConfig}
+                    className="btn-gold btn-gold-hover px-6 py-2.5 rounded-full text-xs uppercase tracking-wider font-bold flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSavingEmailConfig ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Check className="size-3.5" />
+                    )}
+                    Save Email Settings
+                  </button>
+                </div>
+              </form>
+
+              {/* Instant Live Test Tool */}
+              <div className="pt-4 border-t border-border/80">
+                <div className="p-4 sm:p-5 rounded-2xl bg-pearl/40 border border-gold/30 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Zap className="size-4 text-gold-deep" />
+                    <h4 className="font-serif text-sm font-bold text-ink">
+                      Live Email Transmission Verification Tool
+                    </h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Send a test email right now to verify whether your credentials and server connection are working properly.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5 max-w-lg">
+                    <input
+                      type="email"
+                      value={testRecipient}
+                      onChange={(e) => setTestRecipient(e.target.value)}
+                      placeholder="Enter test recipient email..."
+                      className="w-full px-4 py-2 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSendTestEmail}
+                      disabled={isTestingEmail}
+                      className="w-full sm:w-auto px-5 py-2 rounded-xl bg-ink text-gold hover:bg-black text-xs uppercase tracking-wider font-bold whitespace-nowrap flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {isTestingEmail ? (
+                        <>
+                          <Loader2 className="size-3.5 animate-spin" />
+                          Testing...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="size-3.5" />
+                          Send Test Email
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>

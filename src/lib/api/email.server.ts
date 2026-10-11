@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
-import { getSupabaseAdmin, isSupabaseConfigured } from "../supabase.server";
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { getSupabaseAdmin, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 
 export interface OrderEmailItem {
   name: string;
@@ -30,7 +32,21 @@ export interface OrderEmailData {
   items: OrderEmailItem[];
 }
 
-const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "m.shaiesfragrances@gmail.com";
+export interface EmailConfig {
+  provider: "resend" | "gmail" | "smtp";
+  resendApiKey?: string;
+  emailFrom?: string;
+  gmailUser?: string;
+  gmailAppPassword?: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPass?: string;
+  smtpSecure?: boolean;
+  adminEmail: string;
+}
+
+const DEFAULT_ADMIN_EMAIL = "m.shaiesfragrances@gmail.com";
 const STORE_NAME = "M.shaies Haute Parfumerie";
 const STORE_WHATSAPP = "+92 339 0001829";
 
@@ -42,55 +58,97 @@ function formatPKR(num: number): string {
 }
 
 /**
- * Creates email transport or returns null if no credentials configured
+ * Retrieves authoritative Email Configuration:
+ * 1. Checks Supabase system-config-email record in audit_logs (allows instant setup via Admin UI)
+ * 2. Merges with environment variables (process.env.RESEND_API_KEY, GMAIL_APP_PASSWORD, etc.)
+ * 3. Sanitizes spaces and Windows CRLF carriage returns
  */
-function getEmailTransport() {
-  const gmailPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS;
-  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || ADMIN_EMAIL;
-  const smtpHost = process.env.SMTP_HOST;
+export async function getActiveEmailConfig(): Promise<EmailConfig> {
+  let dbConfig: Partial<EmailConfig> = {};
 
-  if (gmailPass) {
-    if (smtpHost) {
-      return nodemailer.createTransport({
-        host: smtpHost,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: Number(process.env.SMTP_PORT || 587) === 465,
-        auth: {
-          user: smtpUser,
-          pass: gmailPass,
-        },
-      });
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseAdmin();
+      if (client) {
+        const { data } = await client
+          .from("audit_logs")
+          .select("details")
+          .eq("id", "system-config-email")
+          .maybeSingle();
+        if (data?.details) {
+          try {
+            dbConfig = JSON.parse(data.details);
+          } catch {}
+        }
+      }
+    } catch (e) {
+      console.warn("[Email Service] Could not fetch db email config:", e);
     }
-
-    // Default to Gmail service
-    return nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: smtpUser,
-        pass: gmailPass,
-      },
-    });
   }
 
-  return null;
+  // Sanitize environment variables against Windows carriage returns and spacing
+  const envResendApiKey = (process.env.RESEND_API_KEY || "").trim().replace(/[\r\n]/g, "");
+  const envGmailPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || "").trim().replace(/[\r\n\s]/g, "");
+  const envGmailUser = (process.env.GMAIL_USER || process.env.SMTP_USER || DEFAULT_ADMIN_EMAIL).trim().replace(/[\r\n]/g, "");
+  const envAdminEmail = (process.env.ADMIN_NOTIFICATION_EMAIL || DEFAULT_ADMIN_EMAIL).trim().replace(/[\r\n]/g, "");
+  const envEmailFrom = (process.env.EMAIL_FROM || "").trim().replace(/[\r\n]/g, "");
+
+  const resendApiKey = (dbConfig.resendApiKey || envResendApiKey || "").trim().replace(/[\r\n]/g, "");
+  const gmailPass = (dbConfig.gmailAppPassword || envGmailPass || "").trim().replace(/[\r\n\s]/g, "");
+  const gmailUser = (dbConfig.gmailUser || envGmailUser || DEFAULT_ADMIN_EMAIL).trim().replace(/[\r\n]/g, "");
+  const adminEmail = (dbConfig.adminEmail || envAdminEmail || DEFAULT_ADMIN_EMAIL).trim().replace(/[\r\n]/g, "");
+  const emailFrom = (dbConfig.emailFrom || envEmailFrom || `M.shaies Haute Parfumerie <${adminEmail}>`).trim();
+
+  const provider: "resend" | "gmail" | "smtp" = dbConfig.provider || (resendApiKey ? "resend" : "gmail");
+
+  const smtpHost = (dbConfig.smtpHost || process.env.SMTP_HOST || "smtp.gmail.com").trim().replace(/[\r\n]/g, "");
+  const smtpPort = Number(dbConfig.smtpPort || process.env.SMTP_PORT || 465);
+  const smtpUser = (dbConfig.smtpUser || gmailUser).trim().replace(/[\r\n]/g, "");
+  const smtpPass = (dbConfig.smtpPass || gmailPass).trim().replace(/[\r\n\s]/g, "");
+  const smtpSecure = dbConfig.smtpSecure ?? (smtpPort === 465);
+
+  return {
+    provider,
+    resendApiKey,
+    emailFrom,
+    gmailUser,
+    gmailAppPassword: gmailPass,
+    smtpHost,
+    smtpPort,
+    smtpUser,
+    smtpPass,
+    smtpSecure,
+    adminEmail,
+  };
 }
 
 /**
- * Sends email via Resend API directly if RESEND_API_KEY is configured
+ * Sends email via Resend HTTP REST API
  */
-async function sendViaResend(to: string, subject: string, html: string): Promise<boolean> {
-  const resendApiKey = process.env.RESEND_API_KEY;
-  if (!resendApiKey) return false;
+async function sendViaResend(
+  to: string,
+  subject: string,
+  html: string,
+  config: EmailConfig
+): Promise<{ sent: boolean; method: string; error?: string }> {
+  if (!config.resendApiKey) {
+    return { sent: false, method: "resend", error: "Missing RESEND_API_KEY" };
+  }
 
   try {
+    // If testing without verified domain, Resend requires onboarding@resend.dev
+    const fromAddress = config.emailFrom && !config.emailFrom.includes("@gmail.com")
+      ? config.emailFrom
+      : "M.shaies Fragrances <onboarding@resend.dev>";
+
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${resendApiKey}`,
+        Authorization: `Bearer ${config.resendApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || "M.shaies Fragrances <onboarding@resend.dev>",
+        from: fromAddress,
         to: [to],
         subject,
         html,
@@ -100,19 +158,83 @@ async function sendViaResend(to: string, subject: string, html: string): Promise
     if (!res.ok) {
       const errBody = await res.text();
       console.warn("[Email Service] Resend API error:", errBody);
-      return false;
+      return { sent: false, method: "resend", error: `Resend API returned: ${errBody}` };
     }
-    return true;
-  } catch (err) {
+    return { sent: true, method: "resend" };
+  } catch (err: any) {
     console.warn("[Email Service] Resend fetch exception:", err);
-    return false;
+    return { sent: false, method: "resend", error: err?.message || "Failed to reach Resend API" };
   }
 }
 
 /**
- * Dispatches an email using available transport (Resend or Nodemailer)
+ * Sends email via Nodemailer SMTP (Gmail or custom server)
  */
-async function sendEmailMessage({
+async function sendViaSmtp(
+  to: string,
+  subject: string,
+  html: string,
+  config: EmailConfig
+): Promise<{ sent: boolean; method: string; error?: string }> {
+  const host = config.smtpHost || "smtp.gmail.com";
+  const port = config.smtpPort || 465;
+  const isSecure = port === 465;
+  const user = config.smtpUser || config.gmailUser;
+  const pass = config.smtpPass || config.gmailAppPassword;
+
+  if (!pass || !user) {
+    return {
+      sent: false,
+      method: "smtp",
+      error: "Missing SMTP/Gmail username or app password. Please configure them in Admin Settings.",
+    };
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: isSecure,
+      auth: {
+        user,
+        pass,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    const fromAddress = config.emailFrom || `"${STORE_NAME}" <${user}>`;
+    await transporter.sendMail({
+      from: fromAddress,
+      to,
+      subject,
+      html,
+    });
+    return { sent: true, method: host.includes("gmail") ? "gmail-smtp" : "smtp" };
+  } catch (err: any) {
+    console.warn("[Email Service] SMTP dispatch error:", err?.message || err);
+    let errorMsg = err?.message || "Failed to send email via SMTP";
+    if (
+      errorMsg.includes("535") ||
+      errorMsg.includes("BadCredentials") ||
+      errorMsg.includes("Username and Password not accepted")
+    ) {
+      errorMsg =
+        "Google SMTP rejected credentials (535 Bad Credentials). Ensure 2-Step Verification is ON and generate a fresh 16-character App Password at https://myaccount.google.com/apppasswords";
+    } else if (errorMsg.includes("ETIMEDOUT") || errorMsg.includes("ECONNREFUSED")) {
+      errorMsg = `Connection to ${host}:${port} timed out. Cloud serverless platforms may restrict SMTP ports; consider switching to Resend API.`;
+    }
+    return { sent: false, method: host.includes("gmail") ? "gmail-smtp" : "smtp", error: errorMsg };
+  }
+}
+
+/**
+ * Dispatches an email using the active or fallback transport
+ */
+export async function sendEmailMessage({
   to,
   subject,
   html,
@@ -121,36 +243,48 @@ async function sendEmailMessage({
   subject: string;
   html: string;
 }): Promise<{ sent: boolean; method: string; error?: string }> {
-  // 1. Try Resend if configured
-  if (process.env.RESEND_API_KEY) {
-    const success = await sendViaResend(to, subject, html);
-    if (success) {
-      return { sent: true, method: "resend" };
+  const config = await getActiveEmailConfig();
+
+  // 1. If configured for Resend
+  if (config.provider === "resend" && config.resendApiKey) {
+    const resendResult = await sendViaResend(to, subject, html, config);
+    if (resendResult.sent) return resendResult;
+    // Fallback to Gmail SMTP if available
+    if (config.gmailAppPassword) {
+      console.log("[Email Service] Resend failed, attempting fallback to Gmail SMTP...");
+      const smtpResult = await sendViaSmtp(to, subject, html, config);
+      if (smtpResult.sent) return smtpResult;
+    }
+    return resendResult;
+  }
+
+  // 2. If configured for Gmail / SMTP
+  if (config.provider === "gmail" || config.provider === "smtp") {
+    if (config.gmailAppPassword || config.smtpPass) {
+      const smtpResult = await sendViaSmtp(to, subject, html, config);
+      if (smtpResult.sent) return smtpResult;
+      // Fallback to Resend if available
+      if (config.resendApiKey) {
+        console.log("[Email Service] SMTP failed, attempting fallback to Resend API...");
+        const resendResult = await sendViaResend(to, subject, html, config);
+        if (resendResult.sent) return resendResult;
+      }
+      return smtpResult;
     }
   }
 
-  // 2. Try Nodemailer / SMTP / Gmail if configured
-  const transporter = getEmailTransport();
-  if (transporter) {
-    try {
-      const fromAddress = process.env.SMTP_FROM || `"${STORE_NAME}" <${ADMIN_EMAIL}>`;
-      await transporter.sendMail({
-        from: fromAddress,
-        to,
-        subject,
-        html,
-      });
-      return { sent: true, method: "smtp" };
-    } catch (err: any) {
-      console.warn("[Email Service] SMTP dispatch error:", err?.message || err);
-      return { sent: false, method: "smtp", error: err?.message };
-    }
+  // 3. Fallback: try any configured credentials
+  if (config.resendApiKey) {
+    return sendViaResend(to, subject, html, config);
+  }
+  if (config.gmailAppPassword || config.smtpPass) {
+    return sendViaSmtp(to, subject, html, config);
   }
 
   return {
     sent: false,
     method: "none",
-    error: "No email transport configured (set GMAIL_APP_PASSWORD or RESEND_API_KEY in .env)",
+    error: "No email transport configured. Please configure Resend API Key or Gmail App Password in Admin Settings.",
   };
 }
 
@@ -363,7 +497,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
                 <strong>M.shaies Haute Parfumerie</strong> · 100% In Stock · Delivering Nationwide Across Pakistan
               </p>
               <p style="margin: 0;">
-                WhatsApp Helpline: <a href="https://wa.me/923390001829" style="color: #15803d; font-weight: bold; text-decoration: none;">+92 339 0001829</a> · Email: <a href="mailto:${ADMIN_EMAIL}" style="color: #1c1917; text-decoration: none;">${ADMIN_EMAIL}</a>
+                WhatsApp Helpline: <a href="https://wa.me/923390001829" style="color: #15803d; font-weight: bold; text-decoration: none;">+92 339 0001829</a> · Email: <a href="mailto:${DEFAULT_ADMIN_EMAIL}" style="color: #1c1917; text-decoration: none;">${DEFAULT_ADMIN_EMAIL}</a>
               </p>
             </td>
           </tr>
@@ -541,7 +675,7 @@ export function generateAdminOrderAlertHtml(order: OrderEmailData): string {
 
 /**
  * Dispatches automated order notification emails to:
- * 1. Store Admin (m.shaiesfragrances@gmail.com)
+ * 1. Store Admin (from active config or default m.shaiesfragrances@gmail.com)
  * 2. Customer (order.email if provided)
  */
 export async function dispatchOrderNotificationEmails(order: OrderEmailData): Promise<{
@@ -549,17 +683,19 @@ export async function dispatchOrderNotificationEmails(order: OrderEmailData): Pr
   customerEmail?: { sent: boolean; method: string; error?: string };
 }> {
   console.log(`[Email Service] Initiating order email dispatches for #${order.id}...`);
+  const config = await getActiveEmailConfig();
+  const adminRecipient = config.adminEmail || DEFAULT_ADMIN_EMAIL;
 
-  // 1. Send Admin Order Alert Email to m.shaiesfragrances@gmail.com
+  // 1. Send Admin Order Alert Email
   const adminSubject = `✨ New Order Placed: #${order.id} (${formatPKR(order.total)}) — ${order.customerName} (${order.city})`;
   const adminHtml = generateAdminOrderAlertHtml(order);
   const adminResult = await sendEmailMessage({
-    to: ADMIN_EMAIL,
+    to: adminRecipient,
     subject: adminSubject,
     html: adminHtml,
   });
 
-  console.log(`[Email Service] Admin notification result for ${ADMIN_EMAIL}:`, adminResult);
+  console.log(`[Email Service] Admin notification result for ${adminRecipient}:`, adminResult);
 
   // 2. Send Customer Invoice Email (if customer provided an email)
   let customerResult: { sent: boolean; method: string; error?: string } | undefined = undefined;
@@ -586,9 +722,9 @@ export async function dispatchOrderNotificationEmails(order: OrderEmailData): Pr
           timestamp: new Date().toISOString(),
           action: adminResult.sent ? "Order Email Dispatched" : "Order Email Queued",
           category: "Order",
-          details: `Order #${order.id} notification: Admin to ${ADMIN_EMAIL} (${adminResult.sent ? "Sent via " + adminResult.method : "Queued: " + (adminResult.error || "No email credentials configured")})${
+          details: `Order #${order.id} notification: Admin to ${adminRecipient} (${adminResult.sent ? "Sent via " + adminResult.method : "Queued: " + (adminResult.error || "No email credentials configured")})${
             order.email
-              ? ` · Customer to ${order.email} (${customerResult?.sent ? "Sent" : "Queued"})`
+              ? ` · Customer to ${order.email} (${customerResult?.sent ? "Sent" : "Queued: " + (customerResult?.error || "Pending")})`
               : " · (Customer email not provided)"
           }`,
           user: "Automated Mailer",
@@ -604,3 +740,225 @@ export async function dispatchOrderNotificationEmails(order: OrderEmailData): Pr
     customerEmail: customerResult,
   };
 }
+
+/**
+ * Generates verification test email HTML
+ */
+export function generateTestEmailHtml(recipient: string, provider: string): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: Georgia, serif; background-color: #f7f5f0; padding: 40px 20px; color: #1c1917; margin: 0;">
+  <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1.5px solid #d4af37; padding: 36px 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); text-align: center;">
+    <h1 style="color: #12100e; font-size: 26px; letter-spacing: 3px; text-transform: uppercase; margin: 0 0 6px;">M.SHAIES</h1>
+    <p style="color: #d4af37; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 24px;">Haute Parfumerie · System Verification</p>
+    
+    <div style="padding: 20px; background-color: #f0fdf4; border-radius: 12px; border: 1px solid #86efac; margin-bottom: 24px;">
+      <h2 style="margin: 0 0 8px; font-size: 18px; color: #166534; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        ✓ Email Transmission Operational!
+      </h2>
+      <p style="margin: 0; font-size: 13px; color: #374151; line-height: 1.5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        Congratulations! Your automated transactional email dispatcher is successfully configured via <strong>${provider.toUpperCase()}</strong>. Official order confirmations, invoices, and customer notifications are ready for nationwide delivery.
+      </p>
+    </div>
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="6" style="text-align: left; font-size: 12px; color: #57534e; background-color: #faf7f2; border: 1px solid #e8e2d5; border-radius: 8px; margin-bottom: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <tr>
+        <td width="35%"><strong>Recipient:</strong></td>
+        <td>${recipient}</td>
+      </tr>
+      <tr>
+        <td><strong>Provider:</strong></td>
+        <td>${provider.toUpperCase()}</td>
+      </tr>
+      <tr>
+        <td><strong>Timestamp:</strong></td>
+        <td>${new Date().toUTCString()}</td>
+      </tr>
+    </table>
+
+    <p style="margin: 0; font-size: 11px; color: #a8a29e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      M.shaies Haute Parfumerie · Dispatch Desk
+    </p>
+  </div>
+</body>
+</html>
+  `;
+}
+
+/**
+ * Server Function: Get current email settings (with masked keys)
+ */
+export const getEmailConfigServerFn = createServerFn({ method: "POST" })
+  .validator(z.object({ authToken: z.string().optional() }))
+  .handler(async ({ data }) => {
+    const sessionCheck = await verifyAdminSession(data.authToken);
+    if (!sessionCheck.valid) {
+      return { success: false, error: sessionCheck.error || "Unauthorized" };
+    }
+
+    const config = await getActiveEmailConfig();
+    const maskKey = (k?: string) => (k && k.length > 6 ? `${k.slice(0, 3)}••••••••${k.slice(-3)}` : k ? "••••••••" : "");
+
+    return {
+      success: true,
+      config: {
+        provider: config.provider,
+        resendApiKey: maskKey(config.resendApiKey),
+        hasResendApiKey: Boolean(config.resendApiKey),
+        emailFrom: config.emailFrom,
+        gmailUser: config.gmailUser,
+        hasGmailPassword: Boolean(config.gmailAppPassword),
+        smtpHost: config.smtpHost,
+        smtpPort: config.smtpPort,
+        smtpUser: config.smtpUser,
+        hasSmtpPass: Boolean(config.smtpPass),
+        smtpSecure: config.smtpSecure,
+        adminEmail: config.adminEmail,
+        isConfigured: Boolean(config.resendApiKey || config.gmailAppPassword || config.smtpPass),
+      },
+    };
+  });
+
+/**
+ * Server Function: Save email settings directly to Supabase
+ */
+export const saveEmailConfigServerFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      authToken: z.string().optional(),
+      provider: z.enum(["resend", "gmail", "smtp"]),
+      resendApiKey: z.string().optional(),
+      emailFrom: z.string().optional(),
+      gmailUser: z.string().optional(),
+      gmailAppPassword: z.string().optional(),
+      smtpHost: z.string().optional(),
+      smtpPort: z.number().optional(),
+      smtpUser: z.string().optional(),
+      smtpPass: z.string().optional(),
+      smtpSecure: z.boolean().optional(),
+      adminEmail: z.string().min(5),
+    })
+  )
+  .handler(async ({ data }) => {
+    const sessionCheck = await verifyAdminSession(data.authToken);
+    if (!sessionCheck.valid) {
+      return { success: false, error: sessionCheck.error || "Unauthorized" };
+    }
+
+    if (!isSupabaseConfigured()) {
+      return { success: false, error: "Database not configured to store settings." };
+    }
+
+    const client = getSupabaseAdmin();
+    if (!client) {
+      return { success: false, error: "Supabase admin client not available." };
+    }
+
+    // Existing config to preserve unedited masked passwords
+    let existing: any = {};
+    try {
+      const { data: exRow } = await client
+        .from("audit_logs")
+        .select("details")
+        .eq("id", "system-config-email")
+        .maybeSingle();
+      if (exRow?.details) existing = JSON.parse(exRow.details);
+    } catch {}
+
+    const newResendApiKey =
+      data.resendApiKey && !data.resendApiKey.includes("••••")
+        ? data.resendApiKey.trim()
+        : (existing.resendApiKey || process.env.RESEND_API_KEY || "").trim();
+
+    const newGmailAppPassword =
+      data.gmailAppPassword && !data.gmailAppPassword.includes("••••")
+        ? data.gmailAppPassword.trim().replace(/[\r\n\s]/g, "")
+        : (existing.gmailAppPassword || process.env.GMAIL_APP_PASSWORD || "").trim().replace(/[\r\n\s]/g, "");
+
+    const newSmtpPass =
+      data.smtpPass && !data.smtpPass.includes("••••")
+        ? data.smtpPass.trim().replace(/[\r\n\s]/g, "")
+        : (existing.smtpPass || existing.gmailAppPassword || process.env.SMTP_PASS || "").trim().replace(/[\r\n\s]/g, "");
+
+    const toSave = {
+      provider: data.provider,
+      resendApiKey: newResendApiKey,
+      emailFrom: data.emailFrom?.trim() || `M.shaies Haute Parfumerie <${data.adminEmail.trim()}>`,
+      gmailUser: data.gmailUser?.trim() || "m.shaiesfragrances@gmail.com",
+      gmailAppPassword: newGmailAppPassword,
+      smtpHost: data.smtpHost?.trim() || "smtp.gmail.com",
+      smtpPort: data.smtpPort || 465,
+      smtpUser: data.smtpUser?.trim() || data.gmailUser?.trim() || "m.shaiesfragrances@gmail.com",
+      smtpPass: newSmtpPass,
+      smtpSecure: data.smtpSecure ?? true,
+      adminEmail: data.adminEmail.trim(),
+    };
+
+    const { error: upsertErr } = await client.from("audit_logs").upsert({
+      id: "system-config-email",
+      action: "email_credentials",
+      category: "Config",
+      details: JSON.stringify(toSave),
+      timestamp: new Date().toISOString(),
+      user: sessionCheck.user?.email || "Admin Console",
+    });
+
+    if (upsertErr) {
+      return { success: false, error: `Failed to save email settings: ${upsertErr.message}` };
+    }
+
+    // Audit log
+    await client.from("audit_logs").insert({
+      id: `log-email-config-${Date.now()}`,
+      action: "Email Settings Updated",
+      category: "Config",
+      details: `Email provider updated to ${data.provider.toUpperCase()} (Admin recipient: ${data.adminEmail})`,
+      timestamp: new Date().toISOString(),
+      user: sessionCheck.user?.email || "Admin Console",
+    });
+
+    return { success: true, message: "Email configuration saved successfully!" };
+  });
+
+/**
+ * Server Function: Test email dispatch
+ */
+export const testEmailServerFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      authToken: z.string().optional(),
+      targetEmail: z.string().min(5),
+    })
+  )
+  .handler(async ({ data }) => {
+    const sessionCheck = await verifyAdminSession(data.authToken);
+    if (!sessionCheck.valid) {
+      return { success: false, error: sessionCheck.error || "Unauthorized" };
+    }
+
+    const config = await getActiveEmailConfig();
+    const testHtml = generateTestEmailHtml(data.targetEmail.trim(), config.provider);
+
+    const result = await sendEmailMessage({
+      to: data.targetEmail.trim(),
+      subject: `✨ M.shaies Fragrances — Email Service Connection Verification`,
+      html: testHtml,
+    });
+
+    if (result.sent) {
+      return {
+        success: true,
+        method: result.method,
+        message: `Verification email sent successfully to ${data.targetEmail.trim()} via ${result.method.toUpperCase()}! Please check your inbox.`,
+      };
+    }
+
+    return {
+      success: false,
+      method: result.method,
+      error: result.error || "Failed to dispatch test verification email.",
+    };
+  });
+

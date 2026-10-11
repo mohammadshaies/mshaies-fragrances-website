@@ -677,4 +677,66 @@ export const getOrderByIdServerFn = createServerFn({ method: "POST" })
   .validator(getOrderByIdSchema)
   .handler(async ({ data }) => processGetOrderById(data));
 
+export const resendOrderEmailSchema = z.object({
+  authToken: z.string().optional(),
+  orderId: z.string().min(1),
+});
+
+export const resendOrderNotificationServerFn = createServerFn({ method: "POST" })
+  .validator(resendOrderEmailSchema)
+  .handler(async ({ data }) => {
+    const sessionCheck = await verifyAdminSession(data.authToken);
+    if (!sessionCheck.valid) {
+      return { success: false, error: sessionCheck.error || "Unauthorized" };
+    }
+
+    const orderRes = await processGetOrderById({ orderId: data.orderId });
+    if (!orderRes.success || !orderRes.order) {
+      return { success: false, error: orderRes.error || "Order not found." };
+    }
+
+    const order = orderRes.order;
+    const result = await dispatchOrderNotificationEmails({
+      id: order.id,
+      customerName: order.customerName,
+      email: order.email || null,
+      phone: order.phone,
+      address: order.address,
+      city: order.city,
+      postalCode: order.postalCode || null,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      transactionId: order.transactionId || null,
+      subtotal: order.subtotal,
+      discountCode: order.discountCode || null,
+      discountAmount: order.discountAmount || 0,
+      shipping: order.shipping,
+      total: order.total,
+      courierName: order.courierName || null,
+      date: order.date || new Date().toISOString().split("T")[0],
+      items: order.items || [],
+    });
+
+    const isDelivered = result.adminEmail.sent || (result.customerEmail ? result.customerEmail.sent : false);
+    if (isDelivered) {
+      return {
+        success: true,
+        adminResult: result.adminEmail,
+        customerResult: result.customerEmail,
+        message: `Order #${order.id} notifications dispatched! Admin: ${result.adminEmail.sent ? "Sent via " + result.adminEmail.method : "Queued"} · Customer: ${order.email ? (result.customerEmail?.sent ? "Sent via " + result.customerEmail.method : "Failed: " + (result.customerEmail?.error || "Error")) : "No customer email"}`,
+      };
+    }
+
+    return {
+      success: false,
+      adminResult: result.adminEmail,
+      customerResult: result.customerEmail,
+      error:
+        result.adminEmail.error ||
+        result.customerEmail?.error ||
+        "Failed to dispatch email. Please check your Email Settings in the Admin Portal.",
+    };
+  });
+
+
 
