@@ -121,10 +121,10 @@ export function Hero() {
               transition={{ duration: 0.8, delay: 0.1 }}
               className="w-[48%] xs:w-[50%] sm:w-[50%] relative h-[230px] xs:h-[260px] sm:h-[300px] flex items-center justify-center shrink-0 pointer-events-none select-none"
             >
-              {/* Ambient Pedestal Glow (GPU accelerated) */}
+              {/* Ambient Pedestal Glow */}
               <div 
-                className="absolute inset-2 rounded-full opacity-12 blur-2xl pointer-events-none transform-gpu"
-                style={{ background: "radial-gradient(circle, var(--gold), transparent 70%)" }}
+                className="absolute inset-2 rounded-full pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(212, 175, 55, 0.16) 0%, rgba(212, 175, 55, 0.04) 50%, transparent 70%)" }}
               />
 
               {!isDesktop && (
