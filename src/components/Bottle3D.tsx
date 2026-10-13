@@ -10,6 +10,9 @@ import { prefetchAndCacheModel } from "@/lib/model-cache";
 const MODEL_PATH = "/attar-bottle-model.glb";
 const DRACO_PATH = "/draco/";
 
+// Starting pose: live bottle begins at exactly the same angle as the poster
+export const INITIAL_ROTATION_Y = 0;
+
 useGLTF.preload(MODEL_PATH, DRACO_PATH);
 
 if (typeof window !== "undefined") {
@@ -105,6 +108,20 @@ function FrameLoopController({ visible }: { visible: boolean }) {
 }
 
 // ============================================================================
+// 4c. READY SIGNAL (EMITS WHEN FIRST LIVE 3D FRAME DRAWS)
+// ============================================================================
+function ReadySignal({ onReady }: { onReady: () => void }) {
+  const signaledRef = useRef(false);
+  useFrame(() => {
+    if (!signaledRef.current) {
+      signaledRef.current = true;
+      onReady();
+    }
+  });
+  return null;
+}
+
+// ============================================================================
 // 5. 3D MODEL COMPONENT (ADAPTIVE MOBILE / PC PBR MATERIALS)
 // ============================================================================
 function Model({
@@ -119,6 +136,13 @@ function Model({
   const { size } = useThree();
   const gltf = useGLTF(MODEL_PATH, DRACO_PATH);
   const modelRef = useRef<THREE.Group>(null);
+
+  // Set explicit initial rotation pose matching the poster
+  useEffect(() => {
+    if (modelRef.current) {
+      modelRef.current.rotation.y = INITIAL_ROTATION_Y;
+    }
+  }, []);
 
   // Calibrated scale
   const scaleVal = useMemo(() => {
@@ -217,7 +241,7 @@ function Model({
   });
 
   return (
-    <group ref={modelRef} scale={[scaleVal, scaleVal, scaleVal]}>
+    <group ref={modelRef} scale={[scaleVal, scaleVal, scaleVal]} rotation={[0, INITIAL_ROTATION_Y, 0]}>
       <primitive object={clonedScene} />
       <FakeContactShadow />
     </group>
@@ -365,6 +389,9 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
     return () => observer.disconnect();
   }, []);
 
+  const [isReady, setIsReady] = useState(false);
+  const [isPosterMounted, setIsPosterMounted] = useState(true);
+
   // Active rendering condition
   const visible = isInView && isTabVisible;
 
@@ -372,7 +399,7 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
     <WebGLErrorBoundary fallback={<BottlePoster isCompact={isCompact} />}>
       <div
         ref={containerRef}
-        className={`w-full h-full flex items-center justify-center select-none ${
+        className={`relative w-full h-full flex items-center justify-center select-none ${
           isCompact
             ? "min-h-[220px] xs:min-h-[250px] sm:min-h-[280px]"
             : "min-h-[440px] lg:min-h-[500px] cursor-grab active:cursor-grabbing"
@@ -381,69 +408,93 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           touchAction: "pan-y",
         }}
       >
-        <Canvas
-          frameloop={visible ? "always" : "never"}
-          dpr={dpr}
-          camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
-          gl={{
-            antialias: true, // Antialias ON for sharp non-pixelated edges
-            alpha: true,
-            stencil: false,
-            depth: true,
-            powerPreference: "high-performance",
-            toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 1.18,
-          }}
-          style={{ 
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          {/* Automatically wake up R3F render loop when canvas becomes visible */}
-          <FrameLoopController visible={visible} />
-
-          {/* PerformanceMonitor: adaptively reduces mobile DPR only if frame rate drops */}
-          {isMobile && (
-            <PerformanceMonitor
-              ms={300}
-              iterations={7}
-              threshold={0.7}
-              onDecline={() => {
-                setDpr((current) => (current[1] > 1.5 ? [1, 1.5] : [1, 1.2]));
-              }}
-              onIncline={() => {
-                setDpr([1, 2]);
-              }}
-            />
-          )}
-
-          <SceneLights isMobile={isMobile} />
-          <SceneEnvironment />
-
-          <Suspense fallback={null}>
-            <Model
-              isCompact={isCompact}
-              isMobile={isMobile}
-              isInteractingRef={isInteractingRef}
-            />
-          </Suspense>
-
-          <OrbitControls
-            enableZoom={false}
-            enablePan={false}
-            autoRotate={false}
-            enableRotate={true}
-            rotateSpeed={0.8}
-            minPolarAngle={Math.PI / 3}
-            maxPolarAngle={Math.PI / 1.6}
-            onStart={() => {
-              isInteractingRef.current = true;
+        {/* Seamless static poster layer: identical framing, dimensions, and background */}
+        {isPosterMounted && (
+          <img
+            src="/bottle-poster.webp"
+            alt="M.shaies Luxury Flacon"
+            fetchPriority="high"
+            decoding="async"
+            onTransitionEnd={() => {
+              if (isReady) setIsPosterMounted(false);
             }}
-            onEnd={() => {
-              isInteractingRef.current = false;
-            }}
+            className={`absolute inset-0 w-full h-full object-contain pointer-events-none select-none z-10 transition-opacity duration-[350ms] ease-out ${
+              isCompact ? "p-4" : "p-6"
+            } ${isReady ? "opacity-0" : "opacity-100"}`}
           />
-        </Canvas>
+        )}
+
+        {/* 3D WebGL Canvas: starts at opacity 0, crossfades to 1 once first frame renders */}
+        <div
+          className={`w-full h-full transition-opacity duration-[350ms] ease-out ${
+            isReady ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <Canvas
+            frameloop={visible ? "always" : "never"}
+            dpr={dpr}
+            camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
+            gl={{
+              antialias: true, // Antialias ON for sharp non-pixelated edges
+              alpha: true,
+              stencil: false,
+              depth: true,
+              powerPreference: "high-performance",
+              toneMapping: THREE.ACESFilmicToneMapping,
+              toneMappingExposure: 1.18,
+            }}
+            style={{ 
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            {/* Automatically wake up R3F render loop when canvas becomes visible */}
+            <FrameLoopController visible={visible} />
+
+            {/* PerformanceMonitor: adaptively reduces mobile DPR only if frame rate drops */}
+            {isMobile && (
+              <PerformanceMonitor
+                ms={300}
+                iterations={7}
+                threshold={0.7}
+                onDecline={() => {
+                  setDpr((current) => (current[1] > 1.5 ? [1, 1.5] : [1, 1.2]));
+                }}
+                onIncline={() => {
+                  setDpr([1, 2]);
+                }}
+              />
+            )}
+
+            <SceneLights isMobile={isMobile} />
+            <SceneEnvironment />
+
+            <Suspense fallback={null}>
+              <Model
+                isCompact={isCompact}
+                isMobile={isMobile}
+                isInteractingRef={isInteractingRef}
+              />
+              <ReadySignal onReady={() => setIsReady(true)} />
+            </Suspense>
+
+            <OrbitControls
+              enableZoom={false}
+              enablePan={false}
+              autoRotate={false}
+              enableRotate={true}
+              rotateSpeed={0.8}
+              minPolarAngle={Math.PI / 3}
+              maxPolarAngle={Math.PI / 1.6}
+              onStart={() => {
+                isInteractingRef.current = true;
+              }}
+              onEnd={() => {
+                isInteractingRef.current = false;
+              }}
+            />
+          </Canvas>
+        </div>
       </div>
     </WebGLErrorBoundary>
   );

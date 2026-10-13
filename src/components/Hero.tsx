@@ -5,7 +5,8 @@ import { Link } from "@tanstack/react-router";
 import { BottlePoster } from "./BottlePoster";
 
 // Lazy-load the heavy 3D WebGL engine after initial paint (SSR-safe, code-split)
-const Bottle3D = lazy(() => import("./Bottle3D").then((m) => ({ default: m.Bottle3D })));
+const loadBottle3D = () => import("./Bottle3D").then((m) => ({ default: m.Bottle3D }));
+const Bottle3D = lazy(loadBottle3D);
 
 // ============================================================================
 // HERO SECTION COMPONENT (Interactive 3D Luxury Showcase)
@@ -24,6 +25,11 @@ export function Hero() {
     const check = () => setIsDesktop(window.innerWidth >= 1024);
     window.addEventListener("resize", check, { passive: true });
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Begin dynamic import chunk download immediately after hydration
+  useEffect(() => {
+    loadBottle3D();
   }, []);
 
   // Smoothly scroll down to the product catalog
