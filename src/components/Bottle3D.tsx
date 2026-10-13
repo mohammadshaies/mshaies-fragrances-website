@@ -76,14 +76,14 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
         if (child.material) {
           if (child.material.isMeshStandardMaterial || child.material.isMeshPhysicalMaterial) {
             if (isCompact) {
-              // MOBILE: Bright, warm, luminous with zero environment-sampling overhead
+              // MOBILE: Refined, rich amber flacon with balanced luxury shine (not overexposed)
               if (child.material.color) {
-                child.material.color.multiplyScalar(1.52);
+                child.material.color.multiplyScalar(1.06);
               }
-              child.material.roughness = 0.32;
-              child.material.metalness = 0.16;
-              child.material.emissive = new THREE.Color(0x523c1a);
-              child.material.emissiveIntensity = 0.55;
+              child.material.roughness = 0.22;
+              child.material.metalness = 0.38;
+              child.material.emissive = new THREE.Color(0x221606);
+              child.material.emissiveIntensity = 0.10;
             } else {
               // PC DESKTOP: Full luxury gold specular and softbox reflections
               if (child.material.color) {
@@ -183,27 +183,27 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           depth: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: isCompact ? 1.70 : 1.85,
+          toneMappingExposure: isCompact ? 1.22 : 1.85,
         }}
         style={{ pointerEvents: isNonInteractive ? "none" : "auto" }}
       >
         {/* Studio Lighting Rig */}
-        <ambientLight intensity={isCompact ? 3.4 : 2.8} color="#ffffff" />
+        <ambientLight intensity={isCompact ? 1.45 : 2.8} color="#ffffff" />
         
         {/* Front Key Light */}
-        <directionalLight position={[4, 7, 6]} intensity={isCompact ? 3.8 : 3.4} color="#ffffff" />
+        <directionalLight position={[4, 7, 6]} intensity={isCompact ? 1.85 : 3.4} color="#ffffff" />
         
         {/* Warm Gold Accent Fill Light */}
-        <directionalLight position={[-5, 5, 5]} intensity={isCompact ? 2.8 : 2.6} color="#fff6e8" />
+        <directionalLight position={[-5, 5, 5]} intensity={isCompact ? 1.35 : 2.6} color="#fff6e8" />
         
         {/* Rim Contour Backlight */}
-        <directionalLight position={[0, 6, -6]} intensity={isCompact ? 2.8 : 2.6} color="#ffffff" />
+        <directionalLight position={[0, 6, -6]} intensity={isCompact ? 1.40 : 2.6} color="#ffffff" />
 
         {/* Front Direct Spot Glow */}
-        <pointLight position={[0, 1.5, 3.5]} intensity={isCompact ? 3.2 : 3.0} color="#ffffff" distance={15} />
+        <pointLight position={[0, 1.5, 3.5]} intensity={isCompact ? 1.30 : 3.0} color="#ffffff" distance={15} />
         
         {/* Base Pedestal Uplight for Glowing Amber Perfume */}
-        <pointLight position={[0, -2.5, 2.5]} intensity={isCompact ? 2.6 : 2.4} color="#ffe8b8" distance={12} />
+        <pointLight position={[0, -2.5, 2.5]} intensity={isCompact ? 1.25 : 2.4} color="#ffe8b8" distance={12} />
 
         {/* PC DESKTOP ONLY: 100% Offline Multi-Panel Studio Environment (bakes once on start) */}
         {!isCompact && (

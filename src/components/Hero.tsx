@@ -123,7 +123,7 @@ export function Hero() {
             >
               {/* Ambient Pedestal Glow (GPU accelerated) */}
               <div 
-                className="absolute inset-2 rounded-full opacity-45 blur-2xl pointer-events-none transform-gpu"
+                className="absolute inset-2 rounded-full opacity-22 blur-2xl pointer-events-none transform-gpu"
                 style={{ background: "radial-gradient(circle, var(--gold), transparent 70%)" }}
               />
 
