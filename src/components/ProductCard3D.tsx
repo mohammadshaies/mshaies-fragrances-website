@@ -64,7 +64,7 @@ function MobileProductCard({ product }: { product: Product }) {
   };
 
   return (
-    <div className="w-full h-full" style={{ contentVisibility: "auto", containIntrinsicSize: "280px" }}>
+    <div className="w-full h-full">
       <div className="group relative rounded-2xl bg-card border border-border/80 active:border-gold/60 transition-colors duration-150 flex flex-col h-full shadow-xs overflow-hidden">
         {/* Native Touch Link to Product Page */}
         <Link
