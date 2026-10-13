@@ -122,13 +122,25 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
   }, [clonedScene]);
 
   // Combined smooth rotation & micro-floating animation
+  // On mobile, throttle rendering to 30 FPS to save 75% GPU cycles for buttery smooth 120Hz scrolling
+  const lastRender = useRef(0);
   useFrame((state, delta) => {
+    const time = state.clock.elapsedTime;
+    if (isCompact) {
+      if (time - lastRender.current < 0.033) return;
+      lastRender.current = time;
+    }
+
     if (modelRef.current) {
       const d = Math.min(delta, 0.033);
       modelRef.current.rotation.y += d * 0.42;
-      modelRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.3) * 0.035;
+      modelRef.current.position.y = Math.sin(time * 1.3) * 0.035;
     }
-  });
+
+    if (isCompact) {
+      state.gl.render(state.scene, state.camera);
+    }
+  }, isCompact ? 1 : 0);
 
   return (
     <group ref={modelRef} scale={[scaleVal, scaleVal, scaleVal]}>
@@ -197,11 +209,11 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
         dpr={dpr}
         camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
         gl={{
-          antialias: true,
+          antialias: !isCompact,
           alpha: true,
           stencil: false,
           depth: true,
-          powerPreference: "high-performance",
+          powerPreference: isCompact ? "default" : "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: isCompact ? 1.35 : 1.85,
         }}

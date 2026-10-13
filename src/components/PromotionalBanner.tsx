@@ -327,7 +327,7 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
       <div className="pointer-events-none absolute -top-12 -left-12 size-48 rounded-full bg-gold/15 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-12 right-0 size-48 rounded-full bg-amber-500/10 blur-3xl" />
 
-      {/* Sweeping Shimmer Light Beam */}
+      {/* Sweeping Shimmer Light Beam (Desktop only to keep mobile 100% silk smooth) */}
       {showShimmer && (
         <motion.div
           animate={{
@@ -339,7 +339,7 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
             ease: "easeInOut",
             repeatDelay: 1.5,
           }}
-          className="pointer-events-none absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 will-change-transform"
+          className="pointer-events-none absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 will-change-transform hidden sm:block"
         />
       )}
 
@@ -378,15 +378,16 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
         </div>
       </div>
 
-      {/* Slide Progress Bar (animated countdown to next transition) */}
+      {/* Slide Progress Bar (animated countdown to next transition using GPU transform) */}
       {!isHovered && speed > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-[2px] sm:h-[2.5px] bg-white/10 overflow-hidden">
           <motion.div
             key={`progress-${safeIndex}`}
-            initial={{ width: "0%" }}
-            animate={{ width: "100%" }}
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
             transition={{ duration: speed / 1000, ease: "linear" }}
-            className="h-full bg-gradient-to-r from-gold via-amber-400 to-gold"
+            style={{ transformOrigin: "left" }}
+            className="h-full w-full bg-gradient-to-r from-gold via-amber-400 to-gold"
           />
         </div>
       )}

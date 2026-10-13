@@ -108,7 +108,7 @@ function MobileProductCard({ product }: { product: Product }) {
                 alt={product.name}
                 loading="lazy"
                 decoding="async"
-                className="w-full h-full object-contain drop-shadow-[0_6px_12px_rgba(0,0,0,0.14)] max-h-[135px] xs:max-h-[165px]"
+                className="w-full h-full object-contain max-h-[135px] xs:max-h-[165px]"
               />
             </div>
           </div>
