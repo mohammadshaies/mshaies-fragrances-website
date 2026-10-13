@@ -64,79 +64,13 @@ function safeCompare(a: string, b: string): boolean {
 export const adminVerifyPinServerFn = createServerFn({ method: "POST" })
   .validator(
     z.object({
-      pin: z.string().min(4).max(12),
+      pin: z.string().optional(),
     })
   )
-  .handler(async ({ data }) => {
-    const rateCheck = isRateLimited("global_staff");
-    if (rateCheck.limited) {
-      return {
-        success: false,
-        error: `Too many failed attempts. Security console locked. Retry in ${rateCheck.retryAfterSeconds}s.`,
-      };
-    }
-
-    // Retrieve active Master PIN from environment, database, or settings
-    let activePin: string | null = process.env.ADMIN_PIN?.trim() || null;
-    if (!activePin && isDatabaseConfigured() && db) {
-      try {
-        const settingsRow = await db.select().from(schema.storeSettings).limit(1);
-        if (settingsRow.length > 0 && settingsRow[0].adminPin) {
-          activePin = settingsRow[0].adminPin.trim();
-        }
-      } catch (err) {
-        console.warn("[adminVerifyPinServerFn] Database PIN read failed:", err);
-      }
-    }
-
-    if (!activePin && isSupabaseConfigured()) {
-      try {
-        const client = getSupabaseAdmin() || getSupabaseClient();
-        if (client) {
-          const { data: dbData } = await client.from("store_settings").select("admin_pin").limit(1).maybeSingle();
-          if (dbData?.admin_pin) {
-            activePin = String(dbData.admin_pin).trim();
-          }
-        }
-      } catch (err) {
-        console.warn("[adminVerifyPinServerFn] Supabase PIN read failed:", err);
-      }
-    }
-
-    if (!activePin) {
-      activePin = "7860";
-    }
-
-    const cleanInput = data.pin.trim();
-    if (safeCompare(cleanInput, activePin) || safeCompare(cleanInput, "7860")) {
-      resetAttempts("global_staff");
-      const sessionToken = createAdminSessionToken({
-        id: "staff-pin-admin",
-        email: "admin@mshaies.com",
-      });
-
-      return {
-        success: true,
-        token: sessionToken,
-        user: {
-          id: "staff-pin-admin",
-          email: "admin@mshaies.com",
-          role: "admin",
-        },
-      };
-    }
-
-    const { attemptsRemaining, lockedOut } = recordFailedAttempt("global_staff");
-    if (lockedOut) {
-      return {
-        success: false,
-        error: "5 consecutive failed PIN attempts. Console locked for 60 seconds.",
-      };
-    }
-
+  .handler(async () => {
     return {
       success: false,
-      error: `Invalid Emergency PIN. ${attemptsRemaining} attempt(s) remaining.`,
+      error: "Master PIN login has been permanently disabled. Please sign in with your Supabase administrator Email and Password.",
     };
   });
 
@@ -156,37 +90,67 @@ export const adminLoginServerFn = createServerFn({ method: "POST" })
       const client = getSupabaseClient();
       if (client) {
         try {
+          const cleanEmail = data.email.trim().toLowerCase();
           const { data: authData, error } = await client.auth.signInWithPassword({
-            email: data.email.trim(),
+            email: cleanEmail,
             password: data.password,
           });
 
           if (error) {
-            // If Supabase failed, check Master PIN fallback before rejecting
-            const isMasterPin = safeCompare(data.password, "7860") || safeCompare(data.password, "Mshaies7860!");
-            if (isMasterPin) {
-              const token = createAdminSessionToken({
-                id: "master-admin",
-                email: data.email.trim() || "admin@mshaies.com",
-              });
-              return {
-                success: true,
-                token,
-                user: {
-                  id: "master-admin",
-                  email: data.email.trim() || "admin@mshaies.com",
-                  role: "admin",
-                },
-              };
-            }
-
             return {
               success: false,
               error: error.message || "Invalid email or password.",
             };
           }
 
-          if (authData?.session) {
+          if (authData?.user && authData?.session) {
+            const user = authData.user;
+            const appRole = (user.app_metadata as any)?.role;
+            const userRole = (user.user_metadata as any)?.role;
+
+            let hasAdminRole =
+              appRole === "admin" ||
+              appRole === "superadmin" ||
+              userRole === "admin" ||
+              userRole === "superadmin";
+
+            // Also check admin_users table if configured in Supabase
+            if (!hasAdminRole) {
+              const adminClient = getSupabaseAdmin();
+              if (adminClient) {
+                try {
+                  const { data: adminRow } = await adminClient
+                    .from("admin_users")
+                    .select("role")
+                    .eq("email", cleanEmail)
+                    .maybeSingle();
+
+                  if (adminRow && (adminRow.role === "admin" || adminRow.role === "superadmin")) {
+                    hasAdminRole = true;
+                  }
+                } catch {
+                  // Table might not exist yet
+                }
+              }
+            }
+
+            // Fallback: If explicit server env ADMIN_EMAIL matches
+            const envAdminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+            if (!hasAdminRole && envAdminEmail && cleanEmail === envAdminEmail) {
+              hasAdminRole = true;
+            }
+
+            // Strictly reject users without the admin role
+            if (!hasAdminRole) {
+              try {
+                await client.auth.signOut();
+              } catch {}
+              return {
+                success: false,
+                error: "Access denied. Your account does not have the 'admin' role assigned in Supabase.",
+              };
+            }
+
             // Write to Supabase audit_logs table for comprehensive activity tracking
             try {
               const adminClient = getSupabaseAdmin();
@@ -196,7 +160,7 @@ export const adminLoginServerFn = createServerFn({ method: "POST" })
                   timestamp: new Date().toISOString(),
                   action: "Staff Authentication",
                   category: "System",
-                  details: `User ${authData.user.email} successfully logged into management portal.`,
+                  details: `Administrator ${authData.user.email} signed into management portal.`,
                   user: authData.user.email || "Staff Admin",
                 });
               }
@@ -225,11 +189,11 @@ export const adminLoginServerFn = createServerFn({ method: "POST" })
     }
 
     // 2. Strict Fallback only if Supabase is offline AND explicit server environment variables exist
-    const expectedEmail = process.env.ADMIN_EMAIL?.trim();
+    const expectedEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
     const expectedPassword = process.env.ADMIN_PASSWORD?.trim();
 
     if (expectedEmail && expectedPassword) {
-      const emailMatches = safeCompare(data.email.trim().toLowerCase(), expectedEmail.toLowerCase());
+      const emailMatches = safeCompare(data.email.trim().toLowerCase(), expectedEmail);
       const passMatches = safeCompare(data.password, expectedPassword);
 
       if (emailMatches && passMatches) {

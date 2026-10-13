@@ -90,7 +90,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
-import { adminLoginServerFn, adminVerifyPinServerFn, verifyAdminStatusServerFn } from "@/lib/api/auth.server";
+import { adminLoginServerFn, verifyAdminStatusServerFn } from "@/lib/api/auth.server";
 import { getCacheStatsServerFn, purgeServerCacheFn } from "@/lib/api/cache.server";
 import { getEmailConfigServerFn, saveEmailConfigServerFn, testEmailServerFn } from "@/lib/api/email.server";
 import { resendOrderNotificationServerFn } from "@/lib/api/orders.server";
@@ -1664,41 +1664,13 @@ function AdminDashboard() {
       localStorage.removeItem(AUTH_SESSION_KEY);
     }
 
-    // Check if browser was refreshed during an active PIN lockout
-    const until = sessionStorage.getItem("mshaies_lockout_until");
-    if (until) {
-      const remaining = parseInt(until, 10) - Date.now();
-      if (remaining > 0) {
-        setIsLockedOut(true);
-        const timer = setTimeout(() => {
-          setIsLockedOut(false);
-          setFailedAttempts(0);
-          sessionStorage.removeItem("mshaies_lockout_until");
-          sessionStorage.removeItem("mshaies_failed_pin_attempts");
-        }, remaining);
-        return () => clearTimeout(timer);
-      } else {
-        sessionStorage.removeItem("mshaies_lockout_until");
-        sessionStorage.removeItem("mshaies_failed_pin_attempts");
-      }
-    }
   }, []);
-  const [authMode, setAuthMode] = useState<"pin" | "supabase">("pin");
-  const [adminEmail, setAdminEmail] = useState("admin@mshaies.com");
+  const [adminEmail, setAdminEmail] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("mshaies_admin_email") || "";
+  });
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [showEmergencyPin, setShowEmergencyPin] = useState(false);
-  const [failedAttempts, setFailedAttempts] = useState(() => {
-    if (typeof window === "undefined") return 0;
-    const attempts = sessionStorage.getItem("mshaies_failed_pin_attempts");
-    return attempts ? parseInt(attempts, 10) || 0 : 0;
-  });
-  const [isLockedOut, setIsLockedOut] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const until = sessionStorage.getItem("mshaies_lockout_until");
-    return until ? Date.now() < parseInt(until, 10) : false;
-  });
 
   const [activeTab, setActiveTab] = useState<TabType>("analytics");
   const [bannerPreviewKey, setBannerPreviewKey] = useState(0);
@@ -2377,10 +2349,6 @@ function AdminDashboard() {
     return Array.from(map.values());
   }, [flaconSizesList, editingProduct?.availableSizes]);
 
-  const [currentPinInput, setCurrentPinInput] = useState("");
-  const [newPinInput, setNewPinInput] = useState("");
-  const [confirmPinInput, setConfirmPinInput] = useState("");
-
   // Backup Import State
   const [backupJsonInput, setBackupJsonInput] = useState("");
 
@@ -2532,11 +2500,11 @@ function AdminDashboard() {
     setSettingsForm(settings);
   }, [settings]);
 
-  // Supabase Auth Login (Authoritative & Secure)
+  // Supabase Auth Login (Authoritative & Secure Email/Password with Admin Role Enforcement)
   const handleSupabaseLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminEmail.trim() || !adminPassword) {
-      toast.error("Please enter your staff email and password.");
+      toast.error("Please enter your administrator email and password.");
       return;
     }
     setIsAuthenticating(true);
@@ -2559,72 +2527,13 @@ function AdminDashboard() {
         setCurrentAdminEmail(authedEmail);
         setIsAuthenticated(true);
         refreshDataFromServer();
-        setFailedAttempts(0);
         setAdminPassword("");
-        toast.success(`Authenticated as ${authedEmail}`);
+        toast.success(`Authenticated as administrator (${authedEmail})`);
       } else {
         toast.error(res.error || "Authentication failed. Check your Supabase credentials.");
       }
     } catch (err: any) {
       toast.error(err?.message || "Login request failed. Check server connection.");
-    } finally {
-      setIsAuthenticating(false);
-    }
-  };
-
-  // Secondary PIN Screen-Lock Handler (Server-Verified with Signed Session Token)
-  const handlePinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isLockedOut) {
-      toast.error("Too many failed attempts. Security console locked.");
-      return;
-    }
-
-    if (!pinInput.trim()) {
-      toast.error("Please enter the Master PIN.");
-      return;
-    }
-
-    setIsAuthenticating(true);
-    try {
-      const res = await adminVerifyPinServerFn({
-        data: { pin: pinInput.trim() },
-      });
-
-      if (res.success && res.token) {
-        sessionStorage.setItem("mshaies_admin_token", res.token);
-        sessionStorage.setItem(AUTH_SESSION_KEY, "true");
-        localStorage.setItem("mshaies_admin_token", res.token);
-        localStorage.setItem(AUTH_SESSION_KEY, "true");
-        const authedEmail = res.user?.email || "admin@mshaies.com";
-        sessionStorage.setItem("mshaies_admin_email", authedEmail);
-        localStorage.setItem("mshaies_admin_email", authedEmail);
-        setCurrentAdminEmail(authedEmail);
-        setIsAuthenticated(true);
-        refreshDataFromServer();
-        setFailedAttempts(0);
-        sessionStorage.removeItem("mshaies_failed_pin_attempts");
-        sessionStorage.removeItem("mshaies_lockout_until");
-        toast.success("Welcome back, Maison Administrator.");
-      } else {
-        const attempts = failedAttempts + 1;
-        setFailedAttempts(attempts);
-        sessionStorage.setItem("mshaies_failed_pin_attempts", attempts.toString());
-        if (attempts >= 5 || res.error?.includes("locked")) {
-          setIsLockedOut(true);
-          const lockUntil = Date.now() + 60000;
-          sessionStorage.setItem("mshaies_lockout_until", lockUntil.toString());
-          setTimeout(() => {
-            setIsLockedOut(false);
-            setFailedAttempts(0);
-            sessionStorage.removeItem("mshaies_lockout_until");
-            sessionStorage.removeItem("mshaies_failed_pin_attempts");
-          }, 60000);
-        }
-        toast.error(res.error || "Incorrect PIN.");
-      }
-    } catch (err: any) {
-      toast.error(err?.message || "PIN verification failed.");
     } finally {
       setIsAuthenticating(false);
     }
@@ -2638,32 +2547,8 @@ function AdminDashboard() {
     localStorage.removeItem(AUTH_SESSION_KEY);
     localStorage.removeItem("mshaies_admin_token");
     localStorage.removeItem("mshaies_admin_email");
-    setPinInput("");
     setAdminPassword("");
     toast.info("Admin console securely locked.");
-  };
-
-  // Change PIN Handler
-  const handleChangePin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (currentPinInput !== settings.adminPin) {
-      toast.error("Current Master PIN is incorrect.");
-      return;
-    }
-    if (newPinInput.length < 4) {
-      toast.error("New PIN must be at least 4 digits.");
-      return;
-    }
-    if (newPinInput !== confirmPinInput) {
-      toast.error("New PIN confirmation does not match.");
-      return;
-    }
-
-    updateSettings({ adminPin: newPinInput });
-    setCurrentPinInput("");
-    setNewPinInput("");
-    setConfirmPinInput("");
-    toast.success("Master PIN updated successfully! Remember your new PIN.");
   };
 
   // Save Store Settings
@@ -3347,141 +3232,75 @@ function AdminDashboard() {
               M.shaies Haute Parfumerie
             </span>
             <h1 className="font-serif text-2xl sm:text-3xl text-ink mt-1">
-              Staff Management Portal
+              Admin Portal
             </h1>
             <p className="text-xs text-muted-foreground mt-2">
-              Sign in with Master PIN or verified staff account.
+              Sign in with your verified administrator email &amp; password.
             </p>
           </div>
 
-          {/* Auth Mode Toggle Tabs */}
-          <div className="flex rounded-xl bg-pearl p-1 border border-border">
+          {/* Supabase Primary Email & Password Authentication Form */}
+          <form onSubmit={handleSupabaseLogin} className="space-y-4 pt-1 text-left">
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+                Admin Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
+                <input
+                  type="email"
+                  required
+                  autoFocus
+                  autoComplete="email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  placeholder="admin@mshaies.com"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
+                <input
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
             <button
-              type="button"
-              onClick={() => setAuthMode("pin")}
-              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                authMode === "pin"
-                  ? "bg-card text-ink shadow-xs border border-gold/40 font-bold"
-                  : "text-muted-foreground hover:text-ink"
-              }`}
+              type="submit"
+              disabled={isAuthenticating}
+              className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 disabled:opacity-50 mt-3 cursor-pointer shadow-md"
             >
-              Master PIN (7860)
+              {isAuthenticating ? (
+                <>
+                  <div className="size-3.5 border-2 border-ink border-t-transparent rounded-full animate-spin" />
+                  Verifying Admin Credentials...
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="size-4" />
+                  Sign In to Admin Portal
+                </>
+              )}
             </button>
-            <button
-              type="button"
-              onClick={() => setAuthMode("supabase")}
-              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                authMode === "supabase"
-                  ? "bg-card text-ink shadow-xs border border-gold/40 font-bold"
-                  : "text-muted-foreground hover:text-ink"
-              }`}
-            >
-              Staff Account
-            </button>
-          </div>
-
-          {authMode === "pin" ? (
-            /* Master PIN Authentication Form */
-            <form onSubmit={handlePinSubmit} className="space-y-4 pt-1 text-left">
-              <div>
-                <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
-                  Master Security PIN
-                </label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
-                  <input
-                    type="password"
-                    maxLength={12}
-                    autoFocus
-                    required
-                    disabled={isLockedOut || isAuthenticating}
-                    placeholder="Enter PIN (Default: 7860)"
-                    value={pinInput}
-                    onChange={(e) => setPinInput(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-base font-mono tracking-widest text-ink focus:border-gold focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLockedOut || isAuthenticating}
-                className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 disabled:opacity-50 mt-2 cursor-pointer"
-              >
-                {isAuthenticating ? (
-                  <>
-                    <div className="size-3.5 border-2 border-ink border-t-transparent rounded-full animate-spin" />
-                    Unlocking Console...
-                  </>
-                ) : (
-                  <>
-                    <Unlock className="size-3.5" />
-                    Unlock Admin Dashboard
-                  </>
-                )}
-              </button>
-            </form>
-          ) : (
-            /* Primary Supabase Authentication Form */
-            <form onSubmit={handleSupabaseLogin} className="space-y-4 pt-1 text-left">
-              <div>
-                <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
-                  Staff Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
-                  <input
-                    type="email"
-                    required
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    placeholder="admin@mshaies.com"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
-                  <input
-                    type="password"
-                    required
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isAuthenticating}
-                className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 disabled:opacity-50 mt-2 cursor-pointer"
-              >
-                {isAuthenticating ? (
-                  <>
-                    <div className="size-3.5 border-2 border-ink border-t-transparent rounded-full animate-spin" />
-                    Verifying Credentials...
-                  </>
-                ) : (
-                  <>
-                    <Unlock className="size-3.5" />
-                    Sign In to Console
-                  </>
-                )}
-              </button>
-            </form>
-          )}
+          </form>
 
           {/* Security Assurance Card */}
           <div className="p-3 rounded-xl bg-pearl border border-gold/25 text-[11px] text-muted-foreground flex items-center gap-2.5 text-left">
             <ShieldCheck className="size-4 text-gold-deep shrink-0" />
-            <span>Secured via Supabase Auth & HMAC Session Tokens. Every staff session is verified & logged.</span>
+            <span>Secured via Supabase RBAC. Only accounts assigned the &apos;admin&apos; role are granted access.</span>
           </div>
 
           <div className="pt-1">
@@ -7574,62 +7393,26 @@ function AdminDashboard() {
               {/* Security Suite */}
             <div className="rounded-3xl border border-gold/40 bg-card p-6 sm:p-8 space-y-5 shadow-sm">
               <div className="flex items-center gap-2 pb-3 border-b border-border">
-                <Shield className="size-5 text-gold-deep" />
-                <h3 className="font-serif text-xl text-ink font-bold">Admin Security & Master PIN</h3>
+                <ShieldCheck className="size-5 text-gold-deep" />
+                <h3 className="font-serif text-xl text-ink font-bold">Admin Security &amp; RBAC Access</h3>
               </div>
 
-              <form onSubmit={handleChangePin} className="space-y-4">
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                    Current Master PIN
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="Enter current PIN"
-                    value={currentPinInput}
-                    onChange={(e) => setCurrentPinInput(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-mono text-ink focus:border-gold focus:outline-none"
-                  />
+              <div className="space-y-3">
+                <div className="p-4 rounded-2xl bg-pearl border border-gold/30 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-ink">
+                    <span className="size-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                    Supabase Role-Based Access Control Active
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Access to this Management Console is strictly restricted to verified Supabase accounts possessing the <code className="px-1.5 py-0.5 rounded bg-background border border-gold/40 text-gold-deep font-mono text-[11px] font-bold">admin</code> role in <code className="text-[11px] font-mono">app_metadata</code> or the <code className="text-[11px] font-mono">admin_users</code> registry. Master PIN logins have been decommissioned.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                      New PIN
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="e.g. 9842"
-                      value={newPinInput}
-                      onChange={(e) => setNewPinInput(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-mono text-ink focus:border-gold focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                      Confirm New PIN
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="Repeat PIN"
-                      value={confirmPinInput}
-                      onChange={(e) => setConfirmPinInput(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-mono text-ink focus:border-gold focus:outline-none"
-                    />
-                  </div>
+                <div className="p-3.5 rounded-2xl bg-background border border-border flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-medium">Current Session Operator</span>
+                  <span className="font-mono font-semibold text-gold-deep">{currentAdminEmail}</span>
                 </div>
-
-                <button
-                  type="submit"
-                  className="w-full btn-gold btn-gold-hover py-3 rounded-full text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2 shadow-md"
-                >
-                  <KeyRound className="size-3.5" />
-                  Update Master PIN
-                </button>
-              </form>
+              </div>
 
               {/* Supabase Auth Staff Management Quicklink */}
               <div className="p-3.5 rounded-2xl bg-pearl border border-gold/30 flex items-center justify-between gap-3">

@@ -86,7 +86,39 @@ export async function verifyAdminSession(token?: string | null): Promise<{ valid
       try {
         const { data: { user }, error } = await client.auth.getUser(cleanToken);
         if (!error && user) {
-          return { valid: true, user: { id: user.id, email: user.email, role: "admin" } };
+          const email = user.email?.trim().toLowerCase();
+          const appRole = (user.app_metadata as any)?.role;
+          const userRole = (user.user_metadata as any)?.role;
+
+          let hasAdminRole =
+            appRole === "admin" ||
+            appRole === "superadmin" ||
+            userRole === "admin" ||
+            userRole === "superadmin";
+
+          // Also check admin_users table
+          if (!hasAdminRole) {
+            try {
+              const { data: adminRow } = await client
+                .from("admin_users")
+                .select("role")
+                .eq("email", email)
+                .maybeSingle();
+              if (adminRow && (adminRow.role === "admin" || adminRow.role === "superadmin")) {
+                hasAdminRole = true;
+              }
+            } catch {}
+          }
+
+          if (!hasAdminRole && process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL.trim().toLowerCase()) {
+            hasAdminRole = true;
+          }
+
+          if (hasAdminRole) {
+            return { valid: true, user: { id: user.id, email: user.email, role: "admin" } };
+          }
+
+          return { valid: false, error: "Access denied. Account lacks 'admin' role in Supabase." };
         }
       } catch (err: any) {
         console.warn("[verifyAdminSession] Supabase JWT verification error:", err?.message);
