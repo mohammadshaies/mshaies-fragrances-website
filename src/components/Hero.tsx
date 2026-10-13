@@ -84,11 +84,10 @@ export function Hero() {
                 style={{ background: "radial-gradient(circle, var(--gold), transparent 70%)" }}
               />
 
-              <Link
-                to="/product/$id"
-                params={{ id: "oud-al-jamil-signature-royal-flacon" }}
+              <div
+                onClick={scrollToShop}
                 className="relative z-10 w-full h-full flex flex-col items-center justify-center group cursor-pointer"
-                title="View Signature Royal Flacon"
+                title="Explore Maison Collection"
               >
                 <div className="relative w-full h-[82%] flex items-center justify-center">
                   <img
@@ -103,7 +102,7 @@ export function Hero() {
                     Royal Flacon
                   </div>
                 </div>
-              </Link>
+              </div>
             </div>
           </div>
 
@@ -185,11 +184,10 @@ export function Hero() {
               style={{ background: "radial-gradient(circle, var(--gold), transparent 70%)" }} 
             />
 
-            <Link
-              to="/product/$id"
-              params={{ id: "oud-al-jamil-signature-royal-flacon" }}
+            <div
+              onClick={scrollToShop}
               className="group relative z-10 w-full h-full flex flex-col items-center justify-center cursor-pointer"
-              title="Discover Oud Al-Jamil Signature Royal Flacon"
+              title="Explore Maison Collection"
             >
               {/* Floating Highlight Pill */}
               <div className="absolute top-6 px-3.5 py-1 rounded-full bg-background/90 border border-gold/50 shadow-md backdrop-blur-md text-[10px] uppercase tracking-[0.2em] text-gold-deep font-bold flex items-center gap-1.5 transition-transform duration-300 group-hover:-translate-y-1">
@@ -210,13 +208,13 @@ export function Hero() {
               {/* Bottom Subtle Pill */}
               <div className="mt-2 text-center">
                 <span className="text-xs uppercase tracking-[0.25em] text-ink font-serif font-bold group-hover:text-gold-deep transition-colors">
-                  Oud Al-Jamil · 35% Extrait
+                  Pure Attars & Extrait Parfums
                 </span>
                 <span className="block text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
-                  Click to View Fragrance Notes →
+                  Click to Explore Collection ↓
                 </span>
               </div>
-            </Link>
+            </div>
           </div>
         </div>
 

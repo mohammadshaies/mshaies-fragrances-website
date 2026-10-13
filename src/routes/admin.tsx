@@ -1681,7 +1681,7 @@ function AdminDashboard() {
       }
     }
   }, []);
-  const [authMode, setAuthMode] = useState<"supabase" | "pin">("supabase");
+  const [authMode, setAuthMode] = useState<"pin" | "supabase">("pin");
   const [adminEmail, setAdminEmail] = useState("admin@mshaies.com");
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -3338,114 +3338,138 @@ function AdminDashboard() {
               Staff Management Portal
             </h1>
             <p className="text-xs text-muted-foreground mt-2">
-              Sign in with your verified Supabase staff account.
+              Sign in with Master PIN or verified staff account.
             </p>
           </div>
 
-          {/* Primary Supabase Authentication Form */}
-          <form onSubmit={handleSupabaseLogin} className="space-y-4 pt-1 text-left">
-            <div>
-              <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
-                Staff Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
-                <input
-                  type="email"
-                  required
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  placeholder="admin@mshaies.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
-                <input
-                  type="password"
-                  required
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                />
-              </div>
-            </div>
-
+          {/* Auth Mode Toggle Tabs */}
+          <div className="flex rounded-xl bg-pearl p-1 border border-border">
             <button
-              type="submit"
-              disabled={isAuthenticating}
-              className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+              type="button"
+              onClick={() => setAuthMode("pin")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                authMode === "pin"
+                  ? "bg-card text-ink shadow-xs border border-gold/40 font-bold"
+                  : "text-muted-foreground hover:text-ink"
+              }`}
             >
-              {isAuthenticating ? (
-                <>
-                  <div className="size-3.5 border-2 border-ink border-t-transparent rounded-full animate-spin" />
-                  Verifying Supabase Credentials...
-                </>
-              ) : (
-                <>
-                  <Unlock className="size-3.5" />
-                  Sign In with Supabase
-                </>
-              )}
+              Master PIN (7860)
             </button>
-          </form>
-
-          {/* Security Assurance Card */}
-          <div className="p-3 rounded-xl bg-pearl border border-gold/25 text-[11px] text-muted-foreground flex items-center gap-2.5 text-left">
-            <ShieldCheck className="size-4 text-gold-deep shrink-0" />
-            <span>Secured via Supabase Auth & PostgreSQL Row-Level Security. Every staff session is verified & logged.</span>
+            <button
+              type="button"
+              onClick={() => setAuthMode("supabase")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                authMode === "supabase"
+                  ? "bg-card text-ink shadow-xs border border-gold/40 font-bold"
+                  : "text-muted-foreground hover:text-ink"
+              }`}
+            >
+              Staff Account
+            </button>
           </div>
 
-          {/* Discrete Emergency Recovery PIN Toggle */}
-          <div className="pt-1">
-            {!showEmergencyPin ? (
-              <button
-                type="button"
-                onClick={() => setShowEmergencyPin(true)}
-                className="text-[11px] text-muted-foreground/80 hover:text-gold-deep underline transition-colors"
-              >
-                Emergency Console Recovery PIN
-              </button>
-            ) : (
-              <form onSubmit={handlePinSubmit} className="space-y-3 pt-2 text-left bg-pearl/60 p-3.5 rounded-2xl border border-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Emergency PIN</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowEmergencyPin(false)}
-                    className="text-[10px] text-muted-foreground hover:text-ink"
-                  >
-                    Close
-                  </button>
-                </div>
+          {authMode === "pin" ? (
+            /* Master PIN Authentication Form */
+            <form onSubmit={handlePinSubmit} className="space-y-4 pt-1 text-left">
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+                  Master Security PIN
+                </label>
                 <div className="relative">
                   <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
                   <input
                     type="password"
                     maxLength={12}
+                    autoFocus
+                    required
                     disabled={isLockedOut || isAuthenticating}
-                    placeholder="Enter custom recovery PIN"
+                    placeholder="Enter PIN (Default: 7860)"
                     value={pinInput}
                     onChange={(e) => setPinInput(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-border bg-background text-sm font-mono focus:border-gold focus:outline-none"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-base font-mono tracking-widest text-ink focus:border-gold focus:outline-none"
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={isLockedOut || isAuthenticating}
-                  className="w-full py-2 rounded-full border border-gold/50 bg-background text-xs font-semibold hover:bg-gold/10 transition-colors"
-                >
-                  {isAuthenticating ? "Verifying..." : "Unlock with Emergency PIN"}
-                </button>
-              </form>
-            )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLockedOut || isAuthenticating}
+                className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 disabled:opacity-50 mt-2 cursor-pointer"
+              >
+                {isAuthenticating ? (
+                  <>
+                    <div className="size-3.5 border-2 border-ink border-t-transparent rounded-full animate-spin" />
+                    Unlocking Console...
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="size-3.5" />
+                    Unlock Admin Dashboard
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            /* Primary Supabase Authentication Form */
+            <form onSubmit={handleSupabaseLogin} className="space-y-4 pt-1 text-left">
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+                  Staff Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
+                  <input
+                    type="email"
+                    required
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    placeholder="admin@mshaies.com"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gold-deep" />
+                  <input
+                    type="password"
+                    required
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isAuthenticating}
+                className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 disabled:opacity-50 mt-2 cursor-pointer"
+              >
+                {isAuthenticating ? (
+                  <>
+                    <div className="size-3.5 border-2 border-ink border-t-transparent rounded-full animate-spin" />
+                    Verifying Credentials...
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="size-3.5" />
+                    Sign In to Console
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Security Assurance Card */}
+          <div className="p-3 rounded-xl bg-pearl border border-gold/25 text-[11px] text-muted-foreground flex items-center gap-2.5 text-left">
+            <ShieldCheck className="size-4 text-gold-deep shrink-0" />
+            <span>Secured via Supabase Auth & HMAC Session Tokens. Every staff session is verified & logged.</span>
           </div>
 
           <div className="pt-1">
