@@ -158,7 +158,16 @@ async function sendViaResend(
     if (!res.ok) {
       const errBody = await res.text();
       console.warn("[Email Service] Resend API error:", errBody);
-      return { sent: false, method: "resend", error: `Resend API returned: ${errBody}` };
+      let errorMsg = `Resend API error (${res.status})`;
+      try {
+        const parsed = JSON.parse(errBody);
+        if (parsed.message) {
+          errorMsg = parsed.message;
+        }
+      } catch {
+        errorMsg = errBody;
+      }
+      return { sent: false, method: "resend", error: errorMsg };
     }
     return { sent: true, method: "resend" };
   } catch (err: any) {
@@ -179,8 +188,10 @@ async function sendViaSmtp(
   const host = config.smtpHost || "smtp.gmail.com";
   const port = config.smtpPort || 465;
   const isSecure = port === 465;
-  const user = config.smtpUser || config.gmailUser;
-  const pass = config.smtpPass || config.gmailAppPassword;
+  const user = (config.smtpUser || config.gmailUser)?.trim();
+  const rawPass = config.smtpPass || config.gmailAppPassword;
+  // Google App Passwords are 16 characters often presented as 4 groups of 4 with spaces
+  const pass = rawPass ? rawPass.replace(/\s+/g, "") : "";
 
   if (!pass || !user) {
     return {

@@ -43,34 +43,59 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: any; reset: () => void }) {
-  console.error(error);
+  console.error("[TanStack Root Error]", error);
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
+  const handleHardReset = () => {
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.clear();
+        localStorage.removeItem("mshaies_staff_auth_v2");
+        localStorage.removeItem("mshaies_admin_token");
+        window.location.reload();
+      }
+    } catch {
+      router.invalidate();
+      reset();
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+      <div className="max-w-md text-center p-6 bg-card border border-border/80 rounded-3xl shadow-lg">
+        <h1 className="text-xl font-serif font-bold tracking-tight text-foreground">
+          Console / Page Encountered an Issue
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Something went wrong loading this view. You can reload or reset stored cache.
         </p>
+        {error?.message && (
+          <div className="mt-3 p-3 bg-muted/60 rounded-xl text-left border border-border/50 text-[11px] font-mono text-muted-foreground overflow-auto max-h-32">
+            {error.message}
+          </div>
+        )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-full bg-gold text-ink font-semibold px-4 py-2 text-xs transition-colors hover:bg-gold-deep hover:text-white cursor-pointer"
           >
             Try again
           </button>
+          <button
+            onClick={handleHardReset}
+            className="inline-flex items-center justify-center rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent cursor-pointer"
+          >
+            Reset Console & Reload
+          </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center justify-center rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent cursor-pointer"
           >
             Go home
           </a>

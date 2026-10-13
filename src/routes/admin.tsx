@@ -3067,24 +3067,29 @@ function AdminDashboard() {
     orders: Order[];
   }>();
 
-  orders.forEach((o) => {
-    const key = o.phone.replace(/[^0-9]/g, "") || o.customerName.toLowerCase().trim();
+  (orders || []).forEach((o) => {
+    if (!o) return;
+    const rawPhone = String(o.phone || "");
+    const rawName = String(o.customerName || "Customer");
+    const key = rawPhone.replace(/[^0-9]/g, "") || rawName.toLowerCase().trim() || o.id || Math.random().toString();
+    const city = String(o.city || "Other").trim();
+    const total = Number(o.total) || 0;
     if (!customerMap.has(key)) {
       customerMap.set(key, {
         key,
-        phone: o.phone,
-        name: o.customerName,
-        email: o.email,
-        city: o.city,
-        address: o.address,
-        totalSpent: o.total,
+        phone: rawPhone,
+        name: rawName,
+        email: String(o.email || ""),
+        city,
+        address: String(o.address || ""),
+        totalSpent: total,
         orderCount: 1,
-        lastOrderDate: o.date,
+        lastOrderDate: o.date || new Date().toISOString().split("T")[0],
         orders: [o],
       });
     } else {
       const existing = customerMap.get(key)!;
-      existing.totalSpent += o.total;
+      existing.totalSpent += total;
       existing.orderCount += 1;
       existing.orders.push(o);
     }
@@ -3094,9 +3099,9 @@ function AdminDashboard() {
 
   const filteredCustomers = uniqueCustomers.filter((c) => {
     const matchesSearch = 
-      c.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
-      c.phone.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
-      c.city.toLowerCase().includes(customerSearchQuery.toLowerCase());
+      (c.name || "").toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+      (c.phone || "").toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+      (c.city || "").toLowerCase().includes(customerSearchQuery.toLowerCase());
 
     const matchesSegment = 
       customerSegment === "all" ? true :
@@ -3114,11 +3119,12 @@ function AdminDashboard() {
   const repeatRatePercent = uniqueCustomers.length > 0 ? Math.round((repeatCustomerCount / uniqueCustomers.length) * 100) : 0;
 
   // Regional Sales by City Breakdown
-  const citySales = orders.reduce((acc, o) => {
-    const city = (o.city || "Other").trim();
+  const citySales = (orders || []).reduce((acc, o) => {
+    if (!o) return acc;
+    const city = String(o.city || "Other").trim();
     if (!acc[city]) acc[city] = { count: 0, revenue: 0 };
     acc[city].count += 1;
-    acc[city].revenue += o.total;
+    acc[city].revenue += (Number(o.total) || 0);
     return acc;
   }, {} as Record<string, { count: number; revenue: number }>);
 
@@ -3191,13 +3197,16 @@ function AdminDashboard() {
 
   // 4. LTV Curve / Cohort Area Chart
   const crmLtvCurveData = useMemo(() => {
-    const sortedByDate = [...orders].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sortedByDate = [...(orders || [])]
+      .filter(Boolean)
+      .sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
     let runningTotal = 0;
     const dateMap = new Map<string, number>();
 
     sortedByDate.forEach((o) => {
-      runningTotal += o.total;
-      dateMap.set(o.date, runningTotal);
+      runningTotal += (Number(o.total) || 0);
+      const d = o.date ? String(o.date) : "2026-01-01";
+      dateMap.set(d, runningTotal);
     });
 
     return Array.from(dateMap.entries()).map(([date, cumulative]) => ({
@@ -3231,12 +3240,13 @@ function AdminDashboard() {
   };
 
   // Filtered Orders Calculation
-  const filteredOrders = orders.filter((o) => {
+  const filteredOrders = (orders || []).filter((o) => {
+    if (!o) return false;
     const matchesSearch = 
-      o.id.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
-      o.customerName.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
-      o.phone.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
-      o.city.toLowerCase().includes(orderSearchQuery.toLowerCase());
+      String(o.id || "").toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
+      String(o.customerName || "").toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
+      String(o.phone || "").toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
+      String(o.city || "").toLowerCase().includes(orderSearchQuery.toLowerCase());
     const matchesStatus = orderStatusFilter === "All" || o.orderStatus === orderStatusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -3269,13 +3279,13 @@ function AdminDashboard() {
 
   // WhatsApp 1-Click Customer Alert
   const handleSendWhatsAppNotification = (order: Order) => {
-    const cleanPhone = order.phone.replace(/[^0-9]/g, "");
+    const cleanPhone = String(order.phone || "").replace(/[^0-9]/g, "");
     const formattedPhone = cleanPhone.startsWith("0") ? "92" + cleanPhone.slice(1) : cleanPhone;
     const trackingMsg = order.trackingNumber ? `\nTracking Number: *${order.trackingNumber}* via *${order.courierName || "Express Courier"}*.` : "";
     const paymentText = order.paymentMethod !== "cod"
-      ? `\nPayment: *${order.paymentMethod.toUpperCase()}* (${order.paymentStatus === "Paid" ? "✅ Verified & Paid" : "⏳ " + order.paymentStatus})${order.transactionId ? `\nTransaction ID: *${order.transactionId}*` : ""}`
+      ? `\nPayment: *${(order.paymentMethod || "").toUpperCase()}* (${order.paymentStatus === "Paid" ? "✅ Verified & Paid" : "⏳ " + (order.paymentStatus || "Pending")})${order.transactionId ? `\nTransaction ID: *${order.transactionId}*` : ""}`
       : `\nPayment: *Cash on Delivery (COD)*`;
-    const message = `Assalam-o-Alaikum ${order.customerName},\n\nThank you for choosing *M.shaies Fragrances*! Your order *#${order.id}* for *${formatPKR(order.total)}* has been *${order.orderStatus}*.${paymentText}${trackingMsg}\n\nView your official invoice here: ${typeof window !== "undefined" ? window.location.origin : "https://mshaies.com"}/invoice/${order.id}\n\nWarm regards,\nMuhammad Shees — M.shaies Maison Concierge`;
+    const message = `Assalam-o-Alaikum ${order.customerName || "Customer"},\n\nThank you for choosing *M.shaies Fragrances*! Your order *#${order.id}* for *${formatPKR(order.total)}* has been *${order.orderStatus}*.${paymentText}${trackingMsg}\n\nView your official invoice here: ${typeof window !== "undefined" ? window.location.origin : "https://mshaies.com"}/invoice/${order.id}\n\nWarm regards,\nMuhammad Shees — M.shaies Maison Concierge`;
 
     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, "_blank");
   };
