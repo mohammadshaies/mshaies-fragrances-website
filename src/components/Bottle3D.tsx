@@ -74,42 +74,38 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
         child.receiveShadow = false;
         child.frustumCulled = true;
         if (child.material) {
-          if (child.material.isMeshStandardMaterial || child.material.isMeshPhysicalMaterial) {
+          // Clone material so each instance has independent shaders without mutating or corrupting gltf cache
+          const origMat = Array.isArray(child.material) ? child.material[0] : child.material;
+          const mat = origMat.clone();
+
+          if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
             // Bright luxury gold specular reflections & vibrant authentic textures
-            if (child.material.color) {
-              child.material.color.multiplyScalar(1.48);
+            if (origMat.color) {
+              mat.color = origMat.color.clone().multiplyScalar(1.48);
             }
-            child.material.envMapIntensity = 3.6;
-            child.material.roughness = Math.min(child.material.roughness, 0.12);
-            child.material.metalness = Math.max(child.material.metalness, 0.58);
+            mat.envMapIntensity = 3.6;
+            mat.roughness = 0.12;
+            mat.metalness = 0.62;
             // Rich warm golden amber perfume glow inside flacon
-            child.material.emissive = new THREE.Color(0x483416);
-            child.material.emissiveIntensity = 0.45;
-            child.material.needsUpdate = true;
+            mat.emissive = new THREE.Color(0x483416);
+            mat.emissiveIntensity = 0.45;
+
+            // Crisp texture mipmapping & anisotropic filtering (fixes pixelation on bottle textures)
+            if (mat.map) {
+              mat.map.anisotropy = 8;
+              mat.map.minFilter = THREE.LinearMipmapLinearFilter;
+              mat.map.magFilter = THREE.LinearFilter;
+              mat.map.generateMipmaps = true;
+              mat.map.needsUpdate = true;
+            }
+            mat.needsUpdate = true;
           }
+          child.material = mat;
         }
       }
     });
     return s;
   }, [gltf.scene]);
-
-  // Clean up cloned geometries & materials on unmount to prevent GPU VRAM leaks in browser
-  useEffect(() => {
-    return () => {
-      clonedScene.traverse((child: any) => {
-        if (child.isMesh) {
-          if (child.geometry) child.geometry.dispose();
-          if (child.material) {
-            if (Array.isArray(child.material)) {
-              child.material.forEach((m: any) => m.dispose());
-            } else {
-              child.material.dispose();
-            }
-          }
-        }
-      });
-    };
-  }, [clonedScene]);
 
   // Silky smooth rotation & micro-floating animation at native 60fps
   useFrame((state, delta) => {
@@ -146,10 +142,10 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
     }
   }, []);
 
-  // Razor-sharp Retina DPR: 1.2 on mobile for crisp edges without GPU fill-rate bottleneck, 1.75 on PC desktop
-  const dpr: [number, number] = isCompact || isTouchDevice ? [1, 1.2] : [1, 1.75];
+  // Razor-sharp Retina DPR: [1, 2] delivers pixel-perfect, crisp HD rendering on all Retina/mobile screens
+  const dpr: [number, number] = [1, 2];
 
-  // Pause WebGL rendering as soon as the hero scrolls out of view (0% background GPU consumption)
+  // Pause continuous rendering when hero is scrolled out of view (0% background GPU consumption)
   useEffect(() => {
     const el = containerRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
@@ -160,7 +156,7 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
       },
       { 
         threshold: 0,
-        rootMargin: "-40px 0px 0px 0px"
+        rootMargin: "150px 0px 150px 0px"
       }
     );
     observer.observe(el);
@@ -183,7 +179,7 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
       }}
     >
       <Canvas
-        frameloop={isInView ? "always" : "never"}
+        frameloop={isInView ? "always" : "demand"}
         dpr={dpr}
         camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
         gl={{

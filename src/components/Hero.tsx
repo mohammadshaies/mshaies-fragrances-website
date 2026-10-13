@@ -16,17 +16,11 @@ export function Hero() {
   const [isDesktop, setIsDesktop] = useState(() => 
     typeof window !== "undefined" ? window.innerWidth >= 1024 : false
   );
-  // Defer 3D canvas mounting so DOM, header, and text paint instantly with 0ms blocking
-  const [canMount3D, setCanMount3D] = useState(false);
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 1024);
     window.addEventListener("resize", check, { passive: true });
-    const timer = setTimeout(() => setCanMount3D(true), 40);
-    return () => {
-      window.removeEventListener("resize", check);
-      clearTimeout(timer);
-    };
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   // Smoothly scroll down to the product catalog
@@ -110,15 +104,11 @@ export function Hero() {
               />
 
               {!isDesktop && (
-                canMount3D ? (
-                  <Suspense fallback={
-                    <div className="size-7 rounded-full border-2 border-gold border-t-transparent animate-spin" />
-                  }>
-                    <Bottle3D isCompact={true} />
-                  </Suspense>
-                ) : (
+                <Suspense fallback={
                   <div className="size-7 rounded-full border-2 border-gold border-t-transparent animate-spin" />
-                )
+                }>
+                  <Bottle3D isCompact={true} />
+                </Suspense>
               )}
             </div>
           </div>
@@ -233,22 +223,16 @@ export function Hero() {
             
             {/* 3D Bottle Viewer with smooth Suspense fallback */}
             {isDesktop && (
-              canMount3D ? (
-                <Suspense fallback={
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                    <div className="size-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
-                    <div className="text-[10px] uppercase tracking-[0.2em] text-gold-deep animate-pulse font-semibold">
-                      Loading 3D Attar Bottle...
-                    </div>
-                  </div>
-                }>
-                  <Bottle3D isCompact={false} />
-                </Suspense>
-              ) : (
+              <Suspense fallback={
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                   <div className="size-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-gold-deep animate-pulse font-semibold">
+                    Loading 3D Attar Bottle...
+                  </div>
                 </div>
-              )
+              }>
+                <Bottle3D isCompact={false} />
+              </Suspense>
             )}
           </motion.div>
         </div>
