@@ -1,3 +1,4 @@
+import "@/lib/polyfill";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { 
   useProductsStore, 

@@ -1,42 +1,4 @@
-// Universal Global Buffer polyfill to ensure zero "Buffer is not defined" errors across Edge, SSR & Client
-if (typeof globalThis !== "undefined" && typeof (globalThis as any).Buffer === "undefined") {
-  (globalThis as any).Buffer = {
-    isBuffer: () => false,
-    from: (data: any, encoding?: string) => {
-      if (typeof data === "string") {
-        if (encoding === "base64" || encoding === "base64url") {
-          let b64 = data.replace(/-/g, "+").replace(/_/g, "/");
-          while (b64.length % 4) b64 += "=";
-          const binary = typeof atob === "function" ? atob(b64) : "";
-          const bytes = new Uint8Array(binary.length);
-          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-          return {
-            toString: (enc?: string) => {
-              if (enc === "utf-8" || enc === "utf8" || !enc) {
-                return new TextDecoder().decode(bytes);
-              }
-              if (enc === "base64") return typeof btoa === "function" ? btoa(binary) : binary;
-              if (enc === "base64url") return typeof btoa === "function" ? btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : binary;
-              return binary;
-            },
-            length: bytes.length,
-          };
-        }
-        const encoder = new TextEncoder();
-        const bytes = encoder.encode(data);
-        return {
-          toString: (enc?: string) => {
-            if (enc === "base64") return typeof btoa === "function" ? btoa(String.fromCharCode(...bytes)) : data;
-            if (enc === "base64url") return typeof btoa === "function" ? btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") : data;
-            return data;
-          },
-          length: bytes.length,
-        };
-      }
-      return { toString: () => String(data), length: 0 };
-    },
-  };
-}
+import "@/lib/polyfill";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
