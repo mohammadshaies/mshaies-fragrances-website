@@ -132,6 +132,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "preload", href: "/attar-bottle-model.glb", as: "fetch", crossOrigin: "anonymous" },
+      { rel: "preload", href: "/draco/draco_decoder.wasm", as: "fetch", crossOrigin: "anonymous" },
       { rel: "icon", href: "/logo-icon.png", type: "image/png" },
       { rel: "shortcut icon", href: "/logo-icon.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/logo-icon.png" },

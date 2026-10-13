@@ -2,11 +2,21 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF, OrbitControls, useProgress, Html, Environment } from "@react-three/drei";
 import { useRef, useMemo, Suspense, useState, useEffect } from "react";
 import * as THREE from "three";
+import { prefetchAndCacheModel } from "@/lib/model-cache";
 
 // ============================================================================
-// 1. ASSET PRELOADING
+// 1. ASSET PRELOADING WITH LOCAL DRACO DECODER & DATABASE CACHING
 // ============================================================================
-useGLTF.preload("/attar-bottle-model.glb");
+// Local /draco/ decoders eliminate cross-origin network latency from gstatic.
+const MODEL_PATH = "/attar-bottle-model.glb";
+const DRACO_PATH = "/draco/";
+
+useGLTF.preload(MODEL_PATH, DRACO_PATH);
+
+// Proactively populate the client-side IndexedDB database cache
+if (typeof window !== "undefined") {
+  prefetchAndCacheModel(MODEL_PATH);
+}
 
 // ============================================================================
 // 2. LOADING COMPONENT
@@ -40,9 +50,9 @@ function Loader() {
 // ============================================================================
 // 3. 3D MODEL COMPONENT — 24K GOLD & CRYSTAL PBR MATERIAL
 // ============================================================================
-function Model({ isCompact = false }: { isCompact?: boolean }) {
+function Model({ isCompact = false, isMobile = false }: { isCompact?: boolean; isMobile?: boolean }) {
   const { size } = useThree();
-  const gltf = useGLTF("/attar-bottle-model.glb");
+  const gltf = useGLTF(MODEL_PATH, DRACO_PATH);
   const modelRef = useRef<THREE.Group>(null);
 
   // Calibrated scale
@@ -81,7 +91,7 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
             // Glossy polished finish gives crystal clarity and crisp specular highlights
             mat.roughness = 0.16;
             // High environment reflection intensity delivers brilliant 24K gold reflections
-            mat.envMapIntensity = 2.4;
+            mat.envMapIntensity = isMobile ? 2.0 : 2.4;
 
             // Warm amber perfume liquid radiance from within the flacon
             mat.emissive = new THREE.Color(0x281604);
@@ -89,7 +99,7 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
 
             // Razor-sharp texture mipmapping and anisotropic filtering
             if (mat.map) {
-              mat.map.anisotropy = 8;
+              mat.map.anisotropy = isMobile ? 4 : 8;
               mat.map.minFilter = THREE.LinearMipmapLinearFilter;
               mat.map.magFilter = THREE.LinearFilter;
               mat.map.generateMipmaps = true;
@@ -108,12 +118,12 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
       }
     });
     return s;
-  }, [gltf.scene]);
+  }, [gltf.scene, isMobile]);
 
-  // Silky smooth continuous 60fps rotation
+  // Smooth, lively luxury rotation speed (0.85 rad/s: ~7.4s per full rotation)
   useFrame((_, delta) => {
     if (modelRef.current) {
-      modelRef.current.rotation.y += Math.min(delta, 0.033) * 0.42;
+      modelRef.current.rotation.y += Math.min(delta, 0.033) * 0.85;
     }
   });
 
@@ -125,24 +135,26 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
 }
 
 // ============================================================================
-// 4. SCENE LIGHTS — SCULPTED LUXURY JEWELRY LIGHTING
+// 4. SCENE LIGHTS — ADAPTIVE MOBILE & DESKTOP LIGHTING
 // ============================================================================
-function SceneLights() {
+function SceneLights({ isMobile }: { isMobile: boolean }) {
+  if (isMobile) {
+    // Mobile optimized 2-light rig (cuts GPU pixel shader overhead in half)
+    return (
+      <>
+        <ambientLight intensity={1.1} color="#ffe2b0" />
+        <directionalLight position={[3.5, 6, 5]} intensity={2.2} color="#fff8e8" />
+      </>
+    );
+  }
+
+  // Desktop full 4-light studio rig
   return (
     <>
-      {/* Warm ambient foundation so shadows are warm bronze, never pitch black */}
       <ambientLight intensity={0.9} color="#ffe2b0" />
-
-      {/* Front-Right Key Light — crisp sunlit gold highlight */}
       <directionalLight position={[4, 7, 5]} intensity={2.2} color="#fff8e8" />
-
-      {/* Front-Left Warm Gold Fill — brings out rich 24K gold body */}
       <directionalLight position={[-5, 4, 4]} intensity={1.4} color="#ffd466" />
-
-      {/* Top-Back Rim Silhouette — illuminates the flacon cap and crystal edges */}
       <directionalLight position={[0, 6, -5]} intensity={1.2} color="#ffeaa6" />
-
-      {/* Subtle Pedestal Uplight — highlights base facets */}
       <pointLight position={[0, -2.2, 2.5]} intensity={1.0} color="#ffbe3b" distance={10} />
     </>
   );
@@ -151,9 +163,6 @@ function SceneLights() {
 // ============================================================================
 // 5. ENVIRONMENT — LUXURY JEWELRY STUDIO (GOLD HIGHLIGHTS & DARK FLAGS)
 // ============================================================================
-// Uses baked cubemap panels (frames=1 bakes once, 0 ongoing GPU cost).
-// Crisp gold reflector panels placed next to dark contrast flags produce the
-// iconic gleaming jewelry aesthetic without blowing out to pure white.
 function SceneEnvironment() {
   return (
     <Environment frames={1}>
@@ -237,11 +246,11 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
     return () => observer.disconnect();
   }, []);
 
-  // Premium Retina DPR (capped at 2.0 to balance crystal-clear sharpness with high FPS)
+  // Calibrated DPR:
+  // Mobile: [1, 1.25] — eliminates mobile GPU bottleneck while keeping crispness
+  // Desktop: [1, 1.75]
   const dpr: [number, number] = useMemo(() => {
-    if (typeof window === "undefined") return [1, 1.5];
-    const maxDpr = Math.min(window.devicePixelRatio || 2, 2);
-    return isCompact || isTouchDevice ? [1, Math.max(1.5, maxDpr)] : [1, 2];
+    return isCompact || isTouchDevice ? [1, 1.25] : [1, 1.75];
   }, [isCompact, isTouchDevice]);
 
   const isNonInteractive = isCompact || isTouchDevice;
@@ -264,13 +273,13 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
         dpr={dpr}
         camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
         gl={{
-          antialias: true, // Hardware antialiasing eliminates jagged pixel edges on mobile OLEDs
+          antialias: true,
           alpha: true,
           stencil: false,
           depth: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.18, // Calibrated for rich 24K gold tones without highlight burnout
+          toneMappingExposure: 1.18,
         }}
         style={{ 
           pointerEvents: isNonInteractive ? "none" : "auto",
@@ -278,11 +287,11 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           height: "100%",
         }}
       >
-        <SceneLights />
+        <SceneLights isMobile={isTouchDevice} />
         <SceneEnvironment />
 
         <Suspense fallback={<Loader />}>
-          <Model isCompact={isCompact} />
+          <Model isCompact={isCompact} isMobile={isTouchDevice} />
         </Suspense>
 
         {/* Orbit controls only on desktop mouse drag */}
