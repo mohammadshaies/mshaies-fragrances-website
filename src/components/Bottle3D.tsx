@@ -79,18 +79,18 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
           const mat = origMat.clone();
 
           if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
-            // Authentic natural colors - preserve original rich gold and flacon tones
+            // Warm 24K gold infusion to eliminate white wash and deliver rich luxury contrast
             if (origMat.color) {
-              mat.color = origMat.color.clone();
+              mat.color = origMat.color.clone().multiply(new THREE.Color("#ffd27d"));
             }
-            mat.envMapIntensity = 1.0;
-            mat.roughness = 0.22;
-            mat.metalness = 0.52;
-            // Gentle warm amber flacon depth (subtle depth, not blinding)
-            mat.emissive = new THREE.Color(0x18120a);
-            mat.emissiveIntensity = 0.12;
+            mat.envMapIntensity = 1.6;
+            mat.roughness = 0.16;
+            mat.metalness = 0.72;
+            // Rich warm amber perfume liquid depth inside the flacon
+            mat.emissive = new THREE.Color(0x382208);
+            mat.emissiveIntensity = 0.25;
 
-            // Crisp texture mipmapping & anisotropic filtering (eliminates blur without GPU stall)
+            // Crisp texture mipmapping & anisotropic filtering (high quality, 0 blur)
             if (mat.map) {
               mat.map.anisotropy = 4;
               mat.map.minFilter = THREE.LinearMipmapLinearFilter;
@@ -107,12 +107,12 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
     return s;
   }, [gltf.scene]);
 
-  // Silky smooth rotation & micro-floating animation at native 60fps
+  // Silky smooth rotation & micro-floating animation at steady native 60fps
   useFrame((state, delta) => {
     if (modelRef.current) {
-      const d = Math.min(delta, 0.033);
-      modelRef.current.rotation.y += d * 0.45;
-      modelRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.3) * 0.035;
+      const d = Math.min(delta, 0.022);
+      modelRef.current.rotation.y += d * 0.42;
+      modelRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.25) * 0.03;
     }
   });
 
@@ -130,7 +130,6 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(true);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
 
   // Detect touch devices to disable touch interference
   useEffect(() => {
@@ -143,33 +142,8 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
     }
   }, []);
 
-  // Pause WebGL rendering during active mobile scrolling for 100% fluid 60fps/120Hz native scroll
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let scrollTimer: any;
-    let scrolling = false;
-
-    const onScroll = () => {
-      if (!scrolling) {
-        scrolling = true;
-        setIsScrolling(true);
-      }
-      clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(() => {
-        scrolling = false;
-        setIsScrolling(false);
-      }, 80);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      clearTimeout(scrollTimer);
-    };
-  }, []);
-
-  // Mobile: 1.45x DPR provides crisp, sharp Retina rendering with 0 pixelation while using 50% less GPU memory than 2.0x
-  const dpr: [number, number] = isCompact || isTouchDevice ? [1, 1.45] : [1, 1.75];
+  // Mobile: 1.5x DPR provides crisp, sharp Retina rendering with 0 pixelation and fluid 60fps
+  const dpr: [number, number] = isCompact || isTouchDevice ? [1, 1.5] : [1, 1.8];
 
   // Pause continuous rendering when hero is scrolled out of view (0% background GPU consumption)
   useEffect(() => {
@@ -182,7 +156,7 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
       },
       { 
         threshold: 0,
-        rootMargin: "60px 0px 60px 0px"
+        rootMargin: "80px 0px 80px 0px"
       }
     );
     observer.observe(el);
@@ -205,7 +179,7 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
       }}
     >
       <Canvas
-        frameloop={isInView && !isScrolling ? "always" : "demand"}
+        frameloop={isInView ? "always" : "demand"}
         dpr={dpr}
         camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
         gl={{
@@ -215,43 +189,52 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           depth: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.15,
+          toneMappingExposure: 1.25,
         }}
         style={{ pointerEvents: isNonInteractive ? "none" : "auto" }}
       >
-        {/* Balanced Studio Lighting Rig (No glare, deep luxury contrast) */}
-        <ambientLight intensity={1.3} color="#ffffff" />
+        {/* Deep, contrasted warm ambient (prevents shadows from washing out to white) */}
+        <ambientLight intensity={0.6} color="#604c35" />
         
-        {/* Front Key Light */}
-        <directionalLight position={[3.5, 5.5, 4.5]} intensity={1.8} color="#ffffff" />
+        {/* Front Key Light for crisp, sunlit golden highlights */}
+        <directionalLight position={[3.5, 5.5, 4.5]} intensity={2.2} color="#fff4de" />
         
-        {/* Warm Gold Accent Fill Light */}
-        <directionalLight position={[-4, 3.5, 3]} intensity={1.1} color="#fff6e8" />
+        {/* Warm 24K Gold Fill Light */}
+        <directionalLight position={[-4, 3, 3]} intensity={1.3} color="#d4af37" />
         
-        {/* Rim Contour Backlight for Flacon Silhouette Definition */}
-        <directionalLight position={[0, 4.5, -4.5]} intensity={1.0} color="#ffffff" />
+        {/* Amber Rim Backlight for flacon silhouette edge contrast */}
+        <directionalLight position={[0, 4.5, -4.5]} intensity={1.4} color="#ffa834" />
 
-        {/* Soft Studio Environment with Dark Contrast Backdrop */}
+        {/* High-Contrast Gold, Amber & Dark Velvet Studio Environment */}
         <Environment frames={1}>
-          {/* Top Diffused Softbox */}
-          <mesh position={[0, 8, 0]} scale={[12, 12, 1]} rotation={[Math.PI / 2, 0, 0]}>
+          {/* Top Warm Champagne Specular Crest */}
+          <mesh position={[0, 8, 2]} scale={[12, 8, 1]} rotation={[Math.PI / 2.5, 0, 0]}>
             <planeGeometry />
-            <meshBasicMaterial color="#f8f4ee" />
+            <meshBasicMaterial color="#ffe8b0" />
           </mesh>
-          {/* Key Light Strip */}
+          {/* 24K Gold Key Reflection Strip */}
           <mesh position={[6, 3, 4]} scale={[8, 12, 1]}>
             <planeGeometry />
-            <meshBasicMaterial color="#f0e6d2" />
+            <meshBasicMaterial color="#d4af37" />
           </mesh>
-          {/* Fill Light Strip */}
+          {/* Deep Amber Fill Strip */}
           <mesh position={[-6, 3, 4]} scale={[8, 12, 1]}>
             <planeGeometry />
-            <meshBasicMaterial color="#e8dcbf" />
+            <meshBasicMaterial color="#a67c1e" />
           </mesh>
-          {/* Dark Luxury Backdrop (creates rich contrast and prevents washing out) */}
-          <mesh position={[0, 3, -6]} scale={[14, 14, 1]}>
+          {/* Warm Bronze Rim */}
+          <mesh position={[0, 5, -6]} scale={[12, 10, 1]}>
             <planeGeometry />
-            <meshBasicMaterial color="#1a1510" />
+            <meshBasicMaterial color="#8b6508" />
+          </mesh>
+          {/* Deep Velvet Dark Pedestal Base & Backdrop for Strong Shadow Contrast */}
+          <mesh position={[0, -5, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#0a0805" />
+          </mesh>
+          <mesh position={[0, 2, -8]} scale={[16, 16, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#0d0a06" />
           </mesh>
         </Environment>
 
