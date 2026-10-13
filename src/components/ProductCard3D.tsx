@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Plus, AlertCircle, ArrowUpRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -50,7 +50,7 @@ interface ProductCardProps {
 // ============================================================================
 // Renders pure HTML/CSS without allocating physics springs, motion values, or
 // transform listeners. Delivers 100% native 60fps/120Hz scrolling on mobile phones.
-function MobileProductCard({ product }: { product: Product }) {
+const MobileProductCard = memo(function MobileProductCard({ product }: { product: Product }) {
   const { add } = useCart();
   const isOutOfStock = product.stock <= 0;
   const isLowStock = product.stock > 0 && product.stock <= 5;
@@ -146,7 +146,7 @@ function MobileProductCard({ product }: { product: Product }) {
       </div>
     </div>
   );
-}
+});
 
 // ============================================================================
 // 2. DESKTOP PRODUCT CARD (Luxury 3D Tilt, Spring Physics & Specular Gold Glare)
@@ -345,7 +345,7 @@ function DesktopProductCard({ product }: { product: Product }) {
 // ============================================================================
 // 3. MAIN EXPORT COMPONENT
 // ============================================================================
-export function ProductCard3D({ product }: ProductCardProps) {
+export const ProductCard3D = memo(function ProductCard3D({ product }: ProductCardProps) {
   const isDesktop = useIsDesktopDevice();
 
   if (isDesktop) {
@@ -353,4 +353,4 @@ export function ProductCard3D({ product }: ProductCardProps) {
   }
 
   return <MobileProductCard product={product} />;
-}
+});

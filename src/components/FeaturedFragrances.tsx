@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useProductsStore } from "@/lib/products-store";
 import { ProductCard3D } from "./ProductCard3D";
 import { Sparkles, SlidersHorizontal, Search, ArrowUpDown, X, Check } from "lucide-react";
@@ -56,38 +56,41 @@ export function FeaturedFragrances({
   const [maxPrice, setMaxPrice] = useState<number>(80000);
 
   // ==========================================================================
-  // 1. FILTERING LOGIC
+  // 1. FILTERING LOGIC (Memoized to prevent unnecessary re-computations)
   // ==========================================================================
-  const filteredProducts = products.filter((product) => {
-    const matchesCategory =
-      selectedCategory === "All" || product.category === selectedCategory;
-    const matchesFamily =
-      selectedFamily === "All" || product.fragranceFamily === selectedFamily;
-    const matchesGender =
-      selectedGender === "All" || product.gender === selectedGender;
-    const matchesLongevity =
-      selectedLongevity === "All" || (product.longevityHours && product.longevityHours >= selectedLongevity);
-    const matchesOccasion =
-      selectedOccasion === "All" || product.occasionSuitability?.includes(selectedOccasion as any);
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.notes.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.tagline.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.inspiredBy && product.inspiredBy.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesStock = !inStockOnly || product.stock > 0;
-    const matchesPrice = product.price <= maxPrice;
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const matchesCategory =
+        selectedCategory === "All" || product.category === selectedCategory;
+      const matchesFamily =
+        selectedFamily === "All" || product.fragranceFamily === selectedFamily;
+      const matchesGender =
+        selectedGender === "All" || product.gender === selectedGender;
+      const matchesLongevity =
+        selectedLongevity === "All" || (product.longevityHours && product.longevityHours >= selectedLongevity);
+      const matchesOccasion =
+        selectedOccasion === "All" || product.occasionSuitability?.includes(selectedOccasion as any);
+      const matchesSearch =
+        !searchQuery ||
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.notes.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.tagline.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (product.inspiredBy && product.inspiredBy.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesStock = !inStockOnly || product.stock > 0;
+      const matchesPrice = product.price <= maxPrice;
 
-    return (
-      matchesCategory &&
-      matchesFamily &&
-      matchesGender &&
-      matchesLongevity &&
-      matchesOccasion &&
-      matchesSearch &&
-      matchesStock &&
-      matchesPrice
-    );
-  });
+      return (
+        matchesCategory &&
+        matchesFamily &&
+        matchesGender &&
+        matchesLongevity &&
+        matchesOccasion &&
+        matchesSearch &&
+        matchesStock &&
+        matchesPrice
+      );
+    });
+  }, [products, selectedCategory, selectedFamily, selectedGender, selectedLongevity, selectedOccasion, searchQuery, inStockOnly, maxPrice]);
 
   // Active filter count
   const activeFilterCount = 
@@ -98,21 +101,19 @@ export function FeaturedFragrances({
     (inStockOnly ? 1 : 0);
 
   // ==========================================================================
-  // 2. SORTING LOGIC
+  // 2. SORTING LOGIC (Memoized)
   // ==========================================================================
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    if (sortBy === "price-asc") return a.price - b.price;
-    if (sortBy === "price-desc") return b.price - a.price;
-    if (sortBy === "name-asc") return a.name.localeCompare(b.name);
-    if (sortBy === "in-stock") return b.stock - a.stock;
-    // Default: Sort featured items first
-    return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
-  });
+  const displayProducts = useMemo(() => {
+    const sorted = [...filteredProducts].sort((a, b) => {
+      if (sortBy === "price-asc") return a.price - b.price;
+      if (sortBy === "price-desc") return b.price - a.price;
+      if (sortBy === "name-asc") return a.name.localeCompare(b.name);
+      if (sortBy === "in-stock") return b.stock - a.stock;
+      return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
+    });
 
-  // If showAll is false, only display products marked as featured
-  const displayProducts = showAll
-    ? sortedProducts
-    : sortedProducts.filter((p) => p.isFeatured !== false);
+    return showAll ? sorted : sorted.filter((p) => p.isFeatured !== false);
+  }, [filteredProducts, sortBy, showAll]);
 
   return (
     <section 
