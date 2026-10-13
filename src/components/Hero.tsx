@@ -34,13 +34,13 @@ export function Hero() {
       // to warm champagne pearl (#f3ece0) at bottom, seamlessly matching the section below.
       style={{ background: "linear-gradient(180deg, #fcfaf6 0%, #f7f2e8 60%, #f3ece0 100%)" }}
     >
-      {/* Ambient background accent glows */}
+      {/* Ambient background accent glows (Hardware accelerated) */}
       <div 
-        className="pointer-events-none absolute -top-24 -left-24 size-[380px] rounded-full opacity-35 blur-3xl"
+        className="pointer-events-none absolute -top-24 -left-24 size-[380px] rounded-full opacity-35 blur-3xl transform-gpu"
         style={{ background: "radial-gradient(circle, var(--gold-soft), transparent 70%)" }} 
       />
       <div 
-        className="pointer-events-none absolute -bottom-24 right-0 size-[420px] rounded-full opacity-25 blur-3xl"
+        className="pointer-events-none absolute -bottom-24 right-0 size-[420px] rounded-full opacity-25 blur-3xl transform-gpu"
         style={{ background: "radial-gradient(circle, var(--gold), transparent 70%)" }} 
       />
 
@@ -120,9 +120,9 @@ export function Hero() {
               transition={{ duration: 0.8, delay: 0.1 }}
               className="w-[48%] xs:w-[50%] sm:w-[50%] relative h-[230px] xs:h-[260px] sm:h-[300px] flex items-center justify-center shrink-0 pointer-events-none select-none"
             >
-              {/* Ambient Pedestal Glow */}
+              {/* Ambient Pedestal Glow (GPU accelerated) */}
               <div 
-                className="absolute inset-2 rounded-full opacity-45 blur-2xl pointer-events-none"
+                className="absolute inset-2 rounded-full opacity-45 blur-2xl pointer-events-none transform-gpu"
                 style={{ background: "radial-gradient(circle, var(--gold), transparent 70%)" }}
               />
 
@@ -243,9 +243,9 @@ export function Hero() {
             transition={{ duration: 1, delay: 0.15 }}
             className="lg:col-span-5 relative h-[480px] lg:h-[520px] xl:h-[560px] w-full flex items-center justify-center"
           >
-            {/* Golden ambient pedestal glow below bottle */}
+            {/* Golden ambient pedestal glow below bottle (GPU accelerated) */}
             <div 
-              className="absolute left-1/2 -translate-x-1/2 bottom-2 size-64 rounded-full opacity-45 blur-3xl pointer-events-none"
+              className="absolute left-1/2 -translate-x-1/2 bottom-2 size-64 rounded-full opacity-45 blur-3xl pointer-events-none transform-gpu"
               style={{ background: "radial-gradient(circle, var(--gold), transparent 70%)" }} 
             />
             
