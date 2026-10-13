@@ -45,7 +45,7 @@ function Loader() {
 }
 
 // ============================================================================
-// 3. ULTRA-OPTIMIZED, LUMINOUS 3D MODEL COMPONENT
+// 3. 3D MODEL COMPONENT (ADAPTIVE MOBILE / DESKTOP MATERIALS)
 // ============================================================================
 function Model({ isCompact = false }: { isCompact?: boolean }) {
   const { size } = useThree();
@@ -59,7 +59,7 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
     return 1.92;
   }, [isCompact, size.width]);
 
-  // Enhanced materials for radiant gold, crystal glass, and glowing amber perfume
+  // Adaptive materials: ultra-fast on mobile, maximum luxury specular on PC
   const clonedScene = useMemo(() => {
     const s = gltf.scene.clone(true);
 
@@ -75,29 +75,39 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
         child.frustumCulled = true;
         if (child.material) {
           if (child.material.isMeshStandardMaterial || child.material.isMeshPhysicalMaterial) {
-            // Brighten base diffuse colors for radiant clarity
-            if (child.material.color) {
-              child.material.color.multiplyScalar(1.48);
+            if (isCompact) {
+              // MOBILE: Bright, warm, luminous with zero environment-sampling overhead
+              if (child.material.color) {
+                child.material.color.multiplyScalar(1.52);
+              }
+              child.material.roughness = 0.32;
+              child.material.metalness = 0.16;
+              child.material.emissive = new THREE.Color(0x523c1a);
+              child.material.emissiveIntensity = 0.55;
+            } else {
+              // PC DESKTOP: Full luxury gold specular and softbox reflections
+              if (child.material.color) {
+                child.material.color.multiplyScalar(1.48);
+              }
+              child.material.envMapIntensity = 3.6;
+              child.material.roughness = Math.min(child.material.roughness, 0.12);
+              child.material.metalness = Math.max(child.material.metalness, 0.58);
+              child.material.emissive = new THREE.Color(0x483416);
+              child.material.emissiveIntensity = 0.45;
             }
-            // Sparkling reflections on metallic cap and glass facets
-            child.material.envMapIntensity = 3.6;
-            child.material.roughness = Math.min(child.material.roughness, 0.12);
-            child.material.metalness = Math.max(child.material.metalness, 0.58);
-            // Rich internal amber-gold radiance so the bottle never appears dark or shadowy
-            child.material.emissive = new THREE.Color(0x483416);
-            child.material.emissiveIntensity = 0.45;
             child.material.needsUpdate = true;
           }
         }
       }
     });
     return s;
-  }, [gltf.scene]);
+  }, [gltf.scene, isCompact]);
 
-  // Combined rotation and gentle floating animation in a single 60fps frame tick
+  // Combined smooth rotation & micro-floating animation
   useFrame((state, delta) => {
     if (modelRef.current) {
-      modelRef.current.rotation.y += delta * 0.42;
+      const d = Math.min(delta, 0.033);
+      modelRef.current.rotation.y += d * 0.42;
       modelRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.3) * 0.035;
     }
   });
@@ -110,13 +120,12 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
 }
 
 // ============================================================================
-// 4. MAIN EXPORT: 3D BOTTLE WITH BRILLIANT LUMINOUS STUDIO RIG
+// 4. MAIN EXPORT: 3D BOTTLE ENGINE
 // ============================================================================
 export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(true);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
 
   // Detect touch devices to disable touch interference
   useEffect(() => {
@@ -129,45 +138,25 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
     }
   }, []);
 
-  // Optimal DPR: Crisp on retina screens without GPU fill-rate throttling
-  const dpr: [number, number] = isTouchDevice ? [1, 1.35] : [1, 1.5];
+  // Optimal DPR: 1.15 on mobile (crisp & zero GPU fill-rate strain), 1.5 on PC desktop
+  const dpr: [number, number] = isCompact || isTouchDevice ? [1, 1.15] : [1, 1.5];
 
-  // Immediately pause WebGL loop when hero is scrolled out of view
+  // Pause WebGL rendering when hero is scrolled out of view (single-fire observer, no scroll lag)
   useEffect(() => {
     const el = containerRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsInView(entry.isIntersecting && entry.intersectionRatio > 0.08);
+        setIsInView(entry.isIntersecting);
       },
-      { threshold: [0, 0.08, 0.25, 0.5] }
+      { threshold: 0 }
     );
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  // Pause render loop during active mobile scrolling for buttery smooth 60fps DOM scrolling
-  useEffect(() => {
-    if (!isTouchDevice) return;
-    let timer: any;
-    const handleScroll = () => {
-      setIsScrolling(true);
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        setIsScrolling(false);
-      }, 120);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      clearTimeout(timer);
-    };
-  }, [isTouchDevice]);
-
   const isNonInteractive = isCompact || isTouchDevice;
-  const shouldRender = isInView && (!isTouchDevice || !isScrolling);
 
   return (
     <div
@@ -184,7 +173,7 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
       }}
     >
       <Canvas
-        frameloop={shouldRender ? "always" : "never"}
+        frameloop={isInView ? "always" : "never"}
         dpr={dpr}
         camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
         gl={{
@@ -194,56 +183,53 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           depth: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.85,
+          toneMappingExposure: isCompact ? 1.70 : 1.85,
         }}
         style={{ pointerEvents: isNonInteractive ? "none" : "auto" }}
       >
-        {/* Ambient base illumination */}
-        <ambientLight intensity={2.8} color="#ffffff" />
+        {/* Studio Lighting Rig */}
+        <ambientLight intensity={isCompact ? 3.4 : 2.8} color="#ffffff" />
         
         {/* Front Key Light */}
-        <directionalLight position={[4, 7, 6]} intensity={3.4} color="#ffffff" />
+        <directionalLight position={[4, 7, 6]} intensity={isCompact ? 3.8 : 3.4} color="#ffffff" />
         
         {/* Warm Gold Accent Fill Light */}
-        <directionalLight position={[-5, 5, 5]} intensity={2.6} color="#fff6e8" />
+        <directionalLight position={[-5, 5, 5]} intensity={isCompact ? 2.8 : 2.6} color="#fff6e8" />
         
         {/* Rim Contour Backlight */}
-        <directionalLight position={[0, 6, -6]} intensity={2.6} color="#ffffff" />
+        <directionalLight position={[0, 6, -6]} intensity={isCompact ? 2.8 : 2.6} color="#ffffff" />
 
         {/* Front Direct Spot Glow */}
-        <pointLight position={[0, 1.5, 3.5]} intensity={3.0} color="#ffffff" distance={15} />
+        <pointLight position={[0, 1.5, 3.5]} intensity={isCompact ? 3.2 : 3.0} color="#ffffff" distance={15} />
         
         {/* Base Pedestal Uplight for Glowing Amber Perfume */}
-        <pointLight position={[0, -2.5, 2.5]} intensity={2.4} color="#ffe8b8" distance={12} />
+        <pointLight position={[0, -2.5, 2.5]} intensity={isCompact ? 2.6 : 2.4} color="#ffe8b8" distance={12} />
 
-        {/* 100% OFFLINE MULTI-PANEL PROCEDURAL STUDIO ENVIRONMENT (frames=1 bakes cubemap once) */}
-        <Environment frames={1}>
-          {/* Top Overhanging Softbox */}
-          <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
-            <planeGeometry />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-          {/* Front Right Fill Light Panel */}
-          <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
-            <planeGeometry />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-          {/* Front Left Warm Accent Panel */}
-          <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
-            <planeGeometry />
-            <meshBasicMaterial color="#fff3dc" />
-          </mesh>
-          {/* Back Rim Light Panel */}
-          <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
-            <planeGeometry />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-          {/* Bottom Warm Ground Reflector */}
-          <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry />
-            <meshBasicMaterial color="#ffeecb" />
-          </mesh>
-        </Environment>
+        {/* PC DESKTOP ONLY: 100% Offline Multi-Panel Studio Environment (bakes once on start) */}
+        {!isCompact && (
+          <Environment frames={1}>
+            <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
+              <planeGeometry />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+            <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
+              <planeGeometry />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+            <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
+              <planeGeometry />
+              <meshBasicMaterial color="#fff3dc" />
+            </mesh>
+            <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
+              <planeGeometry />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+            <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry />
+              <meshBasicMaterial color="#ffeecb" />
+            </mesh>
+          </Environment>
+        )}
 
         {/* 3D Bottle Model */}
         <Suspense fallback={<Loader />}>

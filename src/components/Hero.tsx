@@ -12,11 +12,12 @@ import { Bottle3D } from "./Bottle3D";
 // 2. High-impact headline & CTA buttons (Explore Collection & Scent Journey).
 // 3. Interactive, rotating 3D Bottle showcase with ambient pedestal glow.
 export function Hero() {
-  // Only mount ONE 3D Canvas instance depending on screen size (saves 50%+ GPU load)
-  const [isDesktop, setIsDesktop] = useState(true);
+  // Only mount ONE 3D Canvas instance depending on screen size (lazy initialized to prevent mounting desktop canvas on mobile)
+  const [isDesktop, setIsDesktop] = useState(() => 
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : false
+  );
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 1024);
-    check();
     window.addEventListener("resize", check, { passive: true });
     return () => window.removeEventListener("resize", check);
   }, []);
@@ -34,13 +35,13 @@ export function Hero() {
       // to warm champagne pearl (#f3ece0) at bottom, seamlessly matching the section below.
       style={{ background: "linear-gradient(180deg, #fcfaf6 0%, #f7f2e8 60%, #f3ece0 100%)" }}
     >
-      {/* Ambient background accent glows (Hardware accelerated) */}
+      {/* Ambient background accent glows (Hardware accelerated on desktop; hidden on mobile to eliminate compositor jank) */}
       <div 
-        className="pointer-events-none absolute -top-24 -left-24 size-[380px] rounded-full opacity-35 blur-3xl transform-gpu"
+        className="pointer-events-none absolute -top-24 -left-24 size-[380px] rounded-full opacity-35 blur-3xl transform-gpu hidden lg:block"
         style={{ background: "radial-gradient(circle, var(--gold-soft), transparent 70%)" }} 
       />
       <div 
-        className="pointer-events-none absolute -bottom-24 right-0 size-[420px] rounded-full opacity-25 blur-3xl transform-gpu"
+        className="pointer-events-none absolute -bottom-24 right-0 size-[420px] rounded-full opacity-25 blur-3xl transform-gpu hidden lg:block"
         style={{ background: "radial-gradient(circle, var(--gold), transparent 70%)" }} 
       />
 
