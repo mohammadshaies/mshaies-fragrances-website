@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF, OrbitControls, useProgress, Html, Environment } from "@react-three/drei";
-import { useRef, useMemo, Suspense, useState, useEffect, useCallback } from "react";
+import { useRef, useMemo, Suspense, useState, useEffect } from "react";
 import * as THREE from "three";
 
 // ============================================================================
@@ -38,19 +38,21 @@ function Loader() {
 }
 
 // ============================================================================
-// 3. 3D MODEL — separate mobile/desktop material quality
+// 3. 3D MODEL COMPONENT — 24K GOLD & CRYSTAL PBR MATERIAL
 // ============================================================================
-function Model({ isCompact = false, isMobile = false }: { isCompact?: boolean; isMobile?: boolean }) {
+function Model({ isCompact = false }: { isCompact?: boolean }) {
   const { size } = useThree();
   const gltf = useGLTF("/attar-bottle-model.glb");
   const modelRef = useRef<THREE.Group>(null);
 
+  // Calibrated scale
   const scaleVal = useMemo(() => {
     if (isCompact || size.width < 280) return 1.62;
     if (size.width < 450) return 1.78;
     return 1.92;
   }, [isCompact, size.width]);
 
+  // Premium 24K Gold & Faceted Crystal Material Setup
   const clonedScene = useMemo(() => {
     const s = gltf.scene.clone(true);
 
@@ -69,25 +71,35 @@ function Model({ isCompact = false, isMobile = false }: { isCompact?: boolean; i
           const mat = origMat.clone();
 
           if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
-            // Authentic original bottle color — no tinting
-            if (origMat.color) mat.color = origMat.color.clone();
+            // Retain original authentic base color and textures (no muddy color multiplication)
+            if (origMat.color) {
+              mat.color = origMat.color.clone();
+            }
 
-            // Gold needs strong env reflections — 1.8 brings back the gold shine
-            mat.envMapIntensity = isMobile ? 1.6 : 1.8;
-            // Slightly less rough than pure mirror, gives gold the characteristic sheen
-            mat.roughness = 0.20;
-            mat.metalness = 0.65;
-            // Warm amber internal glow — restores rich gold depth
-            mat.emissive = new THREE.Color(0x2a1500);
+            // High metallic allows the golden environment map to gleam realistically
+            mat.metalness = 0.95;
+            // Glossy polished finish gives crystal clarity and crisp specular highlights
+            mat.roughness = 0.16;
+            // High environment reflection intensity delivers brilliant 24K gold reflections
+            mat.envMapIntensity = 2.4;
+
+            // Warm amber perfume liquid radiance from within the flacon
+            mat.emissive = new THREE.Color(0x281604);
             mat.emissiveIntensity = 0.18;
 
-            // Crisp texture filtering
+            // Razor-sharp texture mipmapping and anisotropic filtering
             if (mat.map) {
-              mat.map.anisotropy = isMobile ? 2 : 4;
+              mat.map.anisotropy = 8;
               mat.map.minFilter = THREE.LinearMipmapLinearFilter;
               mat.map.magFilter = THREE.LinearFilter;
               mat.map.generateMipmaps = true;
               mat.map.needsUpdate = true;
+            }
+            if (mat.normalMap) {
+              mat.normalMap.anisotropy = 4;
+            }
+            if (mat.roughnessMap) {
+              mat.roughnessMap.anisotropy = 4;
             }
             mat.needsUpdate = true;
           }
@@ -96,11 +108,12 @@ function Model({ isCompact = false, isMobile = false }: { isCompact?: boolean; i
       }
     });
     return s;
-  }, [gltf.scene, isMobile]);
+  }, [gltf.scene]);
 
+  // Silky smooth continuous 60fps rotation
   useFrame((_, delta) => {
     if (modelRef.current) {
-      modelRef.current.rotation.y += Math.min(delta, 0.033) * 0.45;
+      modelRef.current.rotation.y += Math.min(delta, 0.033) * 0.42;
     }
   });
 
@@ -112,169 +125,167 @@ function Model({ isCompact = false, isMobile = false }: { isCompact?: boolean; i
 }
 
 // ============================================================================
-// 4. SCENE LIGHTS — mobile gets 2 lights, desktop gets 5 for richness
+// 4. SCENE LIGHTS — SCULPTED LUXURY JEWELRY LIGHTING
 // ============================================================================
-function SceneLights({ isMobile }: { isMobile: boolean }) {
-  if (isMobile) {
-    return (
-      <>
-        {/* Single ambient — warm gold tone */}
-        <ambientLight intensity={1.2} color="#ffe8c0" />
-        {/* One strong key from front-top */}
-        <directionalLight position={[3, 6, 5]} intensity={1.8} color="#fff4d8" />
-      </>
-    );
-  }
+function SceneLights() {
   return (
     <>
-      <ambientLight intensity={0.9} color="#ffffff" />
-      <directionalLight position={[4, 8, 6]} intensity={1.8} color="#ffffff" />
-      <directionalLight position={[-5, 5, 5]} intensity={1.1} color="#fff6e8" />
-      <directionalLight position={[0, 6, -6]} intensity={0.9} color="#ffffff" />
-      <pointLight position={[0, 1.5, 3.5]} intensity={1.5} color="#ffffff" distance={15} />
-      <pointLight position={[0, -2.5, 2.5]} intensity={0.9} color="#ffe8b8" distance={12} />
+      {/* Warm ambient foundation so shadows are warm bronze, never pitch black */}
+      <ambientLight intensity={0.9} color="#ffe2b0" />
+
+      {/* Front-Right Key Light — crisp sunlit gold highlight */}
+      <directionalLight position={[4, 7, 5]} intensity={2.2} color="#fff8e8" />
+
+      {/* Front-Left Warm Gold Fill — brings out rich 24K gold body */}
+      <directionalLight position={[-5, 4, 4]} intensity={1.4} color="#ffd466" />
+
+      {/* Top-Back Rim Silhouette — illuminates the flacon cap and crystal edges */}
+      <directionalLight position={[0, 6, -5]} intensity={1.2} color="#ffeaa6" />
+
+      {/* Subtle Pedestal Uplight — highlights base facets */}
+      <pointLight position={[0, -2.2, 2.5]} intensity={1.0} color="#ffbe3b" distance={10} />
     </>
   );
 }
 
 // ============================================================================
-// 5. ENVIRONMENT — warm golden amber panels that actually make gold look gold
+// 5. ENVIRONMENT — LUXURY JEWELRY STUDIO (GOLD HIGHLIGHTS & DARK FLAGS)
 // ============================================================================
+// Uses baked cubemap panels (frames=1 bakes once, 0 ongoing GPU cost).
+// Crisp gold reflector panels placed next to dark contrast flags produce the
+// iconic gleaming jewelry aesthetic without blowing out to pure white.
 function SceneEnvironment() {
   return (
-    // frames=1 bakes the env cubemap once and never re-renders — free after load
     <Environment frames={1}>
-      {/* Top overhead — warm bright gold light */}
-      <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
+      {/* Overhead Softbox — brilliant warm champagne gold */}
+      <mesh position={[0, 9, 1]} scale={[16, 12, 1]} rotation={[Math.PI / 2.3, 0, 0]}>
         <planeGeometry />
-        <meshBasicMaterial color="#d4a843" />
+        <meshBasicMaterial color="#ffe899" />
       </mesh>
-      {/* Front right fill — amber gold */}
-      <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
+
+      {/* Front-Right 24K Gold Reflection Strip */}
+      <mesh position={[7, 3, 5]} scale={[10, 14, 1]}>
         <planeGeometry />
-        <meshBasicMaterial color="#c89030" />
+        <meshBasicMaterial color="#e6a817" />
       </mesh>
-      {/* Front left accent — deeper amber */}
-      <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
+
+      {/* Front-Left Deep Amber Fill Strip */}
+      <mesh position={[-7, 3, 5]} scale={[10, 14, 1]}>
         <planeGeometry />
-        <meshBasicMaterial color="#b07820" />
+        <meshBasicMaterial color="#d49210" />
       </mesh>
-      {/* Back rim — dark warm brown for depth + contrast */}
-      <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
+
+      {/* Dark Velvet Negative Fill Flags (essential for gold reflection contrast) */}
+      <mesh position={[0, 4, -8]} scale={[16, 16, 1]}>
         <planeGeometry />
-        <meshBasicMaterial color="#4a3010" />
+        <meshBasicMaterial color="#0d0905" />
       </mesh>
-      {/* Bottom ground reflector — warm gold bounce */}
-      <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[10, 0, 0]} scale={[8, 16, 1]} rotation={[0, -Math.PI / 2, 0]}>
         <planeGeometry />
-        <meshBasicMaterial color="#c8a040" />
+        <meshBasicMaterial color="#080603" />
+      </mesh>
+      <mesh position={[-10, 0, 0]} scale={[8, 16, 1]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry />
+        <meshBasicMaterial color="#080603" />
+      </mesh>
+
+      {/* Warm Gold Ground Reflector */}
+      <mesh position={[0, -6, 0]} scale={[18, 18, 1]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry />
+        <meshBasicMaterial color="#d49a26" />
       </mesh>
     </Environment>
   );
 }
 
 // ============================================================================
-// 6. MAIN EXPORT
+// 6. MAIN EXPORT: HIGH-PERFORMANCE 3D BOTTLE ENGINE
 // ============================================================================
 export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(true);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Detect touch / mobile
+  // Detect touch / mobile capabilities once
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    setIsTouchDevice(
-      window.matchMedia("(pointer: coarse)").matches ||
-      "ontouchstart" in window ||
-      navigator.maxTouchPoints > 0
-    );
+    if (typeof window !== "undefined") {
+      setIsTouchDevice(
+        window.matchMedia("(pointer: coarse)").matches ||
+        "ontouchstart" in window ||
+        navigator.maxTouchPoints > 0
+      );
+    }
   }, []);
 
-  // Scroll detection — pause WebGL during scroll on mobile (200ms debounce)
-  const handleScroll = useCallback(() => {
-    if (!isTouchDevice) return;
-    setIsScrolling(true);
-    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
-    scrollTimerRef.current = setTimeout(() => setIsScrolling(false), 200);
-  }, [isTouchDevice]);
-
-  useEffect(() => {
-    if (!isTouchDevice) return;
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("touchmove", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("touchmove", handleScroll);
-      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
-    };
-  }, [isTouchDevice, handleScroll]);
-
-  // Pause when scrolled fully out of view → zero GPU
+  // Strict IntersectionObserver:
+  // When scrolled out of the hero viewport, completely pause WebGL rendering
+  // (0% GPU, 0% CPU consumption during catalog browsing and checkout)
   useEffect(() => {
     const el = containerRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(([entry]) => setIsInView(entry.isIntersecting), { threshold: 0 });
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting);
+      },
+      { 
+        threshold: 0,
+        rootMargin: "60px 0px 60px 0px"
+      }
+    );
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  // DPR:
-  //   Mobile: [1, 1.3] — sharp enough for crisp textures, not GPU-killing
-  //   Desktop: [1, 1.5]
-  const dpr: [number, number] = isTouchDevice ? [1, 1.3] : [1, 1.5];
-
-  // frameloop:
-  //   out of view → "never"  (0% GPU)
-  //   scrolling on mobile → "demand" (no continuous 60fps during scroll)
-  //   otherwise → "always" (smooth rotation)
-  const frameloop: "always" | "demand" | "never" = !isInView
-    ? "never"
-    : isScrolling
-    ? "demand"
-    : "always";
+  // Premium Retina DPR (capped at 2.0 to balance crystal-clear sharpness with high FPS)
+  const dpr: [number, number] = useMemo(() => {
+    if (typeof window === "undefined") return [1, 1.5];
+    const maxDpr = Math.min(window.devicePixelRatio || 2, 2);
+    return isCompact || isTouchDevice ? [1, Math.max(1.5, maxDpr)] : [1, 2];
+  }, [isCompact, isTouchDevice]);
 
   const isNonInteractive = isCompact || isTouchDevice;
 
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full flex items-center justify-center select-none ${
+      className={`w-full h-full flex items-center justify-center select-none transform-gpu ${
         isNonInteractive
           ? "min-h-[220px] xs:min-h-[250px] sm:min-h-[280px] pointer-events-none"
           : "min-h-[440px] lg:min-h-[500px] cursor-grab active:cursor-grabbing pointer-events-auto"
       }`}
       style={{
         touchAction: isNonInteractive ? "auto" : "none",
-        contain: "layout paint",
+        contain: "layout paint size",
       }}
     >
       <Canvas
-        frameloop={frameloop}
+        frameloop={isInView ? "always" : "never"}
         dpr={dpr}
         camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
         gl={{
-          // Disable antialias on mobile — saves significant GPU, DPR 1.3 already gives clean edges
-          antialias: !isTouchDevice,
+          antialias: true, // Hardware antialiasing eliminates jagged pixel edges on mobile OLEDs
           alpha: true,
           stencil: false,
           depth: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          // 1.15 — balanced: gold tones show through without being washed out bright
-          toneMappingExposure: 1.15,
+          toneMappingExposure: 1.18, // Calibrated for rich 24K gold tones without highlight burnout
         }}
-        style={{ pointerEvents: isNonInteractive ? "none" : "auto" }}
+        style={{ 
+          pointerEvents: isNonInteractive ? "none" : "auto",
+          width: "100%",
+          height: "100%",
+        }}
       >
-        <SceneLights isMobile={isTouchDevice} />
+        <SceneLights />
         <SceneEnvironment />
 
         <Suspense fallback={<Loader />}>
-          <Model isCompact={isCompact} isMobile={isTouchDevice} />
+          <Model isCompact={isCompact} />
         </Suspense>
 
+        {/* Orbit controls only on desktop mouse drag */}
         {!isNonInteractive && (
           <OrbitControls
             enableZoom={false}

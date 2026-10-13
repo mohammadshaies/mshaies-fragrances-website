@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { Sparkles, ArrowRight, Tag, ChevronLeft, ChevronRight, Truck, Flame, Watch, Gift, ShieldCheck, Gem } from "lucide-react";
@@ -145,34 +145,36 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
       ? settings.promotionalSlides
       : DEFAULT_PROMOTIONAL_SLIDES;
 
-  const slides: BannerSlide[] = configuredSlides
-    .filter((s) => s.isEnabled !== false)
-    .map((s, idx) => {
-      if (s.id === "slide-primary" || idx === 0) {
+  const slides: BannerSlide[] = useMemo(() => {
+    return configuredSlides
+      .filter((s) => s.isEnabled !== false)
+      .map((s, idx) => {
+        if (s.id === "slide-primary" || idx === 0) {
+          return {
+            id: s.id,
+            tag: props.tag || settings.heroBannerTag || s.tag || primaryTag,
+            title: props.title || settings.heroBannerTitle || s.title || primaryTitle,
+            subtitle: props.subtitle || settings.heroBannerSubtitle || s.subtitle || primarySubtitle,
+            code: s.code || "LUXE15",
+            buttonText: props.buttonText || settings.heroBannerButtonText || s.buttonText || primaryButtonText,
+            linkUrl: props.linkUrl || settings.heroBannerLink || s.linkUrl || primaryLink,
+            icon: s.icon || "sparkles",
+            imageUrl: s.imageUrl || (hasCustomGraphic ? customImage : undefined),
+          };
+        }
         return {
           id: s.id,
-          tag: props.tag || settings.heroBannerTag || s.tag || primaryTag,
-          title: props.title || settings.heroBannerTitle || s.title || primaryTitle,
-          subtitle: props.subtitle || settings.heroBannerSubtitle || s.subtitle || primarySubtitle,
-          code: s.code || "LUXE15",
-          buttonText: props.buttonText || settings.heroBannerButtonText || s.buttonText || primaryButtonText,
-          linkUrl: props.linkUrl || settings.heroBannerLink || s.linkUrl || primaryLink,
-          icon: s.icon || "sparkles",
-          imageUrl: s.imageUrl || (hasCustomGraphic ? customImage : undefined),
+          tag: s.tag,
+          title: s.title,
+          subtitle: s.subtitle,
+          code: s.code,
+          buttonText: s.buttonText,
+          linkUrl: s.linkUrl,
+          icon: s.icon,
+          imageUrl: s.imageUrl,
         };
-      }
-      return {
-        id: s.id,
-        tag: s.tag,
-        title: s.title,
-        subtitle: s.subtitle,
-        code: s.code,
-        buttonText: s.buttonText,
-        linkUrl: s.linkUrl,
-        icon: s.icon,
-        imageUrl: s.imageUrl,
-      };
-    });
+      });
+  }, [configuredSlides, props.tag, props.title, props.subtitle, props.buttonText, props.linkUrl, settings.heroBannerTag, settings.heroBannerTitle, settings.heroBannerSubtitle, settings.heroBannerButtonText, settings.heroBannerLink, primaryTag, primaryTitle, primarySubtitle, primaryButtonText, primaryLink, hasCustomGraphic, customImage]);
 
   const [[currentIndex, direction], setPage] = useState<[number, number]>([0, 0]);
   const [isHovered, setIsHovered] = useState(false);

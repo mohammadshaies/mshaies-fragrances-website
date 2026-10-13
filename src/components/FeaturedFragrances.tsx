@@ -100,6 +100,34 @@ export function FeaturedFragrances({
     (selectedOccasion !== "All" ? 1 : 0) +
     (inStockOnly ? 1 : 0);
 
+  // Memoized fragrance family accords list
+  const familyAccordsList = useMemo(() => {
+    const presetMap: Record<string, string> = {
+      "Woody Oud": "🪵 Woody Oud",
+      "Floral Amber": "🌹 Floral Amber",
+      "Fresh Citrus": "🍋 Fresh Citrus",
+      "Oriental Spice": "✨ Oriental Spice",
+      "Leather Smoke": "🔥 Leather Smoke",
+    };
+    const productFamilies = Array.from(
+      new Set(
+        products
+          .map((p) => p.fragranceFamily)
+          .filter((f): f is string => Boolean(f && f.trim()))
+      )
+    );
+    const allKeys = Array.from(
+      new Set([...Object.keys(presetMap), ...productFamilies])
+    );
+    return [
+      { id: "All", label: "All Families" },
+      ...allKeys.map((k) => ({
+        id: k,
+        label: presetMap[k] || `✨ ${k}`,
+      })),
+    ];
+  }, [products]);
+
   // ==========================================================================
   // 2. SORTING LOGIC (Memoized)
   // ==========================================================================
@@ -368,45 +396,19 @@ export function FeaturedFragrances({
                   Fragrance Family Accord
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {(() => {
-                    const presetMap: Record<string, string> = {
-                      "Woody Oud": "🪵 Woody Oud",
-                      "Floral Amber": "🌹 Floral Amber",
-                      "Fresh Citrus": "🍋 Fresh Citrus",
-                      "Oriental Spice": "✨ Oriental Spice",
-                      "Leather Smoke": "🔥 Leather Smoke",
-                    };
-                    const productFamilies = Array.from(
-                      new Set(
-                        products
-                          .map((p) => p.fragranceFamily)
-                          .filter((f): f is string => Boolean(f && f.trim()))
-                      )
-                    );
-                    const allKeys = Array.from(
-                      new Set([...Object.keys(presetMap), ...productFamilies])
-                    );
-                    const list = [
-                      { id: "All", label: "All Families" },
-                      ...allKeys.map((k) => ({
-                        id: k,
-                        label: presetMap[k] || `✨ ${k}`,
-                      })),
-                    ];
-                    return list.map((fam) => (
-                      <button
-                        key={fam.id}
-                        onClick={() => setSelectedFamily(fam.id)}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                          selectedFamily === fam.id
-                            ? "bg-ink text-gold font-bold shadow-xs"
-                            : "bg-background text-muted-foreground hover:text-ink border border-border/60"
-                        }`}
-                      >
-                        {fam.label}
-                      </button>
-                    ));
-                  })()}
+                  {familyAccordsList.map((fam) => (
+                    <button
+                      key={fam.id}
+                      onClick={() => setSelectedFamily(fam.id)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                        selectedFamily === fam.id
+                          ? "bg-ink text-gold font-bold shadow-xs"
+                          : "bg-background text-muted-foreground hover:text-ink border border-border/60"
+                      }`}
+                    >
+                      {fam.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

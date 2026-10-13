@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Sparkles, ArrowRight, Tag, Truck, Gift, Flame, ShieldCheck, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
@@ -46,21 +46,23 @@ export function DealsBanner() {
       ? settings.announcementItems
       : DEFAULT_ANNOUNCEMENT_ITEMS;
 
-  const deals = configuredItems
-    .filter((item) => item.isEnabled !== false)
-    .map((item, idx) => {
-      // If first item matches legacy announcementText, keep in sync if updated
-      const isOffer = item.id === "item-offer" || idx === 0;
-      return {
-        id: item.id,
-        icon: resolveIcon(item.icon),
-        badge: item.badge,
-        text: isOffer && settings.announcementText ? settings.announcementText : item.text,
-        code: isOffer && settings.announcementCode ? settings.announcementCode : item.code,
-        linkText: item.linkText || "Shop Deal",
-        linkTo: item.linkTo || "/shop",
-      };
-    });
+  const deals = useMemo(() => {
+    return configuredItems
+      .filter((item) => item.isEnabled !== false)
+      .map((item, idx) => {
+        // If first item matches legacy announcementText, keep in sync if updated
+        const isOffer = item.id === "item-offer" || idx === 0;
+        return {
+          id: item.id,
+          icon: resolveIcon(item.icon),
+          badge: item.badge,
+          text: isOffer && settings.announcementText ? settings.announcementText : item.text,
+          code: isOffer && settings.announcementCode ? settings.announcementCode : item.code,
+          linkText: item.linkText || "Shop Deal",
+          linkTo: item.linkTo || "/shop",
+        };
+      });
+  }, [configuredItems, settings.announcementText, settings.announcementCode]);
 
   // Auto-rotate deals every 5 seconds
   useEffect(() => {
