@@ -76,14 +76,15 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
         if (child.material) {
           if (child.material.isMeshStandardMaterial || child.material.isMeshPhysicalMaterial) {
             if (isCompact) {
-              // MOBILE: Refined, rich amber flacon with balanced luxury shine (not overexposed)
+              // MOBILE: Authentic, rich perfume flacon colors with natural depth (zero artificial bleaching)
               if (child.material.color) {
-                child.material.color.multiplyScalar(1.06);
+                child.material.color.multiplyScalar(1.0);
               }
-              child.material.roughness = 0.22;
-              child.material.metalness = 0.38;
-              child.material.emissive = new THREE.Color(0x221606);
-              child.material.emissiveIntensity = 0.10;
+              child.material.envMapIntensity = 1.4;
+              child.material.roughness = Math.max(0.12, Math.min(child.material.roughness, 0.35));
+              child.material.metalness = Math.min(child.material.metalness, 0.85);
+              child.material.emissive = new THREE.Color(0x000000);
+              child.material.emissiveIntensity = 0;
             } else {
               // PC DESKTOP: Full luxury gold specular and softbox reflections
               if (child.material.color) {
@@ -183,53 +184,53 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           depth: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: isCompact ? 1.22 : 1.85,
+          toneMappingExposure: isCompact ? 1.04 : 1.85,
         }}
         style={{ pointerEvents: isNonInteractive ? "none" : "auto" }}
       >
         {/* Studio Lighting Rig */}
-        <ambientLight intensity={isCompact ? 1.45 : 2.8} color="#ffffff" />
+        <ambientLight intensity={isCompact ? 0.85 : 2.8} color="#ffffff" />
         
         {/* Front Key Light */}
-        <directionalLight position={[4, 7, 6]} intensity={isCompact ? 1.85 : 3.4} color="#ffffff" />
+        <directionalLight position={[4, 7, 6]} intensity={isCompact ? 1.30 : 3.4} color="#ffffff" />
         
         {/* Warm Gold Accent Fill Light */}
-        <directionalLight position={[-5, 5, 5]} intensity={isCompact ? 1.35 : 2.6} color="#fff6e8" />
+        <directionalLight position={[-5, 5, 5]} intensity={isCompact ? 0.90 : 2.6} color="#fff6e8" />
         
         {/* Rim Contour Backlight */}
-        <directionalLight position={[0, 6, -6]} intensity={isCompact ? 1.40 : 2.6} color="#ffffff" />
+        <directionalLight position={[0, 6, -6]} intensity={isCompact ? 1.05 : 2.6} color="#ffffff" />
 
-        {/* Front Direct Spot Glow */}
-        <pointLight position={[0, 1.5, 3.5]} intensity={isCompact ? 1.30 : 3.0} color="#ffffff" distance={15} />
+        {/* Front Direct Spot Glow (PC Desktop Only) */}
+        {!isCompact && (
+          <pointLight position={[0, 1.5, 3.5]} intensity={3.0} color="#ffffff" distance={15} />
+        )}
         
         {/* Base Pedestal Uplight for Glowing Amber Perfume */}
-        <pointLight position={[0, -2.5, 2.5]} intensity={isCompact ? 1.25 : 2.4} color="#ffe8b8" distance={12} />
+        <pointLight position={[0, -2.5, 2.5]} intensity={isCompact ? 0.70 : 2.4} color="#ffe8b8" distance={12} />
 
-        {/* PC DESKTOP ONLY: 100% Offline Multi-Panel Studio Environment (bakes once on start) */}
-        {!isCompact && (
-          <Environment frames={1}>
-            <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
-              <planeGeometry />
-              <meshBasicMaterial color="#ffffff" />
-            </mesh>
-            <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
-              <planeGeometry />
-              <meshBasicMaterial color="#ffffff" />
-            </mesh>
-            <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
-              <planeGeometry />
-              <meshBasicMaterial color="#fff3dc" />
-            </mesh>
-            <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
-              <planeGeometry />
-              <meshBasicMaterial color="#ffffff" />
-            </mesh>
-            <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry />
-              <meshBasicMaterial color="#ffeecb" />
-            </mesh>
-          </Environment>
-        )}
+        {/* 100% Offline Multi-Panel Studio Environment (bakes once on start with zero runtime overhead) */}
+        <Environment frames={1}>
+          <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#fff3dc" />
+          </mesh>
+          <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffeecb" />
+          </mesh>
+        </Environment>
 
         {/* 3D Bottle Model */}
         <Suspense fallback={<Loader />}>
