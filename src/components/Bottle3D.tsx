@@ -75,33 +75,23 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
         child.frustumCulled = true;
         if (child.material) {
           if (child.material.isMeshStandardMaterial || child.material.isMeshPhysicalMaterial) {
-            if (isCompact) {
-              // MOBILE: Crystal-clear luxury flacon preserving authentic textures with rich studio luster
-              child.material.envMapIntensity = 2.4;
-              // Preserve the artist's full texture-driven metallic and roughness maps
-              child.material.roughness = 1.0;
-              child.material.metalness = 1.0;
-              // Subtle inner perfume warmth (rich amber glow, not blown out)
-              child.material.emissive = new THREE.Color(0x241808);
-              child.material.emissiveIntensity = 0.16;
-            } else {
-              // PC DESKTOP: Full luxury gold specular and softbox reflections
-              if (child.material.color) {
-                child.material.color.multiplyScalar(1.48);
-              }
-              child.material.envMapIntensity = 3.6;
-              child.material.roughness = Math.min(child.material.roughness, 0.12);
-              child.material.metalness = Math.max(child.material.metalness, 0.58);
-              child.material.emissive = new THREE.Color(0x483416);
-              child.material.emissiveIntensity = 0.45;
+            // Bright luxury gold specular reflections & vibrant authentic textures
+            if (child.material.color) {
+              child.material.color.multiplyScalar(1.48);
             }
+            child.material.envMapIntensity = 3.6;
+            child.material.roughness = Math.min(child.material.roughness, 0.12);
+            child.material.metalness = Math.max(child.material.metalness, 0.58);
+            // Rich warm golden amber perfume glow inside flacon
+            child.material.emissive = new THREE.Color(0x483416);
+            child.material.emissiveIntensity = 0.45;
             child.material.needsUpdate = true;
           }
         }
       }
     });
     return s;
-  }, [gltf.scene, isCompact]);
+  }, [gltf.scene]);
 
   // Clean up cloned geometries & materials on unmount to prevent GPU VRAM leaks in browser
   useEffect(() => {
@@ -121,26 +111,14 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
     };
   }, [clonedScene]);
 
-  // Combined smooth rotation & micro-floating animation
-  // On mobile, throttle rendering to 30 FPS to save 75% GPU cycles for buttery smooth 120Hz scrolling
-  const lastRender = useRef(0);
+  // Silky smooth rotation & micro-floating animation at native 60fps
   useFrame((state, delta) => {
-    const time = state.clock.elapsedTime;
-    if (isCompact) {
-      if (time - lastRender.current < 0.033) return;
-      lastRender.current = time;
-    }
-
     if (modelRef.current) {
       const d = Math.min(delta, 0.033);
-      modelRef.current.rotation.y += d * 0.42;
-      modelRef.current.position.y = Math.sin(time * 1.3) * 0.035;
+      modelRef.current.rotation.y += d * 0.45;
+      modelRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.3) * 0.035;
     }
-
-    if (isCompact) {
-      state.gl.render(state.scene, state.camera);
-    }
-  }, isCompact ? 1 : 0);
+  });
 
   return (
     <group ref={modelRef} scale={[scaleVal, scaleVal, scaleVal]}>
@@ -209,61 +187,57 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
         dpr={dpr}
         camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
         gl={{
-          antialias: !isCompact,
+          antialias: true,
           alpha: true,
           stencil: false,
           depth: true,
-          powerPreference: isCompact ? "default" : "high-performance",
+          powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: isCompact ? 1.35 : 1.85,
+          toneMappingExposure: 1.85,
         }}
         style={{ pointerEvents: isNonInteractive ? "none" : "auto" }}
       >
         {/* Studio Lighting Rig */}
-        <ambientLight intensity={isCompact ? 1.5 : 2.8} color="#ffffff" />
+        <ambientLight intensity={2.8} color="#ffffff" />
         
         {/* Front Key Light */}
-        <directionalLight position={[4, 7, 6]} intensity={isCompact ? 2.2 : 3.4} color="#ffffff" />
+        <directionalLight position={[4, 7, 6]} intensity={3.4} color="#ffffff" />
         
         {/* Warm Gold Accent Fill Light */}
-        <directionalLight position={[-5, 5, 5]} intensity={isCompact ? 1.5 : 2.6} color="#fff6e8" />
+        <directionalLight position={[-5, 5, 5]} intensity={2.6} color="#fff6e8" />
         
         {/* Rim Contour Backlight */}
-        <directionalLight position={[0, 6, -6]} intensity={isCompact ? 1.6 : 2.6} color="#ffffff" />
+        <directionalLight position={[0, 6, -6]} intensity={2.6} color="#ffffff" />
 
-        {/* Front Direct Spot Glow (PC Desktop Only) */}
-        {!isCompact && (
-          <pointLight position={[0, 1.5, 3.5]} intensity={3.0} color="#ffffff" distance={15} />
-        )}
+        {/* Front Direct Spot Glow */}
+        <pointLight position={[0, 1.5, 3.5]} intensity={2.8} color="#ffffff" distance={15} />
         
         {/* Base Pedestal Uplight for Glowing Amber Perfume */}
-        <pointLight position={[0, -2.5, 2.5]} intensity={isCompact ? 1.2 : 2.4} color="#ffe8b8" distance={12} />
+        <pointLight position={[0, -2.5, 2.5]} intensity={2.4} color="#ffe8b8" distance={12} />
 
-        {/* Multi-Panel Studio Environment (PC Desktop Only for extra reflections; bypassed on mobile to prevent GPU jank) */}
-        {!isCompact && (
-          <Environment frames={1}>
-            <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
-              <planeGeometry />
-              <meshBasicMaterial color="#ffffff" />
-            </mesh>
-            <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
-              <planeGeometry />
-              <meshBasicMaterial color="#ffffff" />
-            </mesh>
-            <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
-              <planeGeometry />
-              <meshBasicMaterial color="#fff3dc" />
-            </mesh>
-            <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
-              <planeGeometry />
-              <meshBasicMaterial color="#ffffff" />
-            </mesh>
-            <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry />
-              <meshBasicMaterial color="#ffeecb" />
-            </mesh>
-          </Environment>
-        )}
+        {/* Multi-Panel Studio Environment for Golden Flacon Reflections */}
+        <Environment frames={1}>
+          <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#fff3dc" />
+          </mesh>
+          <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffeecb" />
+          </mesh>
+        </Environment>
 
         {/* 3D Bottle Model */}
         <Suspense fallback={<Loader />}>

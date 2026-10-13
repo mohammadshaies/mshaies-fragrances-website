@@ -63,47 +63,27 @@ export function Hero() {
             {/* Left Column: Brand Story & Compact CTAs */}
             <div className="w-[52%] xs:w-[50%] sm:w-[50%] flex flex-col items-start text-left shrink-0">
               {/* Collection Year Pill Badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-gold/40 bg-background text-[8.5px] xs:text-[9.5px] uppercase tracking-[0.2em] text-gold-deep mb-2 shadow-2xs font-semibold"
-              >
+              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-gold/40 bg-background text-[8.5px] xs:text-[9.5px] uppercase tracking-[0.2em] text-gold-deep mb-2 shadow-2xs font-semibold">
                 <Sparkles className="size-2.5 text-gold" />
                 <span>Maison 2026</span>
-              </motion.div>
+              </div>
 
               {/* Mobile Main Headline */}
-              <motion.h1
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.05 }}
-                className="font-serif text-[21px] xs:text-[24px] sm:text-3xl leading-[1.12] text-ink font-bold tracking-tight"
-              >
+              <h1 className="font-serif text-[21px] xs:text-[24px] sm:text-3xl leading-[1.12] text-ink font-bold tracking-tight">
                 The Essence of <br />
                 <span className="gold-gradient-text font-bold">Luxury.</span>
                 <span className="block text-[11px] xs:text-xs font-sans font-normal text-muted-foreground mt-0.5">
                   Crafted for Pakistan
                 </span>
-              </motion.h1>
+              </h1>
 
               {/* Mobile Subtitle & Value Proposition */}
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="mt-1.5 text-[10px] xs:text-[11.5px] text-muted-foreground leading-snug line-clamp-2 sm:line-clamp-3"
-              >
+              <p className="mt-1.5 text-[10px] xs:text-[11.5px] text-muted-foreground leading-snug line-clamp-2 sm:line-clamp-3">
                 Pure attars & extrait perfumes. 35% oil concentration.
-              </motion.p>
+              </p>
 
               {/* Action Buttons for Mobile */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.15 }}
-                className="mt-3 flex items-center gap-2"
-              >
+              <div className="mt-3 flex items-center gap-2">
                 <button 
                   onClick={scrollToShop} 
                   className="btn-gold btn-gold-hover px-3.5 xs:px-4 py-2 rounded-full text-[10px] xs:text-[11px] uppercase tracking-wider font-bold flex items-center gap-1 shadow-md shrink-0 cursor-pointer active:scale-95"
@@ -118,16 +98,11 @@ export function Hero() {
                 >
                   <Compass className="size-3.5" />
                 </Link>
-              </motion.div>
+              </div>
             </div>
 
             {/* Right Column: 3D Bottle Showcase on RIGHT (Calibrated Size & Non-touchable on Mobile) */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-              className="w-[48%] xs:w-[50%] sm:w-[50%] relative h-[230px] xs:h-[260px] sm:h-[300px] flex items-center justify-center shrink-0 pointer-events-none select-none"
-            >
+            <div className="w-[48%] xs:w-[50%] sm:w-[50%] relative h-[230px] xs:h-[260px] sm:h-[300px] flex items-center justify-center shrink-0 pointer-events-none select-none">
               {/* Ambient Pedestal Glow */}
               <div 
                 className="absolute inset-2 rounded-full pointer-events-none"
@@ -145,22 +120,17 @@ export function Hero() {
                   <div className="size-7 rounded-full border-2 border-gold border-t-transparent animate-spin" />
                 )
               )}
-            </motion.div>
+            </div>
           </div>
 
           {/* Mobile Centered Trust Value Badges */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.25 }}
-            className="mt-2 sm:mt-4 pt-1.5 sm:pt-3 border-t border-gold/20 flex items-center justify-center gap-1.5 xs:gap-2.5 sm:gap-4 text-center text-[7.5px] xs:text-[8.5px] sm:text-[10px] uppercase tracking-wider text-muted-foreground font-medium overflow-hidden px-1"
-          >
+          <div className="mt-2 sm:mt-4 pt-1.5 sm:pt-3 border-t border-gold/20 flex items-center justify-center gap-1.5 xs:gap-2.5 sm:gap-4 text-center text-[7.5px] xs:text-[8.5px] sm:text-[10px] uppercase tracking-wider text-muted-foreground font-medium overflow-hidden px-1">
             <span className="shrink-0">100% Pure Attars</span>
             <span className="text-gold/60 text-[8px] shrink-0">•</span>
             <span className="shrink-0">Free Delivery &gt; ₨ 5k</span>
             <span className="text-gold/60 text-[8px] shrink-0">•</span>
             <span className="shrink-0">Nationwide Delivery</span>
-          </motion.div>
+          </div>
         </div>
 
         {/* ===================================================================== */}
