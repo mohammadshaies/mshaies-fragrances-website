@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Compass } from "lucide-react";
 import { Suspense, useState, useEffect, lazy } from "react";
 import { Link } from "@tanstack/react-router";
-import { BottlePoster } from "./Bottle3D";
+import { BottlePoster } from "./BottlePoster";
 
 // Lazy-load the heavy 3D WebGL engine after initial paint (SSR-safe, code-split)
 const Bottle3D = lazy(() => import("./Bottle3D").then((m) => ({ default: m.Bottle3D })));
@@ -98,8 +98,8 @@ export function Hero() {
               </div>
             </div>
 
-            {/* Right Column: 3D Bottle Showcase on RIGHT (Calibrated Size & Non-touchable on Mobile) */}
-            <div className="w-[48%] xs:w-[50%] sm:w-[50%] relative h-[230px] xs:h-[260px] sm:h-[300px] flex items-center justify-center shrink-0 pointer-events-none select-none">
+            {/* Right Column: 3D Bottle Showcase on RIGHT (Interactive on Touch with Idle Auto-Rotation) */}
+            <div className="w-[48%] xs:w-[50%] sm:w-[50%] relative h-[230px] xs:h-[260px] sm:h-[300px] flex items-center justify-center shrink-0 pointer-events-auto select-none">
               {/* Ambient Pedestal Glow */}
               <div 
                 className="absolute inset-2 rounded-full pointer-events-none"

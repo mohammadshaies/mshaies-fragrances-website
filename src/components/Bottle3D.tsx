@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF, OrbitControls, Environment } from "@react-three/drei";
+import { useGLTF, OrbitControls, Environment, PerformanceMonitor } from "@react-three/drei";
 import { useRef, useMemo, Suspense, useState, useEffect, Component, type ReactNode } from "react";
 import * as THREE from "three";
 import { prefetchAndCacheModel } from "@/lib/model-cache";
@@ -53,25 +53,8 @@ export class WebGLErrorBoundary extends Component<ErrorBoundaryProps, ErrorBound
 // ============================================================================
 // 3. STATIC POSTER COMPONENT (FAST LCP & ZERO CLS FALLBACK)
 // ============================================================================
-export function BottlePoster({ isCompact = false }: { isCompact?: boolean }) {
-  return (
-    <div 
-      className={`relative w-full h-full flex items-center justify-center select-none ${
-        isCompact ? "p-4" : "p-6"
-      }`}
-    >
-      <img
-        src="/product-desert-gold.png"
-        alt="M.shaies Luxury Flacon"
-        fetchPriority="high"
-        decoding="async"
-        className={`w-auto object-contain drop-shadow-[0_20px_35px_rgba(212,175,55,0.25)] transition-opacity duration-500 ${
-          isCompact ? "max-h-[190px] xs:max-h-[220px]" : "max-h-[420px] lg:max-h-[460px]"
-        }`}
-      />
-    </div>
-  );
-}
+export { BottlePoster } from "./BottlePoster";
+import { BottlePoster } from "./BottlePoster";
 
 // ============================================================================
 // 4. FAKE CONTACT SHADOW (0 SHADOW MAP COST)
@@ -109,13 +92,33 @@ function FakeContactShadow() {
 }
 
 // ============================================================================
+// 4b. FRAMELOOP RESUME CONTROLLER (WAKES UP R3F WHEN CANVAS BECOMES VISIBLE)
+// ============================================================================
+function FrameLoopController({ visible }: { visible: boolean }) {
+  const { invalidate } = useThree();
+  useEffect(() => {
+    if (visible) {
+      invalidate();
+    }
+  }, [visible, invalidate]);
+  return null;
+}
+
+// ============================================================================
 // 5. 3D MODEL COMPONENT (ADAPTIVE MOBILE / PC PBR MATERIALS)
 // ============================================================================
-function Model({ isCompact = false, isMobile = false }: { isCompact?: boolean; isMobile?: boolean }) {
+function Model({
+  isCompact = false,
+  isMobile = false,
+  isInteractingRef,
+}: {
+  isCompact?: boolean;
+  isMobile?: boolean;
+  isInteractingRef?: { current: boolean };
+}) {
   const { size } = useThree();
   const gltf = useGLTF(MODEL_PATH, DRACO_PATH);
   const modelRef = useRef<THREE.Group>(null);
-  const lastTickRef = useRef(0);
 
   // Calibrated scale
   const scaleVal = useMemo(() => {
@@ -171,16 +174,28 @@ function Model({ isCompact = false, isMobile = false }: { isCompact?: boolean; i
             }
           }
 
-          // Crisp anisotropic filtering
+          // Crisp anisotropic filtering to prevent texture blur
           if (mat.map) {
-            mat.map.anisotropy = isMobile ? 4 : 8;
+            mat.map.anisotropy = 8;
             mat.map.minFilter = THREE.LinearMipmapLinearFilter;
             mat.map.magFilter = THREE.LinearFilter;
             mat.map.generateMipmaps = true;
             mat.map.needsUpdate = true;
           }
-          if (mat.normalMap) mat.normalMap.anisotropy = 4;
-          if (mat.roughnessMap) mat.roughnessMap.anisotropy = 4;
+          if (mat.normalMap) {
+            mat.normalMap.anisotropy = 8;
+            mat.normalMap.minFilter = THREE.LinearMipmapLinearFilter;
+            mat.normalMap.magFilter = THREE.LinearFilter;
+            mat.normalMap.generateMipmaps = true;
+            mat.normalMap.needsUpdate = true;
+          }
+          if (mat.roughnessMap) {
+            mat.roughnessMap.anisotropy = 8;
+            mat.roughnessMap.minFilter = THREE.LinearMipmapLinearFilter;
+            mat.roughnessMap.magFilter = THREE.LinearFilter;
+            mat.roughnessMap.generateMipmaps = true;
+            mat.roughnessMap.needsUpdate = true;
+          }
 
           mat.needsUpdate = true;
           child.material = mat;
@@ -190,20 +205,15 @@ function Model({ isCompact = false, isMobile = false }: { isCompact?: boolean; i
     return s;
   }, [gltf.scene, isMobile]);
 
-  // Animation Loop:
-  // Mobile throttled to ~30fps ticks to halve GPU power consumption
-  // Desktop runs smooth 60fps
-  useFrame((state, delta) => {
+  // Animation Loop driven by delta:
+  // Continuous idle rotation that safely resumes after scroll/visibility change
+  useFrame((_, delta) => {
     if (!modelRef.current) return;
+    if (isInteractingRef?.current) return;
 
-    if (isMobile) {
-      const now = state.clock.getElapsedTime();
-      if (now - lastTickRef.current < 0.033) return; // limit to 30fps ticks
-      lastTickRef.current = now;
-      modelRef.current.rotation.y += 0.033 * 0.85;
-    } else {
-      modelRef.current.rotation.y += Math.min(delta, 0.033) * 0.85;
-    }
+    // Clamp delta to prevent sudden jump when tab/scroll resumes
+    const safeDelta = Math.min(delta, 0.05);
+    modelRef.current.rotation.y += safeDelta * 0.85;
   });
 
   return (
@@ -291,12 +301,12 @@ function SceneEnvironment() {
 // ============================================================================
 export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isInteractingRef = useRef(false);
   const [isInView, setIsInView] = useState(true);
   const [isTabVisible, setIsTabVisible] = useState(true);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [isLowEndDevice, setIsLowEndDevice] = useState(false);
 
-  // Detect mobile & low-end capabilities
+  // Detect mobile & touch capabilities
   useEffect(() => {
     if (typeof window !== "undefined") {
       const touch =
@@ -304,13 +314,28 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
         "ontouchstart" in window ||
         navigator.maxTouchPoints > 0;
       setIsTouchDevice(touch);
-
-      const cores = navigator.hardwareConcurrency || 4;
-      const mem = (navigator as any).deviceMemory || 4;
-      const lowEnd = cores <= 4 || mem <= 4;
-      setIsLowEndDevice(lowEnd);
     }
   }, []);
+
+  const isMobile = isCompact || isTouchDevice;
+
+  // DPR configuration:
+  // Desktop is kept unchanged at [1, 1.5].
+  // Mobile starts at crisp Retina [1, 2] with antialias on to eliminate blur/pixelation.
+  // PerformanceMonitor will lower mobile DPR only if FPS drops under load.
+  const [dpr, setDpr] = useState<[number, number]>(() =>
+    typeof window !== "undefined" && (window.innerWidth < 1024 || "ontouchstart" in window)
+      ? [1, 2]
+      : [1, 1.5]
+  );
+
+  useEffect(() => {
+    if (isMobile) {
+      setDpr([1, 2]);
+    } else {
+      setDpr([1, 1.5]);
+    }
+  }, [isMobile]);
 
   // Pause render loop when browser tab is inactive / hidden
   useEffect(() => {
@@ -333,47 +358,35 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
       },
       { 
         threshold: 0,
-        rootMargin: "60px 0px 60px 0px"
+        rootMargin: "80px 0px 80px 0px"
       }
     );
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  // Capped pixel ratio: dpr={[1, 1.5]} max
-  const dpr: [number, number] = useMemo(() => {
-    if (isLowEndDevice || isTouchDevice) {
-      return [1, 1.25];
-    }
-    return [1, 1.5];
-  }, [isLowEndDevice, isTouchDevice]);
-
-  const isNonInteractive = isCompact || isTouchDevice;
-
   // Active rendering condition
-  const shouldRender = isInView && isTabVisible;
+  const visible = isInView && isTabVisible;
 
   return (
     <WebGLErrorBoundary fallback={<BottlePoster isCompact={isCompact} />}>
       <div
         ref={containerRef}
-        className={`w-full h-full flex items-center justify-center select-none transform-gpu ${
-          isNonInteractive
-            ? "min-h-[220px] xs:min-h-[250px] sm:min-h-[280px] pointer-events-none"
-            : "min-h-[440px] lg:min-h-[500px] cursor-grab active:cursor-grabbing pointer-events-auto"
+        className={`w-full h-full flex items-center justify-center select-none ${
+          isCompact
+            ? "min-h-[220px] xs:min-h-[250px] sm:min-h-[280px]"
+            : "min-h-[440px] lg:min-h-[500px] cursor-grab active:cursor-grabbing"
         }`}
         style={{
-          touchAction: isNonInteractive ? "auto" : "none",
-          contain: "layout paint size",
+          touchAction: "pan-y",
         }}
       >
         <Canvas
-          frameloop={shouldRender ? "always" : "never"}
+          frameloop={visible ? "always" : "never"}
           dpr={dpr}
           camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
           gl={{
-            // Disabling antialias on low-end/touch saves substantial GPU memory while DPR 1.25 keeps edges crisp
-            antialias: !isTouchDevice,
+            antialias: true, // Antialias ON for sharp non-pixelated edges
             alpha: true,
             stencil: false,
             depth: true,
@@ -382,28 +395,54 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
             toneMappingExposure: 1.18,
           }}
           style={{ 
-            pointerEvents: isNonInteractive ? "none" : "auto",
             width: "100%",
             height: "100%",
           }}
         >
-          <SceneLights isMobile={isTouchDevice} />
+          {/* Automatically wake up R3F render loop when canvas becomes visible */}
+          <FrameLoopController visible={visible} />
+
+          {/* PerformanceMonitor: adaptively reduces mobile DPR only if frame rate drops */}
+          {isMobile && (
+            <PerformanceMonitor
+              ms={300}
+              iterations={7}
+              threshold={0.7}
+              onDecline={() => {
+                setDpr((current) => (current[1] > 1.5 ? [1, 1.5] : [1, 1.2]));
+              }}
+              onIncline={() => {
+                setDpr([1, 2]);
+              }}
+            />
+          )}
+
+          <SceneLights isMobile={isMobile} />
           <SceneEnvironment />
 
           <Suspense fallback={null}>
-            <Model isCompact={isCompact} isMobile={isTouchDevice} />
+            <Model
+              isCompact={isCompact}
+              isMobile={isMobile}
+              isInteractingRef={isInteractingRef}
+            />
           </Suspense>
 
-          {!isNonInteractive && (
-            <OrbitControls
-              enableZoom={false}
-              enablePan={false}
-              autoRotate={false}
-              enableRotate={true}
-              minPolarAngle={Math.PI / 3}
-              maxPolarAngle={Math.PI / 1.6}
-            />
-          )}
+          <OrbitControls
+            enableZoom={false}
+            enablePan={false}
+            autoRotate={false}
+            enableRotate={true}
+            rotateSpeed={0.8}
+            minPolarAngle={Math.PI / 3}
+            maxPolarAngle={Math.PI / 1.6}
+            onStart={() => {
+              isInteractingRef.current = true;
+            }}
+            onEnd={() => {
+              isInteractingRef.current = false;
+            }}
+          />
         </Canvas>
       </div>
     </WebGLErrorBoundary>
