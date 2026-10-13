@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF, OrbitControls, useProgress, Html, Environment } from "@react-three/drei";
-import { useRef, useMemo, Suspense, useState, useEffect } from "react";
+import { useRef, useMemo, Suspense, useState, useEffect, useCallback } from "react";
 import * as THREE from "three";
 
 // ============================================================================
@@ -59,7 +59,7 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
     return 1.92;
   }, [isCompact, size.width]);
 
-  // Adaptive materials: ultra-fast on mobile, maximum luxury specular on PC
+  // Adaptive materials — darkened, richer tones
   const clonedScene = useMemo(() => {
     const s = gltf.scene.clone(true);
 
@@ -74,21 +74,22 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
         child.receiveShadow = false;
         child.frustumCulled = true;
         if (child.material) {
-          // Clone material so each instance has independent shaders without mutating or corrupting gltf cache
           const origMat = Array.isArray(child.material) ? child.material[0] : child.material;
           const mat = origMat.clone();
 
           if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
-            // Restore authentic original bottle colors and textures (no artificial color tinting)
+            // Authentic color — no tinting
             if (origMat.color) {
               mat.color = origMat.color.clone();
             }
-            mat.envMapIntensity = 2.8;
-            mat.roughness = 0.15;
+            // Darker: lower env reflection intensity
+            mat.envMapIntensity = 1.2;
+            // Less shiny = darker appearance
+            mat.roughness = 0.28;
             mat.metalness = 0.58;
-            // Warm golden internal radiance to ensure clear visibility
-            mat.emissive = new THREE.Color(0x382810);
-            mat.emissiveIntensity = 0.35;
+            // Subtle warm glow — much lower than before
+            mat.emissive = new THREE.Color(0x1a1005);
+            mat.emissiveIntensity = 0.10;
 
             // Crisp texture mipmapping & anisotropic filtering
             if (mat.map) {
@@ -107,7 +108,7 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
     return s;
   }, [gltf.scene]);
 
-  // Silky smooth continuous rotation on every frame
+  // Silky smooth continuous rotation
   useFrame((_, delta) => {
     if (modelRef.current) {
       modelRef.current.rotation.y += Math.min(delta, 0.033) * 0.45;
@@ -128,8 +129,10 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(true);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Detect touch devices to disable touch interference
+  // Detect touch devices
   useEffect(() => {
     if (typeof window !== "undefined") {
       setIsTouchDevice(
@@ -140,10 +143,32 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
     }
   }, []);
 
-  // Optimized DPR: 1.25 on mobile gives sharp Retina clarity with zero lag; 1.5 on desktop
-  const dpr: [number, number] = isCompact || isTouchDevice ? [1, 1.25] : [1, 1.5];
+  // Pause rendering during scroll on mobile — use "demand" so one final frame
+  // is painted when scroll stops (avoids frozen/jitter look)
+  const handleScroll = useCallback(() => {
+    if (!isTouchDevice) return;
+    setIsScrolling(true);
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 120); // resume 120ms after scroll ends
+  }, [isTouchDevice]);
 
-  // Pause WebGL rendering as soon as hero scrolls out of view (0% background GPU consumption)
+  useEffect(() => {
+    if (!isTouchDevice) return;
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("touchmove", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("touchmove", handleScroll);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
+  }, [isTouchDevice, handleScroll]);
+
+  // Lower DPR on mobile for GPU relief
+  const dpr: [number, number] = isCompact || isTouchDevice ? [1, 1.15] : [1, 1.5];
+
+  // Pause WebGL when scrolled out of view (0% GPU usage)
   useEffect(() => {
     const el = containerRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
@@ -160,6 +185,16 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
 
   const isNonInteractive = isCompact || isTouchDevice;
 
+  // frameloop logic:
+  //   • Out of view → "never" (zero GPU)
+  //   • In view + scrolling on mobile → "demand" (one frame when needed, no continuous render)
+  //   • In view + not scrolling → "always" (smooth rotation)
+  const frameloop = !isInView
+    ? "never"
+    : isScrolling
+    ? "demand"
+    : "always";
+
   return (
     <div
       ref={containerRef}
@@ -174,7 +209,7 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
       }}
     >
       <Canvas
-        frameloop={isInView ? "always" : "never"}
+        frameloop={frameloop}
         dpr={dpr}
         camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
         gl={{
@@ -184,54 +219,55 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           depth: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.55,
+          // Lowered from 1.55 → 1.05 to darken overall render
+          toneMappingExposure: 1.05,
         }}
         style={{ pointerEvents: isNonInteractive ? "none" : "auto" }}
       >
-        {/* Ambient base illumination */}
-        <ambientLight intensity={2.0} color="#ffffff" />
-        
-        {/* Front Key Light */}
-        <directionalLight position={[4, 8, 6]} intensity={2.8} color="#ffffff" />
-        
-        {/* Warm Gold Accent Fill Light */}
-        <directionalLight position={[-5, 5, 5]} intensity={2.0} color="#fff6e8" />
-        
-        {/* Rim Contour Backlight */}
-        <directionalLight position={[0, 6, -6]} intensity={2.2} color="#ffffff" />
+        {/* Ambient base — reduced from 2.0 → 0.8 */}
+        <ambientLight intensity={0.8} color="#ffffff" />
 
-        {/* Front Direct Spot Glow */}
-        <pointLight position={[0, 1.5, 3.5]} intensity={2.4} color="#ffffff" distance={15} />
-        
-        {/* Base Pedestal Uplight */}
-        <pointLight position={[0, -2.5, 2.5]} intensity={1.8} color="#ffe8b8" distance={12} />
+        {/* Front Key Light — reduced from 2.8 → 1.6 */}
+        <directionalLight position={[4, 8, 6]} intensity={1.6} color="#ffffff" />
 
-        {/* Multi-Panel Studio Environment (frames=1 bakes cubemap once) */}
+        {/* Warm Gold Accent Fill — reduced from 2.0 → 1.0 */}
+        <directionalLight position={[-5, 5, 5]} intensity={1.0} color="#fff6e8" />
+
+        {/* Rim Contour Backlight — reduced from 2.2 → 1.0 */}
+        <directionalLight position={[0, 6, -6]} intensity={1.0} color="#ffffff" />
+
+        {/* Front Direct Spot — reduced from 2.4 → 1.4 */}
+        <pointLight position={[0, 1.5, 3.5]} intensity={1.4} color="#ffffff" distance={15} />
+
+        {/* Base Pedestal Uplight — reduced from 1.8 → 1.0 */}
+        <pointLight position={[0, -2.5, 2.5]} intensity={1.0} color="#ffe8b8" distance={12} />
+
+        {/* Multi-Panel Studio Environment — warmer, darker tones (frames=1 bakes once) */}
         <Environment frames={1}>
-          {/* Top Overhanging Softbox */}
+          {/* Top Softbox — off-white warm grey */}
           <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
             <planeGeometry />
-            <meshBasicMaterial color="#ffffff" />
+            <meshBasicMaterial color="#c8bfa8" />
           </mesh>
-          {/* Front Right Fill Light Panel */}
+          {/* Front Right Fill — warm grey */}
           <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
             <planeGeometry />
-            <meshBasicMaterial color="#ffffff" />
+            <meshBasicMaterial color="#b8ad98" />
           </mesh>
-          {/* Front Left Warm Accent Panel */}
+          {/* Front Left Warm Accent */}
           <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
             <planeGeometry />
-            <meshBasicMaterial color="#fff3dc" />
+            <meshBasicMaterial color="#a89878" />
           </mesh>
-          {/* Back Rim Light Panel */}
+          {/* Back Rim Light — dark warm grey for contrast */}
           <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
             <planeGeometry />
-            <meshBasicMaterial color="#ffffff" />
+            <meshBasicMaterial color="#a09070" />
           </mesh>
-          {/* Bottom Warm Ground Reflector */}
+          {/* Bottom Ground Reflector */}
           <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry />
-            <meshBasicMaterial color="#ffeecb" />
+            <meshBasicMaterial color="#c8b080" />
           </mesh>
         </Environment>
 
@@ -240,10 +276,10 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           <Model isCompact={isCompact} />
         </Suspense>
 
-        {/* Interactive orbit controls (only for PC mouse drag; disabled on touch) */}
+        {/* Interactive orbit controls (PC only) */}
         {!isNonInteractive && (
-          <OrbitControls 
-            enableZoom={false} 
+          <OrbitControls
+            enableZoom={false}
             enablePan={false}
             autoRotate={false}
             enableRotate={true}
