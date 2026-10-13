@@ -67,7 +67,7 @@ export function Hero() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-gold/40 bg-background/80 backdrop-blur-sm text-[8.5px] xs:text-[9.5px] uppercase tracking-[0.2em] text-gold-deep mb-2 shadow-2xs font-semibold"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-gold/40 bg-background text-[8.5px] xs:text-[9.5px] uppercase tracking-[0.2em] text-gold-deep mb-2 shadow-2xs font-semibold"
               >
                 <Sparkles className="size-2.5 text-gold" />
                 <span>Maison 2026</span>

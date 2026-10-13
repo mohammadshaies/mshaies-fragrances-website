@@ -144,7 +144,6 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(true);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
 
   // Detect touch devices to disable touch interference
   useEffect(() => {
@@ -157,34 +156,10 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
     }
   }, []);
 
-  // Performance Optimization: Freeze WebGL draw loop during active page scroll on mobile
-  // This guarantees 100% native 60fps/120Hz buttery smooth scrolling without GPU competition
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let scrollTimeout: any;
-    let isCurrentlyScrolling = false;
-    const onScroll = () => {
-      if (!isCurrentlyScrolling) {
-        isCurrentlyScrolling = true;
-        setIsScrolling(true);
-      }
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        isCurrentlyScrolling = false;
-        setIsScrolling(false);
-      }, 130);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      clearTimeout(scrollTimeout);
-    };
-  }, []);
+  // Razor-sharp Retina DPR: 1.2 on mobile for crisp edges without GPU fill-rate bottleneck, 1.75 on PC desktop
+  const dpr: [number, number] = isCompact || isTouchDevice ? [1, 1.2] : [1, 1.75];
 
-  // Razor-sharp Retina DPR: 1.45 on mobile for crisp edges without fill-rate bottleneck, 1.75 on PC desktop
-  const dpr: [number, number] = isCompact || isTouchDevice ? [1, 1.45] : [1, 1.75];
-
-  // Pause WebGL rendering when hero is scrolled out of view (single-fire observer, zero background GPU use)
+  // Pause WebGL rendering as soon as the hero scrolls out of view (0% background GPU consumption)
   useEffect(() => {
     const el = containerRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
@@ -193,7 +168,10 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
       ([entry]) => {
         setIsInView(entry.isIntersecting);
       },
-      { threshold: 0.05 }
+      { 
+        threshold: 0,
+        rootMargin: "-40px 0px 0px 0px"
+      }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -215,7 +193,7 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
       }}
     >
       <Canvas
-        frameloop={isInView && !isScrolling ? "always" : "never"}
+        frameloop={isInView ? "always" : "never"}
         dpr={dpr}
         camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
         gl={{
@@ -249,29 +227,31 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
         {/* Base Pedestal Uplight for Glowing Amber Perfume */}
         <pointLight position={[0, -2.5, 2.5]} intensity={isCompact ? 1.2 : 2.4} color="#ffe8b8" distance={12} />
 
-        {/* 100% Offline Multi-Panel Studio Environment (bakes once on start with zero runtime overhead) */}
-        <Environment frames={1}>
-          <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
-            <planeGeometry />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-          <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
-            <planeGeometry />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-          <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
-            <planeGeometry />
-            <meshBasicMaterial color="#fff3dc" />
-          </mesh>
-          <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
-            <planeGeometry />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-          <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry />
-            <meshBasicMaterial color="#ffeecb" />
-          </mesh>
-        </Environment>
+        {/* Multi-Panel Studio Environment (PC Desktop Only for extra reflections; bypassed on mobile to prevent GPU jank) */}
+        {!isCompact && (
+          <Environment frames={1}>
+            <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
+              <planeGeometry />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+            <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
+              <planeGeometry />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+            <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
+              <planeGeometry />
+              <meshBasicMaterial color="#fff3dc" />
+            </mesh>
+            <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
+              <planeGeometry />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+            <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry />
+              <meshBasicMaterial color="#ffeecb" />
+            </mesh>
+          </Environment>
+        )}
 
         {/* 3D Bottle Model */}
         <Suspense fallback={<Loader />}>

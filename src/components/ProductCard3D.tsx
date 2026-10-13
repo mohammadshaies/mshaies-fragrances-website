@@ -64,7 +64,7 @@ function MobileProductCard({ product }: { product: Product }) {
   };
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full" style={{ contentVisibility: "auto", containIntrinsicSize: "280px" }}>
       <div className="group relative rounded-2xl bg-card border border-border/80 active:border-gold/60 transition-colors duration-150 flex flex-col h-full shadow-xs overflow-hidden">
         {/* Native Touch Link to Product Page */}
         <Link
@@ -81,22 +81,22 @@ function MobileProductCard({ product }: { product: Product }) {
               style={{ background: "radial-gradient(circle, rgba(212, 175, 55, 0.16) 0%, transparent 70%)" }}
             />
 
-            {/* Floating Badges */}
+            {/* Floating Badges (Solid crisp colors, 0 GPU blur passes for 120Hz smooth scrolling) */}
             <div className="absolute top-2 inset-x-2 z-20 flex items-start justify-between gap-1 pointer-events-none">
               <div className="flex flex-col gap-1 min-w-0">
                 {isOutOfStock ? (
-                  <span className="inline-flex items-center gap-1 text-[8.5px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-full bg-destructive/90 text-white border border-destructive/30 backdrop-blur-md shadow-xs whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1 text-[8.5px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-full bg-destructive text-white border border-destructive/40 shadow-xs whitespace-nowrap">
                     Sold Out
                   </span>
                 ) : isLowStock ? (
-                  <span className="inline-flex items-center gap-0.5 text-[8px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-full bg-amber-500/90 text-white border border-amber-500/30 backdrop-blur-md shadow-xs whitespace-nowrap">
+                  <span className="inline-flex items-center gap-0.5 text-[8px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-full bg-amber-600 text-white border border-amber-500/40 shadow-xs whitespace-nowrap">
                     <AlertCircle className="size-2.5 shrink-0" />
                     <span><span className="hidden min-[380px]:inline">Only </span>{product.stock} left</span>
                   </span>
                 ) : null}
               </div>
 
-              <span className="text-[8.5px] uppercase tracking-widest text-gold-deep font-bold px-2 py-0.5 rounded-full bg-background/95 backdrop-blur-md border border-gold/30 shadow-xs whitespace-nowrap shrink-0">
+              <span className="text-[8.5px] uppercase tracking-widest text-gold-deep font-bold px-2 py-0.5 rounded-full bg-background border border-gold/40 shadow-xs whitespace-nowrap shrink-0">
                 {product.category}
               </span>
             </div>

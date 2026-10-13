@@ -29,7 +29,7 @@ export function Navbar() {
   ];
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 bg-background/90 backdrop-blur-md border-b border-border/20 shadow-sm">
+    <header className="fixed top-0 inset-x-0 z-40 bg-background/98 sm:bg-background/90 sm:backdrop-blur-md border-b border-border/20 shadow-sm">
       {/* =================================================================== */}
       {/* 1. TOP ROW: LOGO, DESKTOP LINKS, CART & MOBILE BUTTON               */}
       {/* =================================================================== */}

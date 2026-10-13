@@ -168,7 +168,7 @@ export function FeaturedFragrances({
           </div>
 
           {/* 2. Unified Smart Action Bar (Search + Sort + Filters in Harmonious Capsule) */}
-          <div className="rounded-2xl sm:rounded-full bg-card/95 border border-gold/40 shadow-xs backdrop-blur-md p-1 sm:p-1.5">
+          <div className="rounded-2xl sm:rounded-full bg-card border border-gold/40 shadow-xs sm:backdrop-blur-md p-1 sm:p-1.5">
             <div className="flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-0.5">
               {/* Search Input (Seamless, spacious, clean) */}
               <div className="relative flex-1 min-w-0 flex items-center">
