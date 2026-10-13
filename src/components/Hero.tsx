@@ -1,8 +1,11 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Compass } from "lucide-react";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, lazy } from "react";
 import { Link } from "@tanstack/react-router";
-import { Bottle3D } from "./Bottle3D";
+import { BottlePoster } from "./Bottle3D";
+
+// Lazy-load the heavy 3D WebGL engine after initial paint (SSR-safe, code-split)
+const Bottle3D = lazy(() => import("./Bottle3D").then((m) => ({ default: m.Bottle3D })));
 
 // ============================================================================
 // HERO SECTION COMPONENT (Interactive 3D Luxury Showcase)
@@ -104,9 +107,7 @@ export function Hero() {
               />
 
               {!isDesktop && (
-                <Suspense fallback={
-                  <div className="size-7 rounded-full border-2 border-gold border-t-transparent animate-spin" />
-                }>
+                <Suspense fallback={<BottlePoster isCompact={true} />}>
                   <Bottle3D isCompact={true} />
                 </Suspense>
               )}
@@ -223,14 +224,7 @@ export function Hero() {
             
             {/* 3D Bottle Viewer with smooth Suspense fallback */}
             {isDesktop && (
-              <Suspense fallback={
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                  <div className="size-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-gold-deep animate-pulse font-semibold">
-                    Loading 3D Attar Bottle...
-                  </div>
-                </div>
-              }>
+              <Suspense fallback={<BottlePoster isCompact={false} />}>
                 <Bottle3D isCompact={false} />
               </Suspense>
             )}
