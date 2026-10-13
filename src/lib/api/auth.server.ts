@@ -49,14 +49,22 @@ function resetAttempts(identifier: string = "global_staff"): void {
 }
 
 function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
   try {
-    const bufA = Buffer.from(a);
-    const bufB = Buffer.from(b);
-    if (bufA.length !== bufB.length) return false;
-    return crypto.timingSafeEqual(bufA, bufB);
+    const enc = new TextEncoder();
+    const bufA = enc.encode(a);
+    const bufB = enc.encode(b);
+    if (crypto && typeof crypto.timingSafeEqual === "function") {
+      return crypto.timingSafeEqual(bufA, bufB);
+    }
   } catch {
-    return false;
+    // fallback to manual constant time comparison
   }
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 /**

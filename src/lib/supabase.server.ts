@@ -1,7 +1,28 @@
 import { createClient } from "@supabase/supabase-js";
 
-const defaultServiceKey = Buffer.from("c2Jfc2VjcmV0XzM0QW9yXy00MHRSNk5wb0xTOURaa1Ffd2JOTW9KRng=", "base64").toString("utf-8");
-const defaultAnonKey = Buffer.from("c2JfcHVibGlzaGFibGVfMEt1NUtYUFZPcU9iTnVmcVFKQy1ZZ19aOVJ6V3JYUQ==", "base64").toString("utf-8");
+function decodeKey(b64: string): string {
+  if (typeof atob === "function") {
+    return atob(b64);
+  }
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+  let str = "";
+  for (let i = 0; i < b64.length;) {
+    const enc1 = chars.indexOf(b64.charAt(i++));
+    const enc2 = chars.indexOf(b64.charAt(i++));
+    const enc3 = chars.indexOf(b64.charAt(i++));
+    const enc4 = chars.indexOf(b64.charAt(i++));
+    const chr1 = (enc1 << 2) | (enc2 >> 4);
+    const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+    const chr3 = ((enc3 & 3) << 6) | enc4;
+    str += String.fromCharCode(chr1);
+    if (enc3 !== 64 && enc3 !== -1) str += String.fromCharCode(chr2);
+    if (enc4 !== 64 && enc4 !== -1) str += String.fromCharCode(chr3);
+  }
+  return str;
+}
+
+const defaultServiceKey = decodeKey("c2Jfc2VjcmV0XzM0QW9yXy00MHRSNk5wb0xTOURaa1Ffd2JOTW9KRng=");
+const defaultAnonKey = decodeKey("c2JfcHVibGlzaGFibGVfMEt1NUtYUFZPcU9iTnVmcVFKQy1ZZ19aOVJ6V3JYUQ==");
 
 const supabaseUrl =
   process.env.SUPABASE_URL ||

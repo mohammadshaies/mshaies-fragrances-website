@@ -19,11 +19,33 @@ function getSessionSecret(): string {
 }
 
 function base64UrlEncode(str: string): string {
-  return Buffer.from(str, "utf8").toString("base64url");
+  try {
+    if (typeof Buffer !== "undefined") {
+      return Buffer.from(str, "utf8").toString("base64url");
+    }
+  } catch {}
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function base64UrlDecode(str: string): string {
-  return Buffer.from(str, "base64url").toString("utf8");
+  try {
+    if (typeof Buffer !== "undefined") {
+      return Buffer.from(str, "base64url").toString("utf8");
+    }
+  } catch {}
+  let b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4) b64 += "=";
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
 }
 
 function computeHmac(data: string, secret: string): string {
@@ -76,11 +98,17 @@ export function verifyAdminSessionToken(
   const secret = getSessionSecret();
   const expectedSignature = computeHmac(`msh.${encodedPayload}`, secret);
 
-  // Constant-time signature comparison
-  const sigBuf = Buffer.from(signature);
-  const expBuf = Buffer.from(expectedSignature);
+  // Constant-time signature comparison without Buffer dependency
+  if (signature.length !== expectedSignature.length) {
+    return { valid: false, error: "Invalid or forged session token." };
+  }
 
-  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+  let diff = 0;
+  for (let i = 0; i < signature.length; i++) {
+    diff |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+  }
+
+  if (diff !== 0) {
     return { valid: false, error: "Invalid or forged session token." };
   }
 
