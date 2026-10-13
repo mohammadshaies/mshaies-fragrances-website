@@ -113,12 +113,12 @@ export function Hero() {
               </motion.div>
             </div>
 
-            {/* Right Column: 3D Bottle Showcase on RIGHT (Calibrated Size) */}
+            {/* Right Column: 3D Bottle Showcase on RIGHT (Calibrated Size & Non-touchable on Mobile) */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.1 }}
-              className="w-[48%] xs:w-[50%] sm:w-[50%] relative h-[230px] xs:h-[260px] sm:h-[300px] flex items-center justify-center shrink-0"
+              className="w-[48%] xs:w-[50%] sm:w-[50%] relative h-[230px] xs:h-[260px] sm:h-[300px] flex items-center justify-center shrink-0 pointer-events-none select-none"
             >
               {/* Ambient Pedestal Glow */}
               <div 

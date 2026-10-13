@@ -118,10 +118,21 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
 export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(true);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
 
-  // Lower DPR on touch devices to improve mobile GPU performance
-  const isMobileTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
-  const dpr: [number, number] = isMobileTouch ? [1, 1] : (isCompact ? [1, 1.25] : [1, 1.5]);
+  // Detect touch devices to completely disable touch interactions on mobile
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsTouchDevice(
+        window.matchMedia("(pointer: coarse)").matches ||
+        "ontouchstart" in window ||
+        navigator.maxTouchPoints > 0
+      );
+    }
+  }, []);
+
+  // Crisp Retina DPR ([1, 2]) on all screens so the bottle is razor sharp with zero pixelation
+  const dpr: [number, number] = [1, 2];
 
   // Automatically pause the WebGL render loop when the hero bottle is off-screen.
   // This frees up 100% of GPU resources when scrolling the product catalog or navigating other pages.
@@ -139,27 +150,31 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
     return () => observer.disconnect();
   }, []);
 
+  const isNonInteractive = isCompact || isTouchDevice;
+
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full flex items-center justify-center ${
-        isCompact
-          ? "min-h-[220px] xs:min-h-[250px] sm:min-h-[280px] touch-pan-y"
-          : "min-h-[440px] lg:min-h-[500px] cursor-grab active:cursor-grabbing"
+      className={`w-full h-full flex items-center justify-center select-none ${
+        isNonInteractive
+          ? "min-h-[220px] xs:min-h-[250px] sm:min-h-[280px] pointer-events-none"
+          : "min-h-[440px] lg:min-h-[500px] cursor-grab active:cursor-grabbing pointer-events-auto"
       }`}
+      style={{ touchAction: isNonInteractive ? "auto" : "none" }}
     >
       <Canvas
         frameloop={isInView ? "always" : "never"}
         dpr={dpr}
         camera={{ position: [0, 0, 3.85], fov: isCompact ? 39 : 38 }}
         gl={{
-          antialias: !isMobileTouch,
+          antialias: true,
           alpha: true,
           stencil: false,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.60
         }}
+        style={{ pointerEvents: isNonInteractive ? "none" : "auto" }}
       >
         {/* Ambient base illumination */}
         <ambientLight intensity={2.3} />
@@ -215,15 +230,17 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           </Float>
         </Suspense>
 
-        {/* Interactive orbit controls (Non-blocking vertical scroll on mobile) */}
-        <OrbitControls 
-          enableZoom={false} 
-          enablePan={false}
-          autoRotate={false}
-          enableRotate={!isCompact}
-          minPolarAngle={Math.PI / 3}
-          maxPolarAngle={Math.PI / 1.6}
-        />
+        {/* Interactive orbit controls (strictly desktop with mouse; completely disabled and unmounted on mobile/touch) */}
+        {!isNonInteractive && (
+          <OrbitControls 
+            enableZoom={false} 
+            enablePan={false}
+            autoRotate={false}
+            enableRotate={true}
+            minPolarAngle={Math.PI / 3}
+            maxPolarAngle={Math.PI / 1.6}
+          />
+        )}
       </Canvas>
     </div>
   );
