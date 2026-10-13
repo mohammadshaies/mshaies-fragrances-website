@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF, OrbitControls, useProgress, Html } from "@react-three/drei";
+import { useGLTF, OrbitControls, useProgress, Html, Environment } from "@react-three/drei";
 import { useRef, useMemo, Suspense, useState, useEffect } from "react";
 import * as THREE from "three";
 
@@ -45,7 +45,7 @@ function Loader() {
 }
 
 // ============================================================================
-// 3. ULTRA-OPTIMIZED 3D MODEL COMPONENT
+// 3. ULTRA-OPTIMIZED, LUMINOUS 3D MODEL COMPONENT
 // ============================================================================
 function Model({ isCompact = false }: { isCompact?: boolean }) {
   const { size } = useThree();
@@ -59,7 +59,7 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
     return 1.92;
   }, [isCompact, size.width]);
 
-  // Enhanced materials for vibrant gold and glass without expensive cubemaps
+  // Enhanced materials for radiant gold, crystal glass, and glowing amber perfume
   const clonedScene = useMemo(() => {
     const s = gltf.scene.clone(true);
 
@@ -75,13 +75,17 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
         child.frustumCulled = true;
         if (child.material) {
           if (child.material.isMeshStandardMaterial || child.material.isMeshPhysicalMaterial) {
+            // Brighten base diffuse colors for radiant clarity
             if (child.material.color) {
-              child.material.color.multiplyScalar(1.35);
+              child.material.color.multiplyScalar(1.48);
             }
-            child.material.roughness = Math.min(child.material.roughness, 0.16);
-            child.material.metalness = Math.max(child.material.metalness, 0.55);
-            child.material.emissive = new THREE.Color(0x382810);
-            child.material.emissiveIntensity = 0.38;
+            // Sparkling reflections on metallic cap and glass facets
+            child.material.envMapIntensity = 3.6;
+            child.material.roughness = Math.min(child.material.roughness, 0.12);
+            child.material.metalness = Math.max(child.material.metalness, 0.58);
+            // Rich internal amber-gold radiance so the bottle never appears dark or shadowy
+            child.material.emissive = new THREE.Color(0x483416);
+            child.material.emissiveIntensity = 0.45;
             child.material.needsUpdate = true;
           }
         }
@@ -106,7 +110,7 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
 }
 
 // ============================================================================
-// 4. MAIN EXPORT: 3D BOTTLE WITH HIGH-EFFICIENCY GPU ENGINE
+// 4. MAIN EXPORT: 3D BOTTLE WITH BRILLIANT LUMINOUS STUDIO RIG
 // ============================================================================
 export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -190,21 +194,56 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           depth: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.55,
+          toneMappingExposure: 1.85,
         }}
         style={{ pointerEvents: isNonInteractive ? "none" : "auto" }}
       >
-        {/* Balanced 3-Point Studio Illumination (Ultra-fast, zero cubemap lag) */}
-        <ambientLight intensity={2.5} color="#ffffff" />
+        {/* Ambient base illumination */}
+        <ambientLight intensity={2.8} color="#ffffff" />
         
         {/* Front Key Light */}
-        <directionalLight position={[4, 6, 5]} intensity={3.0} color="#ffffff" />
+        <directionalLight position={[4, 7, 6]} intensity={3.4} color="#ffffff" />
         
         {/* Warm Gold Accent Fill Light */}
-        <directionalLight position={[-4, 4, 4]} intensity={2.2} color="#fff6e8" />
+        <directionalLight position={[-5, 5, 5]} intensity={2.6} color="#fff6e8" />
         
         {/* Rim Contour Backlight */}
-        <directionalLight position={[0, 5, -5]} intensity={2.4} color="#ffe8b8" />
+        <directionalLight position={[0, 6, -6]} intensity={2.6} color="#ffffff" />
+
+        {/* Front Direct Spot Glow */}
+        <pointLight position={[0, 1.5, 3.5]} intensity={3.0} color="#ffffff" distance={15} />
+        
+        {/* Base Pedestal Uplight for Glowing Amber Perfume */}
+        <pointLight position={[0, -2.5, 2.5]} intensity={2.4} color="#ffe8b8" distance={12} />
+
+        {/* 100% OFFLINE MULTI-PANEL PROCEDURAL STUDIO ENVIRONMENT (frames=1 bakes cubemap once) */}
+        <Environment frames={1}>
+          {/* Top Overhanging Softbox */}
+          <mesh position={[0, 10, 0]} scale={[16, 16, 1]} rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          {/* Front Right Fill Light Panel */}
+          <mesh position={[8, 4, 6]} scale={[12, 12, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          {/* Front Left Warm Accent Panel */}
+          <mesh position={[-8, 4, 6]} scale={[12, 12, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#fff3dc" />
+          </mesh>
+          {/* Back Rim Light Panel */}
+          <mesh position={[0, 4, -8]} scale={[14, 14, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          {/* Bottom Warm Ground Reflector */}
+          <mesh position={[0, -6, 0]} scale={[16, 16, 1]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry />
+            <meshBasicMaterial color="#ffeecb" />
+          </mesh>
+        </Environment>
 
         {/* 3D Bottle Model */}
         <Suspense fallback={<Loader />}>
