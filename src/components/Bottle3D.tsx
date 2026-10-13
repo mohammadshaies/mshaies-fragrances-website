@@ -103,6 +103,24 @@ function Model({ isCompact = false }: { isCompact?: boolean }) {
     return s;
   }, [gltf.scene, isCompact]);
 
+  // Clean up cloned geometries & materials on unmount to prevent GPU VRAM leaks in browser
+  useEffect(() => {
+    return () => {
+      clonedScene.traverse((child: any) => {
+        if (child.isMesh) {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach((m: any) => m.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
+        }
+      });
+    };
+  }, [clonedScene]);
+
   // Combined smooth rotation & micro-floating animation
   useFrame((state, delta) => {
     if (modelRef.current) {
@@ -144,12 +162,17 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     let scrollTimeout: any;
+    let isCurrentlyScrolling = false;
     const onScroll = () => {
-      setIsScrolling(true);
+      if (!isCurrentlyScrolling) {
+        isCurrentlyScrolling = true;
+        setIsScrolling(true);
+      }
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
+        isCurrentlyScrolling = false;
         setIsScrolling(false);
-      }, 120);
+      }, 130);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
@@ -158,8 +181,8 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
     };
   }, []);
 
-  // Razor-sharp Retina DPR: 1.65 on mobile for crisp edges without pixelation, 1.75 on PC desktop
-  const dpr: [number, number] = isCompact || isTouchDevice ? [1, 1.65] : [1, 1.75];
+  // Razor-sharp Retina DPR: 1.45 on mobile for crisp edges without fill-rate bottleneck, 1.75 on PC desktop
+  const dpr: [number, number] = isCompact || isTouchDevice ? [1, 1.45] : [1, 1.75];
 
   // Pause WebGL rendering when hero is scrolled out of view (single-fire observer, zero background GPU use)
   useEffect(() => {
@@ -200,7 +223,7 @@ export function Bottle3D({ isCompact = false }: { isCompact?: boolean }) {
           alpha: true,
           stencil: false,
           depth: true,
-          powerPreference: "default",
+          powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: isCompact ? 1.35 : 1.85,
         }}
