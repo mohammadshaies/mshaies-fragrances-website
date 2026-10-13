@@ -201,6 +201,70 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== "undefined") {
+                if (!window.global) window.global = window;
+                if (!window.Buffer || typeof window.Buffer.alloc !== "function") {
+                  class B extends Uint8Array {
+                    static from(d, e) {
+                      if (typeof d === "string") {
+                        if (e === "base64" || e === "base64url") {
+                          var b = d.replace(/-/g, "+").replace(/_/g, "/");
+                          while (b.length % 4) b += "=";
+                          var bin = atob(b), res = new B(bin.length);
+                          for (var i = 0; i < bin.length; i++) res[i] = bin.charCodeAt(i);
+                          return res;
+                        }
+                        var enc = new TextEncoder().encode(d), res = new B(enc.length);
+                        res.set(enc);
+                        return res;
+                      }
+                      if (ArrayBuffer.isView(d)) return new B(d.buffer, d.byteOffset, d.byteLength);
+                      if (Array.isArray(d)) return new B(d);
+                      return new B(d);
+                    }
+                    static alloc(s, f) {
+                      var b = new B(s);
+                      if (f !== undefined) b.fill(f);
+                      return b;
+                    }
+                    static allocUnsafe(s) { return new B(s); }
+                    static allocUnsafeSlow(s) { return new B(s); }
+                    static isBuffer(b) { return b instanceof B || b instanceof Uint8Array || !!(b && b._isBuffer); }
+                    static byteLength(s) { return typeof s === "string" ? new TextEncoder().encode(s).length : (s ? s.byteLength || s.length || 0 : 0); }
+                    static concat(l, t) {
+                      if (!Array.isArray(l)) return new B(0);
+                      if (t === undefined) t = l.reduce(function(a, c) { return a + (c ? c.length : 0); }, 0);
+                      var res = new B(t), off = 0;
+                      for (var i = 0; i < l.length; i++) {
+                        if (l[i]) { res.set(l[i], off); off += l[i].length; }
+                      }
+                      return res;
+                    }
+                    toString(e) {
+                      if (e === "base64") {
+                        var bin = "";
+                        for (var i = 0; i < this.length; i++) bin += String.fromCharCode(this[i]);
+                        return btoa(bin);
+                      }
+                      if (e === "base64url") {
+                        var bin = "";
+                        for (var i = 0; i < this.length; i++) bin += String.fromCharCode(this[i]);
+                        return btoa(bin).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/, "");
+                      }
+                      return new TextDecoder().decode(this);
+                    }
+                  }
+                  B.prototype._isBuffer = true;
+                  window.Buffer = B;
+                  globalThis.Buffer = B;
+                }
+              }
+            `,
+          }}
+        />
         <HeadContent />
         <script
           type="application/ld+json"

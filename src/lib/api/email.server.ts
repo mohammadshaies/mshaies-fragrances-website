@@ -1,4 +1,3 @@
-import nodemailer from "nodemailer";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getSupabaseAdmin, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
@@ -202,6 +201,7 @@ async function sendViaSmtp(
   }
 
   try {
+    const { default: nodemailer } = await import("nodemailer");
     const transporter = nodemailer.createTransport({
       host,
       port,

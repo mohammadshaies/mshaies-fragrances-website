@@ -113,6 +113,7 @@ import {
 } from "recharts";
 
 export const Route = createFileRoute("/admin")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Staff & Business Management Console — M.shaies" },

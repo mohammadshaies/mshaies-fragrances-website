@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import crypto from "node:crypto";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { createAdminSessionToken } from "../security/session.server";
@@ -50,16 +49,6 @@ function resetAttempts(identifier: string = "global_staff"): void {
 
 function safeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
-  try {
-    const enc = new TextEncoder();
-    const bufA = enc.encode(a);
-    const bufB = enc.encode(b);
-    if (crypto && typeof crypto.timingSafeEqual === "function") {
-      return crypto.timingSafeEqual(bufA, bufB);
-    }
-  } catch {
-    // fallback to manual constant time comparison
-  }
   let diff = 0;
   for (let i = 0; i < a.length; i++) {
     diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
