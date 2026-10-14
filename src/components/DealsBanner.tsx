@@ -63,6 +63,7 @@ export function DealsBanner() {
         code: item.code,
         linkText: item.linkText || "Shop Deal",
         linkTo: item.linkTo || "/shop",
+        imageUrl: item.imageUrl,
       }));
   }, [configuredItems]);
 
@@ -85,7 +86,10 @@ export function DealsBanner() {
   const Icon = currentDeal.icon;
 
   return (
-    <div className="relative z-50 bg-[#16120b] text-white border-b border-gold/40 py-1.5 sm:py-2.5 px-2.5 sm:px-4 select-none shadow-md overflow-hidden">
+    <div
+      className="relative z-50 bg-[#16120b] text-white border-b border-gold/40 py-1.5 sm:py-2.5 px-2.5 sm:px-4 select-none shadow-md overflow-hidden bg-cover bg-center"
+      style={settings.announcementBackgroundImage ? { backgroundImage: `url(${settings.announcementBackgroundImage})` } : undefined}
+    >
       {/* High-visibility golden ambient glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.22),transparent_70%)] pointer-events-none" />
 
@@ -101,16 +105,27 @@ export function DealsBanner() {
               transition={{ duration: 0.3 }}
               className="flex items-center justify-center gap-1.5 sm:gap-3 text-center overflow-hidden"
             >
+              {/* Optional Custom Graphic Thumbnail */}
+              {currentDeal.imageUrl && (
+                <img
+                  src={currentDeal.imageUrl}
+                  alt={currentDeal.badge}
+                  className="size-5 sm:size-6 rounded-md object-cover border border-gold/60 shadow-xs shrink-0"
+                />
+              )}
+
               {/* Desktop Badge Tag */}
               <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gold text-[#16120b] font-bold text-[10px] uppercase tracking-wider shadow-sm shrink-0">
-                <Icon className="size-3" />
+                {!currentDeal.imageUrl && <Icon className="size-3" />}
                 <span>{currentDeal.badge}</span>
               </span>
 
               {/* Mobile Icon */}
-              <span className="sm:hidden text-gold shrink-0">
-                <Icon className="size-3" />
-              </span>
+              {!currentDeal.imageUrl && (
+                <span className="sm:hidden text-gold shrink-0">
+                  <Icon className="size-3" />
+                </span>
+              )}
 
               {/* Deal Description Text */}
               <span className="text-white/90 font-medium text-[10.5px] xs:text-[11.5px] sm:text-sm leading-tight truncate max-w-[190px] xs:max-w-[250px] sm:max-w-none">

@@ -88,6 +88,7 @@ import {
   Gem,
   ChevronUp,
   ChevronDown,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminLoginServerFn, verifyAdminStatusServerFn } from "@/lib/api/auth.server";
@@ -6500,6 +6501,108 @@ function AdminDashboard() {
                 />
               </div>
 
+              {/* Optional Announcement Ribbon Background Texture / Image */}
+              <div className="p-4 rounded-2xl border border-border bg-background space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="block text-xs font-bold text-ink flex items-center gap-1.5">
+                      <ImageIcon className="size-3.5 text-gold" />
+                      <span>Announcement Ribbon Background Image / Texture (Optional)</span>
+                    </label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Upload an ultra-wide panoramic luxury texture (e.g. gold dust, dark damask, or noir marble) to span behind the announcement ticker.
+                    </p>
+                  </div>
+                  {settingsForm.announcementBackgroundImage && (
+                    <button
+                      type="button"
+                      onClick={() => setSettingsForm({ ...settingsForm, announcementBackgroundImage: "" })}
+                      className="text-[11px] text-destructive hover:underline font-semibold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                    >
+                      <Trash2 className="size-3" />
+                      <span>Remove Background Image</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                  <label className="px-4 py-2.5 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shrink-0 transition-colors">
+                    <Upload className="size-4" />
+                    <span>Upload Ribbon Texture</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const dataUrl = await compressImageFile(file, 1920, 100, 0.85);
+                          setSettingsForm({ ...settingsForm, announcementBackgroundImage: dataUrl });
+                          toast.success("Announcement background image uploaded!");
+                        } catch {
+                          toast.error("Failed to process background image.");
+                        }
+                      }}
+                    />
+                  </label>
+                  <input
+                    type="text"
+                    value={settingsForm.announcementBackgroundImage || ""}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, announcementBackgroundImage: e.target.value })}
+                    placeholder="Or paste direct image URL (e.g. https://...)"
+                    className="flex-1 px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+
+                {settingsForm.announcementBackgroundImage && (
+                  <div className="relative rounded-xl overflow-hidden border border-gold/40 h-10 w-full bg-[#16120b] flex items-center justify-center shadow-inner">
+                    <img
+                      src={settingsForm.announcementBackgroundImage}
+                      alt="Announcement Bar Background Preview"
+                      className="absolute inset-0 w-full h-full object-cover opacity-80"
+                    />
+                    <div className="relative z-10 px-3 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-[10px] text-gold font-bold uppercase tracking-wider border border-gold/40">
+                      Live Ribbon Texture Preview
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Top Announcement Bar Image Requirements Card */}
+              <div className="p-4 rounded-2xl bg-gold/5 border border-gold/30 space-y-2">
+                <div className="flex items-center gap-2 text-gold-deep font-bold text-xs">
+                  <Info className="size-4 text-gold shrink-0" />
+                  <span>Announcement Bar Image Requirements & Specifications</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] text-muted-foreground pt-1">
+                  <div className="p-3 rounded-xl bg-background/80 border border-gold/20 space-y-1">
+                    <p className="font-bold text-ink flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-gold" />
+                      Per-Item Thumbnail / Badge Icon:
+                    </p>
+                    <ul className="space-y-0.5 list-disc list-inside text-[10.5px]">
+                      <li><strong>Dimensions:</strong> 64×64 px to 128×128 px (1:1 Square)</li>
+                      <li><strong>Formats:</strong> PNG (transparent), WebP, or SVG</li>
+                      <li><strong>Max Size:</strong> Under 100 KB (optimized for instant mobile load)</li>
+                      <li><strong>Best For:</strong> Bottle flacons, gift boxes, crowns, or sale stamps</li>
+                    </ul>
+                  </div>
+                  <div className="p-3 rounded-xl bg-background/80 border border-gold/20 space-y-1">
+                    <p className="font-bold text-ink flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-gold" />
+                      Full-Width Ribbon Background Texture:
+                    </p>
+                    <ul className="space-y-0.5 list-disc list-inside text-[10.5px]">
+                      <li><strong>Dimensions:</strong> 1920×60 px to 2560×80 px (Ultra-wide panorama)</li>
+                      <li><strong>Formats:</strong> WebP or JPG</li>
+                      <li><strong>Max Size:</strong> Under 200 KB (auto-compressed on upload)</li>
+                      <li><strong>Best For:</strong> Subtle dark textures (#16120b), gold dust, or noir damask</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               {/* Live Ticker Preview */}
               <div className="p-4 rounded-2xl bg-pearl border border-gold/40 space-y-2">
                 <div className="flex items-center justify-between">
@@ -6509,9 +6612,17 @@ function AdminDashboard() {
                 <div className="space-y-1.5">
                   {announcementItemsList.filter(i => i.isEnabled !== false).map((item, idx) => (
                     <div key={item.id || idx} className="p-2.5 rounded-xl bg-[#1c160c] text-pearl text-xs flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-[10px] font-bold uppercase shrink-0">
-                        {item.badge}
-                      </span>
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.badge}
+                          className="size-5 rounded object-cover border border-gold/60 shrink-0"
+                        />
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-[10px] font-bold uppercase shrink-0">
+                          {item.badge}
+                        </span>
+                      )}
                       <span className="truncate flex-1 text-white/90">{item.text}</span>
                       {item.code && (
                         <span className="font-mono bg-gold text-ink font-bold px-1.5 py-0.5 rounded text-[10px] shrink-0">
@@ -6641,6 +6752,13 @@ function AdminDashboard() {
                       {/* Collapsed Item Info */}
                       {!isEditing && (
                         <div className="px-4 py-2 border-t border-border/40 bg-card/60 flex flex-wrap items-center gap-2 text-[11px]">
+                          {item.imageUrl && (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.badge}
+                              className="size-6 rounded-md object-cover border border-gold/50 shrink-0 shadow-xs"
+                            />
+                          )}
                           <span className="px-2 py-0.5 rounded-md bg-gold/15 text-gold-deep font-bold text-[10px]">
                             Badge: {item.badge}
                           </span>
@@ -6652,6 +6770,11 @@ function AdminDashboard() {
                           <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 text-[10px]">
                             Link: {item.linkText || "Shop"} → {item.linkTo || "/shop"}
                           </span>
+                          {item.imageUrl && (
+                            <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-800 border border-blue-500/20 text-[10px] font-semibold">
+                              🖼️ Thumbnail Attached
+                            </span>
+                          )}
                         </div>
                       )}
 
@@ -6748,6 +6871,63 @@ function AdminDashboard() {
                                 <option value="flame">🔥 Flame (Hot / Trending)</option>
                                 <option value="shield">🛡️ Shield (Guaranteed Authentic)</option>
                               </select>
+                            </div>
+                          </div>
+
+                          {/* Item Thumbnail / Icon Image Upload */}
+                          <div className="pt-2 border-t border-border/40">
+                            <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1 flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <ImageIcon className="size-3.5 text-gold" />
+                                <span>Item Thumbnail / Icon Image (Optional)</span>
+                              </span>
+                              <span className="text-[10px] text-muted-foreground font-normal lowercase">64×64 to 128×128 px (PNG / WebP / SVG)</span>
+                            </label>
+                            <div className="flex items-center gap-2.5">
+                              {item.imageUrl && (
+                                <img
+                                  src={item.imageUrl}
+                                  alt="Item thumbnail"
+                                  className="size-9 rounded-lg object-cover border border-gold/60 shrink-0 shadow-xs bg-[#16120b]"
+                                />
+                              )}
+                              <label className="px-3.5 py-2 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors">
+                                <Upload className="size-3.5" />
+                                <span>Upload Image</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    try {
+                                      const dataUrl = await compressImageFile(file, 256, 256, 0.9);
+                                      handleUpdateAnnouncementItem(tIndex, { imageUrl: dataUrl });
+                                      toast.success("Thumbnail image uploaded!");
+                                    } catch {
+                                      toast.error("Failed to process thumbnail image.");
+                                    }
+                                  }}
+                                />
+                              </label>
+                              <input
+                                type="text"
+                                value={item.imageUrl || ""}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { imageUrl: e.target.value })}
+                                placeholder="Or paste direct thumbnail image URL"
+                                className="flex-1 px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                              />
+                              {item.imageUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateAnnouncementItem(tIndex, { imageUrl: "" })}
+                                  className="p-2 text-destructive hover:bg-destructive/10 rounded-lg text-xs transition-colors cursor-pointer"
+                                  title="Remove thumbnail"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -7105,6 +7285,81 @@ function AdminDashboard() {
                     className="size-5 accent-gold cursor-pointer"
                   />
                 </div>
+
+                {/* Default Storewide Graphic Banner Image */}
+                <div className="sm:col-span-2 p-4 rounded-2xl border border-border bg-background space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <label className="block text-xs font-bold text-ink flex items-center gap-1.5">
+                        <ImageIcon className="size-3.5 text-gold" />
+                        <span>Default Storewide Graphic Banner Image (Optional)</span>
+                      </label>
+                      <p className="text-[11px] text-muted-foreground">
+                        Upload a wide promotional graphic banner (1600×320 px) to display as the default graphic across the public storefront.
+                      </p>
+                    </div>
+                    {settingsForm.heroBannerImage && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSettingsForm({ ...settingsForm, heroBannerImage: "" });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        className="text-[11px] text-destructive hover:underline font-semibold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                      >
+                        <Trash2 className="size-3" />
+                        <span>Remove Default Graphic</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                    <label className="px-4 py-2.5 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shrink-0 transition-colors">
+                      <Upload className="size-4" />
+                      <span>Upload Banner Graphic</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const dataUrl = await compressImageFile(file, 1600, 320, 0.88);
+                            setSettingsForm({ ...settingsForm, heroBannerImage: dataUrl });
+                            setBannerPreviewKey((k) => k + 1);
+                            toast.success("Default banner graphic uploaded & compressed!");
+                          } catch {
+                            toast.error("Failed to process banner graphic.");
+                          }
+                        }}
+                      />
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.heroBannerImage || ""}
+                      onChange={(e) => {
+                        setSettingsForm({ ...settingsForm, heroBannerImage: e.target.value });
+                        setBannerPreviewKey((k) => k + 1);
+                      }}
+                      placeholder="Or paste direct image URL (e.g. https://...)"
+                      className="flex-1 px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                    />
+                  </div>
+
+                  {settingsForm.heroBannerImage && (
+                    <div className="relative rounded-xl overflow-hidden border border-gold/40 h-24 sm:h-28 w-full bg-[#16120b] shadow-inner">
+                      <img
+                        src={settingsForm.heroBannerImage}
+                        alt="Hero Banner Graphic Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-xs text-[10px] text-gold font-bold uppercase tracking-wider border border-gold/40">
+                        Default Graphic Preview
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Slides Deck Carousel Manager */}
@@ -7233,6 +7488,13 @@ function AdminDashboard() {
                         {/* Collapsed Slide Info Chips */}
                         {!isEditing && (
                           <div className="px-4 py-2.5 border-t border-border/40 bg-card/60 flex flex-wrap items-center gap-2 text-[11px]">
+                            {slide.imageUrl && (
+                              <img
+                                src={slide.imageUrl}
+                                alt={slide.title}
+                                className="h-6 w-14 rounded object-cover border border-gold/50 shrink-0 shadow-xs"
+                              />
+                            )}
                             {slide.code && (
                               <span className="px-2 py-0.5 rounded-md bg-gold/15 text-gold-deep font-mono font-bold text-[10px]">
                                 Code: {slide.code}
@@ -7362,14 +7624,18 @@ function AdminDashboard() {
                               </div>
 
                               {/* Custom Graphic Banner Image */}
-                              <div>
-                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                  Custom Graphic Image (Optional)
+                              <div className="sm:col-span-2 pt-1">
+                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1 flex items-center justify-between">
+                                  <span className="flex items-center gap-1.5">
+                                    <ImageIcon className="size-3.5 text-gold" />
+                                    <span>Slide Custom Graphic Image (Optional)</span>
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground font-normal lowercase">1600×320 px (WebP / JPG)</span>
                                 </label>
-                                <div className="flex gap-2">
-                                  <label className="px-3 py-2 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0">
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                  <label className="px-3.5 py-2 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-colors">
                                     <Upload className="size-3.5" />
-                                    <span>Upload</span>
+                                    <span>Upload Graphic</span>
                                     <input
                                       type="file"
                                       accept="image/*"
@@ -7391,20 +7657,33 @@ function AdminDashboard() {
                                     type="text"
                                     value={slide.imageUrl || ""}
                                     onChange={(e) => handleUpdatePromotionalSlide(sIndex, { imageUrl: e.target.value })}
-                                    placeholder="Or paste image URL"
+                                    placeholder="Or paste direct image URL (e.g. https://...)"
                                     className="flex-1 px-3 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
                                   />
                                   {slide.imageUrl && (
                                     <button
                                       type="button"
                                       onClick={() => handleUpdatePromotionalSlide(sIndex, { imageUrl: "" })}
-                                      className="px-2.5 py-1 text-destructive hover:bg-destructive/10 rounded-lg text-xs"
+                                      className="p-2 text-destructive hover:bg-destructive/10 rounded-lg text-xs transition-colors cursor-pointer"
                                       title="Remove image"
                                     >
-                                      ✕
+                                      <Trash2 className="size-3.5" />
                                     </button>
                                   )}
                                 </div>
+
+                                {slide.imageUrl && (
+                                  <div className="mt-2.5 relative rounded-xl overflow-hidden border border-gold/40 h-20 sm:h-24 w-full bg-[#16120b] shadow-inner">
+                                    <img
+                                      src={slide.imageUrl}
+                                      alt={`Slide ${sIndex + 1} Preview`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-[9px] text-gold font-bold uppercase tracking-wider border border-gold/40">
+                                      Slide #{sIndex + 1} Graphic Preview
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
 

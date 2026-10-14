@@ -84,6 +84,7 @@ async function enrichBannerConfig(client: any, mapped: any) {
       if (parsed.heroBannerTransitionEffect !== undefined) mapped.heroBannerTransitionEffect = parsed.heroBannerTransitionEffect;
       if (parsed.heroBannerTransitionSpeed !== undefined) mapped.heroBannerTransitionSpeed = parsed.heroBannerTransitionSpeed;
       if (parsed.heroBannerShimmer !== undefined) mapped.heroBannerShimmer = parsed.heroBannerShimmer;
+      if (parsed.announcementBackgroundImage !== undefined) mapped.announcementBackgroundImage = parsed.announcementBackgroundImage;
     }
   } catch (err) {
     // Ignore
@@ -236,6 +237,7 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
       heroBannerTransitionEffect: safeSettings.heroBannerTransitionEffect,
       heroBannerTransitionSpeed: safeSettings.heroBannerTransitionSpeed,
       heroBannerShimmer: safeSettings.heroBannerShimmer,
+      announcementBackgroundImage: safeSettings.announcementBackgroundImage,
     };
 
     const hasBannerUpdates = Object.values(bannerPayload).some((v) => v !== undefined);

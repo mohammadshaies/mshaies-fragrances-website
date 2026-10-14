@@ -212,6 +212,7 @@ export type AnnouncementItem = {
   linkText: string;
   linkTo: string;
   icon?: "tag" | "truck" | "sparkles" | "gift" | "flame" | "shield";
+  imageUrl?: string;
   isEnabled: boolean;
 };
 
@@ -368,6 +369,7 @@ export type StoreSettings = {
   heroBannerTransitionEffect?: "slide" | "marquee" | "fade" | "zoom" | "flip";
   heroBannerTransitionSpeed?: number;
   heroBannerShimmer?: boolean;
+  announcementBackgroundImage?: string;
   // Flacon & Bottle Size Options Configuration
   flaconSizes?: FlaconSizeOption[];
   // Dynamic Banner & Announcement Deck
@@ -380,6 +382,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   announcementText: "Flat 15% OFF on all Pure Attar Oils — Use code",
   announcementCode: "LUXE15",
   announcementActive: true,
+  announcementBackgroundImage: undefined,
   freeShippingThreshold: 5000,
   standardShippingFee: 400,
   expressShippingFee: 450,
