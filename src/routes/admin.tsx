@@ -1637,11 +1637,17 @@ function AdminDashboard() {
       localStorage.getItem("mshaies_admin_token");
 
     if (storedToken) {
+      try {
+        sessionStorage.setItem("mshaies_admin_token", storedToken);
+        localStorage.setItem("mshaies_admin_token", storedToken);
+      } catch {}
       verifyAdminStatusServerFn({ data: { authToken: storedToken } })
         .then((res) => {
           if (res.valid && res.user?.email) {
             setIsAuthenticated(true);
             setCurrentAdminEmail(res.user.email);
+            sessionStorage.setItem("mshaies_admin_token", storedToken);
+            localStorage.setItem("mshaies_admin_token", storedToken);
             sessionStorage.setItem("mshaies_admin_email", res.user.email);
             localStorage.setItem("mshaies_admin_email", res.user.email);
             sessionStorage.setItem(AUTH_SESSION_KEY, "true");
@@ -2079,6 +2085,7 @@ function AdminDashboard() {
 
   // Full Edit Product Modal State
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
 
   // Discount / Coupon Form State
   const [newCoupon, setNewCoupon] = useState<{
@@ -2602,11 +2609,25 @@ function AdminDashboard() {
     toast.info("Admin console securely locked.");
   };
 
-  // Save Store Settings
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateSettings(settingsForm);
-    toast.success("Store settings & shipping rules updated!");
+  // Save Store Settings & Sync to Supabase Database
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const handleSaveSettings = async (e?: React.SyntheticEvent) => {
+    if (e) e.preventDefault();
+    setIsSavingSettings(true);
+    const toastId = toast.loading("Saving changes to Supabase database...");
+    try {
+      const res = await updateSettings(settingsForm);
+      if (res.success) {
+        toast.success("✓ All changes saved to Supabase database successfully!", { id: toastId });
+        refreshDataFromServer();
+      } else {
+        toast.error(res.error || "Failed to save changes to database. Please check your admin session.", { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save changes to database.", { id: toastId });
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   // Stats Calculations
@@ -4640,11 +4661,12 @@ function AdminDashboard() {
 
               <button
                 type="button"
+                disabled={isSavingSettings}
                 onClick={handleSaveSettings}
-                className="btn-gold btn-gold-hover px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2 shadow-md shrink-0 cursor-pointer self-start sm:self-auto"
+                className="btn-gold btn-gold-hover px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2 shadow-md shrink-0 cursor-pointer self-start sm:self-auto disabled:opacity-50"
               >
                 <Check className="size-4" />
-                Save Shipping Rates
+                <span>{isSavingSettings ? "Saving to Database..." : "Save Shipping Rates to Database"}</span>
               </button>
             </div>
 
@@ -4909,10 +4931,11 @@ function AdminDashboard() {
 
                     <button
                       type="submit"
-                      className="w-full btn-gold btn-gold-hover py-3 rounded-full text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                      disabled={isSavingSettings}
+                      className="w-full btn-gold btn-gold-hover py-3 rounded-full text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
                     >
                       <Check className="size-4" />
-                      Save Shipping Rates
+                      <span>{isSavingSettings ? "Saving to Database..." : "Save Shipping Rates to Database"}</span>
                     </button>
                   </div>
                 </div>
@@ -6636,11 +6659,12 @@ function AdminDashboard() {
                 </p>
                 <button
                   type="button"
+                  disabled={isSavingSettings}
                   onClick={handleSaveSettings}
-                  className="btn-gold btn-gold-hover px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2 cursor-pointer shadow-xs"
+                  className="btn-gold btn-gold-hover px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   <Check className="size-4" />
-                  Save Announcement Bar
+                  <span>{isSavingSettings ? "Saving to Database..." : "Save Announcement Bar to Database"}</span>
                 </button>
               </div>
             </div>
@@ -7287,11 +7311,12 @@ function AdminDashboard() {
               <div className="pt-2 border-t border-border">
                 <button
                   type="button"
+                  disabled={isSavingSettings}
                   onClick={handleSaveSettings}
-                  className="btn-gold btn-gold-hover px-6 py-3 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2"
+                  className="btn-gold btn-gold-hover px-6 py-3 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs"
                 >
                   <Check className="size-4" />
-                  Save Promotional Banner Across All Pages
+                  <span>{isSavingSettings ? "Saving to Database..." : "Save Promotional Banner to Database"}</span>
                 </button>
               </div>
             </div>
@@ -7439,14 +7464,12 @@ function AdminDashboard() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      updateSettings(settingsForm);
-                      toast.success("Flacon sizes & options saved successfully!");
-                    }}
-                    className="btn-gold btn-gold-hover px-5 py-2 rounded-full text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                    disabled={isSavingSettings}
+                    onClick={handleSaveSettings}
+                    className="btn-gold btn-gold-hover px-5 py-2 rounded-full text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
                   >
                     <Check className="size-3.5" />
-                    Save Sizes
+                    <span>{isSavingSettings ? "Saving to Database..." : "Save Sizes to Database"}</span>
                   </button>
                 </div>
               </div>
@@ -8330,10 +8353,11 @@ function AdminDashboard() {
 
                 <button
                   type="submit"
-                  className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2 shadow-md"
+                  disabled={isSavingSettings}
+                  className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2 shadow-md disabled:opacity-50 cursor-pointer"
                 >
                   <Check className="size-4" />
-                  Save Store Settings
+                  <span>{isSavingSettings ? "Saving to Database..." : "Save Store Settings to Database"}</span>
                 </button>
               </form>
             </div>
@@ -8862,7 +8886,7 @@ function AdminDashboard() {
                 </button>
               </div>
 
-              <form onSubmit={handleSaveNewProduct} className="space-y-4">
+              <form noValidate onSubmit={handleSaveNewProduct} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
@@ -9311,38 +9335,59 @@ function AdminDashboard() {
               </div>
 
               <form
+                noValidate
                 onSubmit={async (e) => {
                   e.preventDefault();
-                  const toastId = toast.loading(`Updating ${editingProduct.name} in Supabase...`);
-                  const res = await updateProduct(editingProduct.id, {
-                    name: editingProduct.name,
-                    price: Number(editingProduct.price),
-                    category: editingProduct.category,
-                    volume: editingProduct.volume,
-                    stock: Number(editingProduct.stock),
-                    notes: editingProduct.notes,
-                    tagline: editingProduct.tagline,
-                    description: editingProduct.description,
-                    image: editingProduct.images?.[0] || editingProduct.image || "/product-box.jpg",
-                    images: (editingProduct.images && editingProduct.images.length > 0)
-                      ? editingProduct.images
-                      : [editingProduct.image || "/product-box.jpg"],
-                    isFeatured: editingProduct.isFeatured,
-                    gender: editingProduct.gender || "Unisex",
-                    longevityHours: Number(editingProduct.longevityHours || 18),
-                    sillageRating: editingProduct.sillageRating || "Strong",
-                    fragranceFamily: editingProduct.fragranceFamily || "Woody Oud",
-                    inspiredBy: editingProduct.inspiredBy,
-                    samplePrice: Number(editingProduct.samplePrice || 650),
-                    batchNumber: editingProduct.batchNumber || "MSH-2026-B1",
-                    availableSizes: editingProduct.availableSizes,
-                  });
-                  if (res.success) {
-                    toast.success(`Updated ${editingProduct.name} specifications & volume!`, { id: toastId });
-                    setEditingProduct(null);
-                    refreshDataFromServer();
-                  } else {
-                    toast.error(res.error || "Failed to update product in Supabase.", { id: toastId });
+                  if (!editingProduct.name?.trim()) {
+                    toast.error("Please enter a product title.");
+                    return;
+                  }
+                  if (!editingProduct.price || Number(editingProduct.price) <= 0) {
+                    toast.error("Please enter a valid fragrance price in PKR.");
+                    return;
+                  }
+                  if (!editingProduct.volume?.trim()) {
+                    toast.error("Please specify a bottle volume & format (e.g. 12ml Pure Attar).");
+                    return;
+                  }
+
+                  setIsSavingProduct(true);
+                  const toastId = toast.loading(`Saving "${editingProduct.name}" to Supabase database...`);
+                  try {
+                    const res = await updateProduct(editingProduct.id, {
+                      name: editingProduct.name.trim(),
+                      price: Number(editingProduct.price),
+                      category: editingProduct.category,
+                      volume: editingProduct.volume.trim(),
+                      stock: Number(editingProduct.stock || 0),
+                      notes: editingProduct.notes || "",
+                      tagline: editingProduct.tagline || "",
+                      description: editingProduct.description || "",
+                      image: editingProduct.images?.[0] || editingProduct.image || "/product-box.jpg",
+                      images: (editingProduct.images && editingProduct.images.length > 0)
+                        ? editingProduct.images
+                        : [editingProduct.image || "/product-box.jpg"],
+                      isFeatured: Boolean(editingProduct.isFeatured),
+                      gender: editingProduct.gender || "Unisex",
+                      longevityHours: Number(editingProduct.longevityHours || 18),
+                      sillageRating: editingProduct.sillageRating || "Strong",
+                      fragranceFamily: editingProduct.fragranceFamily || "Woody Oud",
+                      inspiredBy: editingProduct.inspiredBy || undefined,
+                      samplePrice: Number(editingProduct.samplePrice || 650),
+                      batchNumber: editingProduct.batchNumber || "MSH-2026-B1",
+                      availableSizes: editingProduct.availableSizes,
+                    });
+                    if (res.success) {
+                      toast.success(`✓ "${editingProduct.name}" saved to Supabase database successfully!`, { id: toastId });
+                      setEditingProduct(null);
+                      refreshDataFromServer();
+                    } else {
+                      toast.error(res.error || "Failed to update product in Supabase database.", { id: toastId });
+                    }
+                  } catch (err: any) {
+                    toast.error(err?.message || "Network exception saving product to database.", { id: toastId });
+                  } finally {
+                    setIsSavingProduct(false);
                   }
                 }}
                 className="space-y-4"
@@ -9798,9 +9843,11 @@ function AdminDashboard() {
                     </button>
                     <button
                       type="submit"
-                      className="btn-gold btn-gold-hover px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold shadow-md cursor-pointer"
+                      disabled={isSavingProduct}
+                      className="btn-gold btn-gold-hover px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                     >
-                      Save Changes
+                      <Check className="size-3.5" />
+                      <span>{isSavingProduct ? "Saving to Database..." : "Save Changes to Database"}</span>
                     </button>
                   </div>
                 </div>
@@ -9925,13 +9972,18 @@ function AdminDashboard() {
               </div>
 
               <form
+                noValidate
                 onSubmit={(e) => {
                   e.preventDefault();
+                  if (!editingPackagingBox.name?.trim()) {
+                    toast.error("Please enter a box title/name.");
+                    return;
+                  }
                   const updated = packagingBoxes.map((b) =>
                     b.id === editingPackagingBox.id ? editingPackagingBox : b
                   );
                   savePackagingBoxesList(updated);
-                  toast.success(`Updated "${editingPackagingBox.name}"`);
+                  toast.success(`✓ Saved packaging box "${editingPackagingBox.name}" successfully!`);
                   setEditingPackagingBox(null);
                 }}
                 className="space-y-4"
@@ -10047,9 +10099,10 @@ function AdminDashboard() {
                     </button>
                     <button
                       type="submit"
-                      className="btn-gold btn-gold-hover px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer"
+                      className="btn-gold btn-gold-hover px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer flex items-center gap-1.5"
                     >
-                      Save Changes
+                      <Check className="size-3.5" />
+                      <span>Save Changes</span>
                     </button>
                   </div>
                 </div>

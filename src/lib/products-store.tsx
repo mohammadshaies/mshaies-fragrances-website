@@ -496,7 +496,7 @@ type ProductsStoreContextType = {
   getProductReviews: (productId: string) => ProductReview[];
   getProductRating: (productId: string) => { average: number; count: number };
   // Store Settings & Backup
-  updateSettings: (updates: Partial<StoreSettings>) => void;
+  updateSettings: (updates: Partial<StoreSettings>) => Promise<{ success: boolean; error?: string }>;
   exportAllStoreData: () => string;
   importStoreData: (jsonData: string) => boolean;
   resetToDefaults: () => void;
@@ -749,6 +749,19 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [products, categories, coupons, orders, settings, reviews, auditLogs]);
 
+  const getAdminAuthToken = (): string | undefined => {
+    if (typeof window === "undefined") return undefined;
+    try {
+      return (
+        sessionStorage.getItem("mshaies_admin_token") ||
+        localStorage.getItem("mshaies_admin_token") ||
+        undefined
+      );
+    } catch {
+      return undefined;
+    }
+  };
+
   const addAuditLog = (
     action: string, 
     category: AuditLogEntry["category"], 
@@ -771,9 +784,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     const id = `${slug}-${Date.now().toString().slice(-4)}`;
     const fullProd: Product = { ...newProd, id };
 
-    const token = typeof sessionStorage !== "undefined"
-      ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
-      : undefined;
+    const token = getAdminAuthToken();
 
     if (!token) {
       return { success: false, error: "Administrative authorization token missing. Please sign in to the Admin Panel to save changes." };
@@ -804,9 +815,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     if (!target) return { success: false, error: "Product not found." };
     const merged: Product = { ...target, ...updates };
 
-    const token = typeof sessionStorage !== "undefined"
-      ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
-      : undefined;
+    const token = getAdminAuthToken();
 
     if (!token) {
       return { success: false, error: "Administrative authorization token missing. Please sign in again." };
@@ -833,9 +842,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteProduct = async (id: string): Promise<{ success: boolean; error?: string }> => {
-    const token = typeof sessionStorage !== "undefined"
-      ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
-      : undefined;
+    const token = getAdminAuthToken();
 
     if (!token) {
       return { success: false, error: "Administrative authorization token missing. Please sign in again." };
@@ -966,8 +973,11 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
       usedCount: 0,
     };
     setCoupons((prev) => [fullCoupon, ...prev]);
+    try {
+      localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify([fullCoupon, ...coupons]));
+    } catch {}
 
-    const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+    const token = getAdminAuthToken();
     saveCouponServerFn({ data: { authToken: token, coupon: fullCoupon } }).catch((err) =>
       console.warn("[saveCouponServerFn]", err)
     );
@@ -976,9 +986,12 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
   const toggleCoupon = (id: string) => {
     setCoupons((prev) => {
       const updated = prev.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c));
+      try {
+        localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify(updated));
+      } catch {}
       const target = updated.find((c) => c.id === id);
       if (target) {
-        const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+        const token = getAdminAuthToken();
         saveCouponServerFn({ data: { authToken: token, coupon: target } }).catch((err) =>
           console.warn("[saveCouponServerFn]", err)
         );
@@ -988,9 +1001,15 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteCoupon = (id: string) => {
-    setCoupons((prev) => prev.filter((c) => c.id !== id));
+    setCoupons((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      try {
+        localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
-    const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+    const token = getAdminAuthToken();
     deleteCouponServerFn({ data: { authToken: token, id } }).catch((err) =>
       console.warn("[deleteCouponServerFn]", err)
     );
@@ -1158,7 +1177,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
       `Order #${id} marked as ${status}${tracking ? ` via ${courier || "Courier"} (Tracking: ${tracking})` : ""}`
     );
 
-    const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+    const token = getAdminAuthToken();
     updateOrderStatusServerFn({
       data: {
         id,
@@ -1180,7 +1199,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
       `Order #${id} payment status updated to "${paymentStatus}"`
     );
 
-    const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+    const token = getAdminAuthToken();
     updatePaymentStatusServerFn({
       data: {
         id,
@@ -1195,17 +1214,32 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
   };
 
   // --- STORE SETTINGS & DATA BACKUP ---
-  const updateSettings = (updates: Partial<StoreSettings>) => {
+  const updateSettings = async (updates: Partial<StoreSettings>): Promise<{ success: boolean; error?: string }> => {
     setSettings((prev) => ({ ...prev, ...updates }));
-    addAuditLog("Settings Saved", "Settings", "Store parameters, shipping rates, or social links updated.");
+    try {
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({ ...settings, ...updates }));
+    } catch (e) {
+      console.warn("Failed to persist settings to localStorage:", e);
+    }
+    addAuditLog("Settings Saved", "Settings", "Store parameters, shipping rates, or banner configurations updated.");
 
-    const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
-    updateSettingsServerFn({
-      data: {
-        authToken: token,
-        settings: updates,
-      },
-    }).catch((err) => console.warn("[updateSettingsServerFn]", err));
+    const token = getAdminAuthToken();
+    try {
+      const res = await updateSettingsServerFn({
+        data: {
+          authToken: token,
+          settings: updates,
+        },
+      });
+      if (!res.success) {
+        console.warn("[updateSettingsServerFn] Server rejected settings update:", res.error);
+        return { success: false, error: res.error || "Failed to update settings in Supabase database." };
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.warn("[updateSettingsServerFn] Exception:", err);
+      return { success: false, error: err?.message || "Network exception saving settings to database." };
+    }
   };
 
   const exportAllStoreData = (): string => {
@@ -1233,7 +1267,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
       if (parsed.auditLogs && Array.isArray(parsed.auditLogs)) setAuditLogs(parsed.auditLogs);
       addAuditLog("Database Restored", "System", "Full store database restored from JSON backup archive.");
 
-      const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("mshaies_admin_token") || undefined : undefined;
+      const token = getAdminAuthToken();
       restoreDatabaseBackupServerFn({
         data: {
           authToken: token,
