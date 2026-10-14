@@ -57,6 +57,32 @@ function formatPKR(num: number): string {
 }
 
 /**
+ * Strips HTML tags and entities to generate a clean plain-text fallback.
+ * Essential for spam prevention: email servers penalize HTML-only emails that lack a multipart/text fallback.
+ */
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/tr>/gi, "\n")
+    .replace(/<\/td>/gi, "  |  ")
+    .replace(/<\/th>/gi, "  |  ")
+    .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, "$1\n\n")
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "$2 ($1)")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n\s+\n/g, "\n\n")
+    .trim();
+}
+
+/**
  * Retrieves authoritative Email Configuration:
  * 1. Checks Supabase system-config-email record in audit_logs (allows instant setup via Admin UI)
  * 2. Merges with environment variables (process.env.RESEND_API_KEY, GMAIL_APP_PASSWORD, etc.)
@@ -91,6 +117,7 @@ export async function getActiveEmailConfig(): Promise<EmailConfig> {
   const envGmailUser = (process.env.GMAIL_USER || process.env.SMTP_USER || DEFAULT_ADMIN_EMAIL).trim().replace(/[\r\n]/g, "");
   const envAdminEmail = (process.env.ADMIN_NOTIFICATION_EMAIL || DEFAULT_ADMIN_EMAIL).trim().replace(/[\r\n]/g, "");
   const envEmailFrom = (process.env.EMAIL_FROM || "").trim().replace(/[\r\n]/g, "");
+  const envProvider = (process.env.EMAIL_PROVIDER || "").trim().toLowerCase();
 
   const resendApiKey = (dbConfig.resendApiKey || envResendApiKey || "").trim().replace(/[\r\n]/g, "");
   const gmailPass = (dbConfig.gmailAppPassword || envGmailPass || "").trim().replace(/[\r\n\s]/g, "");
@@ -98,7 +125,13 @@ export async function getActiveEmailConfig(): Promise<EmailConfig> {
   const adminEmail = (dbConfig.adminEmail || envAdminEmail || DEFAULT_ADMIN_EMAIL).trim().replace(/[\r\n]/g, "");
   const emailFrom = (dbConfig.emailFrom || envEmailFrom || `M.shaies Haute Parfumerie <${adminEmail}>`).trim();
 
-  const provider: "resend" | "gmail" | "smtp" = dbConfig.provider || (resendApiKey ? "resend" : "gmail");
+  const provider: "resend" | "gmail" | "smtp" =
+    dbConfig.provider ||
+    (envProvider === "gmail" || envProvider === "resend" || envProvider === "smtp"
+      ? (envProvider as "resend" | "gmail" | "smtp")
+      : resendApiKey
+      ? "resend"
+      : "gmail");
 
   const smtpHost = (dbConfig.smtpHost || process.env.SMTP_HOST || "smtp.gmail.com").trim().replace(/[\r\n]/g, "");
   const smtpPort = Number(dbConfig.smtpPort || process.env.SMTP_PORT || 465);
@@ -140,6 +173,8 @@ async function sendViaResend(
       ? config.emailFrom
       : "M.shaies Fragrances <onboarding@resend.dev>";
 
+    const text = htmlToPlainText(html);
+
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -151,6 +186,11 @@ async function sendViaResend(
         to: [to],
         subject,
         html,
+        text,
+        reply_to: config.adminEmail || DEFAULT_ADMIN_EMAIL,
+        headers: {
+          "X-Entity-Ref-ID": `mshaies-${Date.now()}`,
+        },
       }),
     });
 
@@ -217,14 +257,26 @@ async function sendViaSmtp(
       },
     });
 
-    const fromAddress = config.emailFrom || `"${STORE_NAME}" <${user}>`;
+    // For Gmail SMTP, the From address must match the authenticated Gmail user to pass SPF/DKIM alignment
+    const isGmailHost = host.includes("gmail");
+    const fromAddress = isGmailHost
+      ? `"${STORE_NAME}" <${user}>`
+      : config.emailFrom || `"${STORE_NAME}" <${user}>`;
+
+    const text = htmlToPlainText(html);
+
     await transporter.sendMail({
       from: fromAddress,
       to,
       subject,
       html,
+      text,
+      replyTo: config.adminEmail || user,
+      headers: {
+        "X-Entity-Ref-ID": `mshaies-${Date.now()}`,
+      },
     });
-    return { sent: true, method: host.includes("gmail") ? "gmail-smtp" : "smtp" };
+    return { sent: true, method: isGmailHost ? "gmail-smtp" : "smtp" };
   } catch (err: any) {
     console.warn("[Email Service] SMTP dispatch error:", err?.message || err);
     let errorMsg = err?.message || "Failed to send email via SMTP";
