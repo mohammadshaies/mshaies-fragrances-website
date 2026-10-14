@@ -1672,7 +1672,21 @@ function AdminDashboard() {
   const [adminPassword, setAdminPassword] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<TabType>("analytics");
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const t = params.get("tab") as TabType;
+        const validTabs: TabType[] = ["analytics", "inventory", "products", "categories", "orders", "customers", "shipping", "coupons", "banner", "marketing", "jobs", "settings", "audit"];
+        if (t && validTabs.includes(t)) {
+          return t;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return "analytics";
+  });
   const [bannerPreviewKey, setBannerPreviewKey] = useState(0);
 
   // Packaging Boxes State with LocalStorage Persistence
