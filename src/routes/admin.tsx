@@ -2224,6 +2224,17 @@ function AdminDashboard() {
     toast.success("Announcement items reset to default Maison offers!");
   };
 
+  const handleToggleAnnouncementActive = (active: boolean) => {
+    const updated = { ...settingsForm, announcementActive: active };
+    setSettingsForm(updated);
+    updateSettings(updated);
+    if (active) {
+      toast.success("Top Announcement Bar is now LIVE on store header!");
+    } else {
+      toast.success("Top Announcement Bar REMOVED / HIDDEN from store!");
+    }
+  };
+
   // Custom ML inputs & handlers for Add and Edit fragrance modals
   const [newCustomMlInput, setNewCustomMlInput] = useState("");
   const [editCustomMlInput, setEditCustomMlInput] = useState("");
@@ -3453,7 +3464,7 @@ function AdminDashboard() {
               icon: Megaphone,
               tabs: [
                 { id: "coupons" as TabType, label: `Discount Codes (${coupons.length})`, icon: Percent, count: coupons.length },
-                { id: "banner" as TabType, label: "Promotional Banners", icon: Megaphone },
+                { id: "banner" as TabType, label: "Top Announcement Bar & Banners", icon: Megaphone },
                 { id: "marketing" as TabType, label: "WhatsApp Broadcasts", icon: MessageCircle },
               ],
             },
@@ -3564,7 +3575,7 @@ function AdminDashboard() {
                     </optgroup>
                     <optgroup label="Marketing & Growth">
                       <option value="coupons">Discount Generator ({coupons.length})</option>
-                      <option value="banner">Promotional Banners (Home, Shop & Catalogs)</option>
+                      <option value="banner">Top Announcement Bar & Banners</option>
                       <option value="marketing">WhatsApp Broadcasts</option>
                     </optgroup>
                     <optgroup label="Careers & Hiring">
@@ -6219,7 +6230,354 @@ function AdminDashboard() {
         {/* TAB 5: TOP DEALS & ANNOUNCEMENT BANNER */}
         {activeTab === "banner" && (
           <div className="space-y-8 max-w-4xl">
-            {/* Section A: Storewide Promotional Long Banner */}
+            {/* Section 1: Top Ticker Announcement Bar */}
+            <div className="rounded-3xl border border-gold/40 bg-card p-6 sm:p-8 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 text-gold-deep text-[11px] font-bold uppercase tracking-wider mb-2">
+                    <Megaphone className="size-3.5" />
+                    <span>Storefront Header Announcement Bar</span>
+                  </div>
+                  <h2 className="font-serif text-2xl text-ink font-bold flex items-center gap-2">
+                    <Megaphone className="size-5 text-gold-deep" />
+                    Top Ticker Announcement Bar
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+                    Pinned across all pages at the very top of your store navigation. Displays auto-rotating announcements, discount codes, shipping perks, and special offers with a dismiss button.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  {/* Instant 1-Click Toggle / Remove Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleAnnouncementActive(!settingsForm.announcementActive)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer border ${
+                      settingsForm.announcementActive
+                        ? "border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive hover:text-white"
+                        : "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+                    }`}
+                    title={settingsForm.announcementActive ? "Instantly remove announcement bar from site" : "Instantly enable announcement bar on site"}
+                  >
+                    {settingsForm.announcementActive ? (
+                      <>
+                        <EyeOff className="size-3.5" />
+                        <span>Remove / Hide Bar</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="size-3.5" />
+                        <span>Activate Bar on Store</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleAddAnnouncementItem}
+                    className="px-3.5 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
+                  >
+                    <Plus className="size-3.5" />
+                    <span>Add Ticker Item</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleResetAnnouncementItems}
+                    className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-pearl text-muted-foreground hover:text-ink text-xs transition-colors cursor-pointer"
+                    title="Reset ticker items to defaults"
+                  >
+                    <RotateCcw className="size-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Master Announcement Toggle Bar */}
+              <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                settingsForm.announcementActive ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-background"
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`size-3 rounded-full ${settingsForm.announcementActive ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"}`} />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-bold text-ink">Storefront Top Header Announcement Status</p>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        settingsForm.announcementActive ? "bg-emerald-500/20 text-emerald-800" : "bg-zinc-500/15 text-zinc-600"
+                      }`}>
+                        {settingsForm.announcementActive ? "LIVE ON STOREFRONT" : "HIDDEN / REMOVED"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {settingsForm.announcementActive
+                        ? "Bar is visible on customer storefront with scrolling ticker offers. Click 'Remove / Hide Bar' to instantly take it down."
+                        : "Bar is completely removed and hidden from all store pages. Click 'Activate Bar' to publish it."}
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.announcementActive}
+                  onChange={(e) => handleToggleAnnouncementActive(e.target.checked)}
+                  className="size-5 accent-gold cursor-pointer"
+                />
+              </div>
+
+              {/* Live Ticker Preview */}
+              <div className="p-4 rounded-2xl bg-pearl border border-gold/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] uppercase tracking-wider text-gold-deep font-bold">Live Ticker Items Preview:</p>
+                  <span className="text-[10px] text-muted-foreground">{announcementItemsList.filter(i => i.isEnabled !== false).length} Active Items</span>
+                </div>
+                <div className="space-y-1.5">
+                  {announcementItemsList.filter(i => i.isEnabled !== false).map((item, idx) => (
+                    <div key={item.id || idx} className="p-2.5 rounded-xl bg-[#1c160c] text-pearl text-xs flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-[10px] font-bold uppercase shrink-0">
+                        {item.badge}
+                      </span>
+                      <span className="truncate flex-1 text-white/90">{item.text}</span>
+                      {item.code && (
+                        <span className="font-mono bg-gold text-ink font-bold px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                          {item.code}
+                        </span>
+                      )}
+                      <span className="text-gold text-[10px] underline shrink-0">{item.linkText || "Shop"} →</span>
+                    </div>
+                  ))}
+                  {announcementItemsList.filter(i => i.isEnabled !== false).length === 0 && (
+                    <p className="text-xs text-muted-foreground italic text-center py-2">No active ticker items. All items are disabled.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Ticker Items List */}
+              <div className="space-y-3">
+                {announcementItemsList.map((item, tIndex) => {
+                  const isEditing = editingTickerIndex === tIndex;
+                  const isEnabled = item.isEnabled !== false;
+
+                  return (
+                    <div
+                      key={item.id || tIndex}
+                      className={`rounded-2xl border transition-all ${
+                        isEnabled
+                          ? "border-gold/40 bg-card shadow-xs"
+                          : "border-border/60 bg-muted/30 opacity-75"
+                      } overflow-hidden`}
+                    >
+                      {/* Header */}
+                      <div className="p-4 flex items-center justify-between gap-3 bg-pearl/40">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="size-6 rounded-full bg-gold/20 text-gold-deep text-xs font-bold flex items-center justify-center shrink-0">
+                            #{tIndex + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                  isEnabled
+                                    ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                                    : "bg-zinc-500/15 text-zinc-600 border border-zinc-500/30"
+                                }`}
+                              >
+                                {isEnabled ? "Live in Ticker" : "Hidden"}
+                              </span>
+                              <span className="text-xs font-bold text-ink truncate max-w-[200px] sm:max-w-md">
+                                {item.badge}: {item.text}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Toggle Active */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleUpdateAnnouncementItem(tIndex, { isEnabled: !isEnabled });
+                              toast.info(isEnabled ? `Ticker item #${tIndex + 1} hidden.` : `Ticker item #${tIndex + 1} is now live!`);
+                            }}
+                            className={`p-2 rounded-lg border transition-colors cursor-pointer ${
+                              isEnabled
+                                ? "border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10"
+                                : "border-border text-muted-foreground hover:bg-muted"
+                            }`}
+                            title={isEnabled ? "Click to hide item" : "Click to enable item"}
+                          >
+                            {isEnabled ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                          </button>
+
+                          {/* Edit Button */}
+                          <button
+                            type="button"
+                            onClick={() => setEditingTickerIndex(isEditing ? null : tIndex)}
+                            className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer ${
+                              isEditing
+                                ? "border-gold bg-gold/20 text-gold-deep font-bold"
+                                : "border-border hover:border-gold hover:bg-pearl text-ink"
+                            }`}
+                          >
+                            <Edit3 className="size-3.5" />
+                            <span>{isEditing ? "Close" : "Edit"}</span>
+                          </button>
+
+                          {/* Delete Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAnnouncementItem(tIndex)}
+                            className="p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                            title="Delete this ticker item"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Collapsed Item Info */}
+                      {!isEditing && (
+                        <div className="px-4 py-2 border-t border-border/40 bg-card/60 flex flex-wrap items-center gap-2 text-[11px]">
+                          <span className="px-2 py-0.5 rounded-md bg-gold/15 text-gold-deep font-bold text-[10px]">
+                            Badge: {item.badge}
+                          </span>
+                          {item.code && (
+                            <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 font-mono font-bold text-[10px]">
+                              Code: {item.code}
+                            </span>
+                          )}
+                          <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 text-[10px]">
+                            Link: {item.linkText || "Shop"} → {item.linkTo || "/shop"}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Expanded Inline Editor for this Item */}
+                      {isEditing && (
+                        <div className="p-4 sm:p-5 border-t border-gold/30 bg-background space-y-3.5">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {/* Badge */}
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Tag / Badge Label
+                              </label>
+                              <input
+                                type="text"
+                                value={item.badge || ""}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { badge: e.target.value })}
+                                placeholder="e.g. FLAT 15% OFF, FREE DELIVERY"
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                              />
+                            </div>
+
+                            {/* Code */}
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Promo / Coupon Code (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                value={item.code || ""}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { code: e.target.value })}
+                                placeholder="e.g. LUXE15, FREESHIP"
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono font-bold text-ink focus:border-gold focus:outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Text */}
+                          <div>
+                            <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                              Announcement Message Text
+                            </label>
+                            <input
+                              type="text"
+                              value={item.text || ""}
+                              onChange={(e) => handleUpdateAnnouncementItem(tIndex, { text: e.target.value })}
+                              placeholder="e.g. Flat 15% OFF on all Pure Attar Oils — Use code LUXE15"
+                              className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {/* Link Text */}
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Action Button Text
+                              </label>
+                              <input
+                                type="text"
+                                value={item.linkText || ""}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { linkText: e.target.value })}
+                                placeholder="e.g. Shop Deal, View Collection"
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                              />
+                            </div>
+
+                            {/* Link Destination */}
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Link Destination URL
+                              </label>
+                              <input
+                                type="text"
+                                value={item.linkTo || ""}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { linkTo: e.target.value })}
+                                placeholder="e.g. /shop, /attars, or /perfumes"
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                              />
+                            </div>
+
+                            {/* Icon */}
+                            <div>
+                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                                Ticker Icon
+                              </label>
+                              <select
+                                value={item.icon || "tag"}
+                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { icon: e.target.value as any })}
+                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none cursor-pointer"
+                              >
+                                <option value="tag">🏷️ Tag (Deal / Offer)</option>
+                                <option value="truck">🚚 Truck (Shipping / Delivery)</option>
+                                <option value="sparkles">✨ Sparkles (Luxury / Collection)</option>
+                                <option value="gift">🎁 Gift (Free Gift / Coffret)</option>
+                                <option value="flame">🔥 Flame (Hot / Trending)</option>
+                                <option value="shield">🛡️ Shield (Guaranteed Authentic)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setEditingTickerIndex(null)}
+                              className="px-4 py-1.5 rounded-full bg-gold/20 hover:bg-gold text-ink font-bold text-xs transition-colors cursor-pointer"
+                            >
+                              ✓ Done Editing Item #{tIndex + 1}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Master Save Button for Top Announcement Bar */}
+              <div className="pt-2 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Changes save to your database and update live on the customer header.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSaveSettings}
+                  className="btn-gold btn-gold-hover px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Check className="size-4" />
+                  Save Announcement Bar
+                </button>
+              </div>
+            </div>
+
+            {/* Section 2: Storewide Promotional Long Banner */}
             <div className="rounded-3xl border border-gold/40 bg-card p-6 sm:p-8 shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -6842,302 +7200,6 @@ function AdminDashboard() {
               </div>
             </div>
 
-            {/* Section B: Top Deals Announcement Bar */}
-            <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="font-serif text-2xl text-ink font-bold flex items-center gap-2">
-                    <Megaphone className="size-5 text-gold-deep" />
-                    Top Ticker Announcement Bar
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Manage the scrolling announcements and policy highlights pinned at the very top of your store navigation.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleAddAnnouncementItem}
-                    className="px-3.5 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
-                  >
-                    <Plus className="size-3.5" />
-                    <span>Add Ticker Item</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleResetAnnouncementItems}
-                    className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-pearl text-muted-foreground hover:text-ink text-xs transition-colors cursor-pointer"
-                    title="Reset ticker items to defaults"
-                  >
-                    <RotateCcw className="size-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Master Announcement Toggle */}
-              <div className="flex items-center justify-between p-4 rounded-2xl border border-border bg-background">
-                <div>
-                  <p className="text-xs font-bold text-ink">Enable Top Ticker Announcement Across Header</p>
-                  <p className="text-[11px] text-muted-foreground">When turned off, the top announcement bar is completely hidden</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settingsForm.announcementActive}
-                  onChange={(e) => setSettingsForm({ ...settingsForm, announcementActive: e.target.checked })}
-                  className="size-5 accent-gold cursor-pointer"
-                />
-              </div>
-
-              {/* Live Ticker Preview */}
-              <div className="p-4 rounded-2xl bg-pearl border border-gold/40 space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] uppercase tracking-wider text-gold-deep font-bold">Live Ticker Items Preview:</p>
-                  <span className="text-[10px] text-muted-foreground">{announcementItemsList.filter(i => i.isEnabled !== false).length} Active Items</span>
-                </div>
-                <div className="space-y-1.5">
-                  {announcementItemsList.filter(i => i.isEnabled !== false).map((item, idx) => (
-                    <div key={item.id || idx} className="p-2.5 rounded-xl bg-[#1c160c] text-pearl text-xs flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-[10px] font-bold uppercase shrink-0">
-                        {item.badge}
-                      </span>
-                      <span className="truncate flex-1 text-white/90">{item.text}</span>
-                      {item.code && (
-                        <span className="font-mono bg-gold text-ink font-bold px-1.5 py-0.5 rounded text-[10px] shrink-0">
-                          {item.code}
-                        </span>
-                      )}
-                      <span className="text-gold text-[10px] underline shrink-0">{item.linkText || "Shop"} →</span>
-                    </div>
-                  ))}
-                  {announcementItemsList.filter(i => i.isEnabled !== false).length === 0 && (
-                    <p className="text-xs text-muted-foreground italic text-center py-2">No active ticker items. All items are disabled.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Ticker Items List */}
-              <div className="space-y-3">
-                {announcementItemsList.map((item, tIndex) => {
-                  const isEditing = editingTickerIndex === tIndex;
-                  const isEnabled = item.isEnabled !== false;
-
-                  return (
-                    <div
-                      key={item.id || tIndex}
-                      className={`rounded-2xl border transition-all ${
-                        isEnabled
-                          ? "border-gold/40 bg-card shadow-xs"
-                          : "border-border/60 bg-muted/30 opacity-75"
-                      } overflow-hidden`}
-                    >
-                      {/* Header */}
-                      <div className="p-4 flex items-center justify-between gap-3 bg-pearl/40">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="size-6 rounded-full bg-gold/20 text-gold-deep text-xs font-bold flex items-center justify-center shrink-0">
-                            #{tIndex + 1}
-                          </span>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                  isEnabled
-                                    ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
-                                    : "bg-zinc-500/15 text-zinc-600 border border-zinc-500/30"
-                                }`}
-                              >
-                                {isEnabled ? "Live in Ticker" : "Hidden"}
-                              </span>
-                              <span className="text-xs font-bold text-ink truncate max-w-[200px] sm:max-w-md">
-                                {item.badge}: {item.text}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {/* Toggle Active */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleUpdateAnnouncementItem(tIndex, { isEnabled: !isEnabled });
-                              toast.info(isEnabled ? `Ticker item #${tIndex + 1} hidden.` : `Ticker item #${tIndex + 1} is now live!`);
-                            }}
-                            className={`p-2 rounded-lg border transition-colors cursor-pointer ${
-                              isEnabled
-                                ? "border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10"
-                                : "border-border text-muted-foreground hover:bg-muted"
-                            }`}
-                            title={isEnabled ? "Click to hide item" : "Click to enable item"}
-                          >
-                            {isEnabled ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-                          </button>
-
-                          {/* Edit Button */}
-                          <button
-                            type="button"
-                            onClick={() => setEditingTickerIndex(isEditing ? null : tIndex)}
-                            className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer ${
-                              isEditing
-                                ? "border-gold bg-gold/20 text-gold-deep font-bold"
-                                : "border-border hover:border-gold hover:bg-pearl text-ink"
-                            }`}
-                          >
-                            <Edit3 className="size-3.5" />
-                            <span>{isEditing ? "Close" : "Edit"}</span>
-                          </button>
-
-                          {/* Delete Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveAnnouncementItem(tIndex)}
-                            className="p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                            title="Delete this ticker item"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Collapsed Item Info */}
-                      {!isEditing && (
-                        <div className="px-4 py-2 border-t border-border/40 bg-card/60 flex flex-wrap items-center gap-2 text-[11px]">
-                          <span className="px-2 py-0.5 rounded-md bg-gold/15 text-gold-deep font-bold text-[10px]">
-                            Badge: {item.badge}
-                          </span>
-                          {item.code && (
-                            <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 font-mono font-bold text-[10px]">
-                              Code: {item.code}
-                            </span>
-                          )}
-                          <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 text-[10px]">
-                            Link: {item.linkText || "Shop"} → {item.linkTo || "/shop"}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Expanded Inline Editor for this Item */}
-                      {isEditing && (
-                        <div className="p-4 sm:p-5 border-t border-gold/30 bg-background space-y-3.5">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {/* Badge */}
-                            <div>
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Tag / Badge Label
-                              </label>
-                              <input
-                                type="text"
-                                value={item.badge || ""}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { badge: e.target.value })}
-                                placeholder="e.g. Active Offer, Nationwide Express, Artisanal Luxury"
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
-                              />
-                            </div>
-
-                            {/* Promo Code */}
-                            <div>
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Featured Coupon Code (Optional)
-                              </label>
-                              <input
-                                type="text"
-                                value={item.code || ""}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { code: e.target.value.toUpperCase() })}
-                                placeholder="e.g. LUXE15, AUTOMATIC"
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono font-bold text-ink uppercase focus:border-gold focus:outline-none"
-                              />
-                            </div>
-
-                            {/* Message Text */}
-                            <div className="sm:col-span-2">
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Announcement Message Text
-                              </label>
-                              <input
-                                type="text"
-                                value={item.text || ""}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { text: e.target.value })}
-                                placeholder="e.g. Free Delivery across Pakistan on all orders over Rs 5,000"
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
-                              />
-                            </div>
-
-                            {/* Link Text */}
-                            <div>
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Action Link Text
-                              </label>
-                              <input
-                                type="text"
-                                value={item.linkText || ""}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { linkText: e.target.value })}
-                                placeholder="e.g. Shop Deal, Explore, Shop Collection"
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
-                              />
-                            </div>
-
-                            {/* Link URL */}
-                            <div>
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Link Destination URL
-                              </label>
-                              <input
-                                type="text"
-                                value={item.linkTo || ""}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { linkTo: e.target.value })}
-                                placeholder="e.g. /shop, /attars, or /perfumes"
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
-                              />
-                            </div>
-
-                            {/* Icon */}
-                            <div>
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Ticker Icon
-                              </label>
-                              <select
-                                value={item.icon || "tag"}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { icon: e.target.value as any })}
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none cursor-pointer"
-                              >
-                                <option value="tag">🏷️ Tag (Deal / Offer)</option>
-                                <option value="truck">🚚 Truck (Shipping / Delivery)</option>
-                                <option value="sparkles">✨ Sparkles (Luxury / Collection)</option>
-                                <option value="gift">🎁 Gift (Free Gift / Coffret)</option>
-                                <option value="flame">🔥 Flame (Hot / Trending)</option>
-                                <option value="shield">🛡️ Shield (Guaranteed Authentic)</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          <div className="flex justify-end pt-1">
-                            <button
-                              type="button"
-                              onClick={() => setEditingTickerIndex(null)}
-                              className="px-4 py-1.5 rounded-full bg-gold/20 hover:bg-gold text-ink font-bold text-xs transition-colors cursor-pointer"
-                            >
-                              ✓ Done Editing Item #{tIndex + 1}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Master Save Button */}
-              <div className="pt-2 border-t border-border">
-                <button
-                  type="button"
-                  onClick={handleSaveSettings}
-                  className="btn-gold btn-gold-hover px-6 py-3 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2"
-                >
-                  <Check className="size-4" />
-                  Save & Update All Banners & Announcements
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
@@ -7183,6 +7245,64 @@ function AdminDashboard() {
         {/* TAB 7: SECURITY & STORE SETTINGS */}
         {activeTab === "settings" && (
           <div className="space-y-8">
+            {/* Quick Card: Top Announcement Bar Status & Switch */}
+            <div className="rounded-3xl border border-gold/40 bg-card p-6 sm:p-7 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="size-11 rounded-2xl bg-gold/15 border border-gold/40 grid place-items-center shrink-0">
+                  <Megaphone className="size-5 text-gold-deep" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-serif text-lg text-ink font-bold">Top Header Announcement Bar</h3>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        settingsForm.announcementActive
+                          ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                          : "bg-zinc-500/15 text-zinc-600 border border-zinc-500/30"
+                      }`}
+                    >
+                      {settingsForm.announcementActive ? "● Live on Store" : "Hidden / Removed"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Pinned across all pages at the very top of your site with discounts, coupons, and announcements.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handleToggleAnnouncementActive(!settingsForm.announcementActive)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                    settingsForm.announcementActive
+                      ? "border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive hover:text-white"
+                      : "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+                  }`}
+                >
+                  {settingsForm.announcementActive ? (
+                    <>
+                      <EyeOff className="size-3.5" />
+                      <span>Remove / Hide Bar</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="size-3.5" />
+                      <span>Activate Bar on Store</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("banner")}
+                  className="px-4 py-2 rounded-xl border border-gold/40 bg-gold/10 hover:bg-gold text-ink text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Edit3 className="size-3.5" />
+                  <span>Edit Bar & Offers →</span>
+                </button>
+              </div>
+            </div>
+
             {/* Card: Flacon & Sample Sizes (ml Options & Display Rules) */}
             <div className="rounded-3xl border border-border/80 bg-card p-6 sm:p-8 space-y-6 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">

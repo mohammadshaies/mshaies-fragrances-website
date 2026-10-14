@@ -17,10 +17,16 @@ import { formatPKR } from "@/lib/cart-context";
 export function DealsBanner() {
   const { settings } = useProductsStore();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
-
-  // If announcement ticker is globally disabled in admin or dismissed by user, do not show
-  if (!settings.announcementActive || !isVisible) return null;
+  const [isDismissed, setIsDismissed] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return sessionStorage.getItem("mshaies_announcement_dismissed") === "true";
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
 
   // Icon mapping helper
   const resolveIcon = (iconName?: string) => {
@@ -73,7 +79,10 @@ export function DealsBanner() {
     return () => clearInterval(interval);
   }, [deals.length]);
 
-  if (deals.length === 0) return null;
+  // CRITICAL: All hooks must execute on every render; early returns only happen after hooks
+  if (!settings.announcementActive || isDismissed || deals.length === 0) {
+    return null;
+  }
 
   const safeIndex = currentIndex % deals.length;
   const currentDeal = deals[safeIndex];
@@ -133,8 +142,15 @@ export function DealsBanner() {
 
         {/* Dismiss / Close Button */}
         <button
-          onClick={() => setIsVisible(false)}
-          className="size-5 sm:size-6 rounded-full hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors shrink-0"
+          onClick={() => {
+            setIsDismissed(true);
+            try {
+              sessionStorage.setItem("mshaies_announcement_dismissed", "true");
+            } catch {
+              // ignore
+            }
+          }}
+          className="size-5 sm:size-6 rounded-full hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors shrink-0 cursor-pointer"
           aria-label="Dismiss banner"
         >
           <X className="size-3 sm:size-3.5" />
