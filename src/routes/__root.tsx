@@ -137,7 +137,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/logo-icon.png", type: "image/png" },
       { rel: "shortcut icon", href: "/logo-icon.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/logo-icon.png" },
-      { rel: "manifest", href: "/site.webmanifest" },
       { rel: "canonical", href: "https://mshaies.com/" },
       { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
       { rel: "stylesheet", href: appCss },
@@ -207,6 +206,11 @@ function RootShell({ children }: { children: ReactNode }) {
           dangerouslySetInnerHTML={{
             __html: `
               if (typeof window !== "undefined") {
+                // Prevent browser native PWA installation prompts and infobars
+                window.addEventListener("beforeinstallprompt", function (e) {
+                  e.preventDefault();
+                  return false;
+                });
                 if (!window.global) window.global = window;
                 if (!window.Buffer || typeof window.Buffer.alloc !== "function") {
                   class B extends Uint8Array {
