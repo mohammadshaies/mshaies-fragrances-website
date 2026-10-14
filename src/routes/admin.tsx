@@ -2141,9 +2141,10 @@ function AdminDashboard() {
   };
 
   // Banner Deck & Announcement Ticker Helpers
-  const promotionalSlidesList: PromotionalSlide[] = (settingsForm.promotionalSlides && settingsForm.promotionalSlides.length > 0)
-    ? settingsForm.promotionalSlides
-    : DEFAULT_PROMOTIONAL_SLIDES;
+  const promotionalSlidesList: PromotionalSlide[] =
+    settingsForm.promotionalSlides !== undefined && settingsForm.promotionalSlides !== null
+      ? settingsForm.promotionalSlides
+      : DEFAULT_PROMOTIONAL_SLIDES;
 
   const [editingSlideIndex, setEditingSlideIndex] = useState<number | null>(null);
 
@@ -2166,27 +2167,29 @@ function AdminDashboard() {
       isEnabled: true,
     };
     const updated = [...promotionalSlidesList, newSlide];
-    setSettingsForm({ ...settingsForm, promotionalSlides: updated });
+    const newForm = { ...settingsForm, promotionalSlides: updated };
+    setSettingsForm(newForm);
+    updateSettings(newForm);
     setEditingSlideIndex(updated.length - 1);
     setBannerPreviewKey((k) => k + 1);
     toast.success("Added new banner slide! Configure its details below.");
   };
 
   const handleRemovePromotionalSlide = (index: number) => {
-    if (promotionalSlidesList.length <= 1) {
-      toast.error("You must have at least one slide in the deck. You can toggle it off instead.");
-      return;
-    }
     const updated = promotionalSlidesList.filter((_, i) => i !== index);
-    setSettingsForm({ ...settingsForm, promotionalSlides: updated });
+    const newForm = { ...settingsForm, promotionalSlides: updated };
+    setSettingsForm(newForm);
+    updateSettings(newForm);
     if (editingSlideIndex === index) setEditingSlideIndex(null);
     else if (editingSlideIndex !== null && editingSlideIndex > index) setEditingSlideIndex(editingSlideIndex - 1);
     setBannerPreviewKey((k) => k + 1);
-    toast.info("Slide removed from promotional carousel.");
+    toast.success(updated.length === 0 ? "Deleted slide. Promotional carousel is now hidden." : "Slide removed from promotional carousel.");
   };
 
   const handleResetPromotionalSlides = () => {
-    setSettingsForm({ ...settingsForm, promotionalSlides: DEFAULT_PROMOTIONAL_SLIDES });
+    const newForm = { ...settingsForm, promotionalSlides: DEFAULT_PROMOTIONAL_SLIDES };
+    setSettingsForm(newForm);
+    updateSettings(newForm);
     setEditingSlideIndex(null);
     setBannerPreviewKey((k) => k + 1);
     toast.success("Promotional slides reset to default Maison collection!");
@@ -7250,6 +7253,34 @@ function AdminDashboard() {
                       </div>
                     );
                   })}
+
+                  {promotionalSlidesList.length === 0 && (
+                    <div className="p-8 text-center rounded-2xl border border-dashed border-border bg-background space-y-3">
+                      <ImageIcon className="size-8 text-muted-foreground mx-auto opacity-50" />
+                      <p className="text-sm font-bold text-ink">No Carousel Slides</p>
+                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                        All promotional slides have been deleted. The promotional banner is currently hidden from the storefront.
+                      </p>
+                      <div className="flex items-center justify-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleAddPromotionalSlide}
+                          className="px-4 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
+                        >
+                          <Plus className="size-3.5" />
+                          <span>Add Slide</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleResetPromotionalSlides}
+                          className="px-4 py-2 rounded-xl border border-border bg-card text-muted-foreground hover:text-ink text-xs font-semibold transition-colors cursor-pointer"
+                        >
+                          <RotateCcw className="size-3.5" />
+                          <span>Restore Defaults</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -141,7 +141,7 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
 
   // User-configurable slides from store settings (falling back to DEFAULT_PROMOTIONAL_SLIDES)
   const configuredSlides: PromotionalSlide[] =
-    settings.promotionalSlides && settings.promotionalSlides.length > 0
+    settings.promotionalSlides !== undefined && settings.promotionalSlides !== null
       ? settings.promotionalSlides
       : DEFAULT_PROMOTIONAL_SLIDES;
 
@@ -152,12 +152,12 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
         if (s.id === "slide-primary" || idx === 0) {
           return {
             id: s.id,
-            tag: props.tag || settings.heroBannerTag || s.tag || primaryTag,
-            title: props.title || settings.heroBannerTitle || s.title || primaryTitle,
-            subtitle: props.subtitle || settings.heroBannerSubtitle || s.subtitle || primarySubtitle,
+            tag: s.tag || props.tag || settings.heroBannerTag || primaryTag,
+            title: s.title || props.title || settings.heroBannerTitle || primaryTitle,
+            subtitle: s.subtitle || props.subtitle || settings.heroBannerSubtitle || primarySubtitle,
             code: s.code || "LUXE15",
-            buttonText: props.buttonText || settings.heroBannerButtonText || s.buttonText || primaryButtonText,
-            linkUrl: props.linkUrl || settings.heroBannerLink || s.linkUrl || primaryLink,
+            buttonText: s.buttonText || props.buttonText || settings.heroBannerButtonText || primaryButtonText,
+            linkUrl: s.linkUrl || props.linkUrl || settings.heroBannerLink || primaryLink,
             icon: s.icon || "sparkles",
             imageUrl: s.imageUrl || (hasCustomGraphic ? customImage : undefined),
           };
