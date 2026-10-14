@@ -2200,7 +2200,12 @@ function AdminDashboard() {
 
   const handleUpdateAnnouncementItem = (index: number, updates: Partial<AnnouncementItem>) => {
     const updated = announcementItemsList.map((item, i) => (i === index ? { ...item, ...updates } : item));
-    setSettingsForm({ ...settingsForm, announcementItems: updated });
+    const extraSync: Partial<typeof settingsForm> = {};
+    if (index === 0) {
+      if (updates.text !== undefined) extraSync.announcementText = updates.text;
+      if (updates.code !== undefined) extraSync.announcementCode = updates.code;
+    }
+    setSettingsForm({ ...settingsForm, announcementItems: updated, ...extraSync });
   };
 
   const handleAddAnnouncementItem = () => {
