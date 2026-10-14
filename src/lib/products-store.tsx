@@ -594,7 +594,18 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return DEFAULT_SETTINGS;
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...DEFAULT_SETTINGS,
+          ...parsed,
+          promotionalSlides: parsed.promotionalSlides !== undefined ? parsed.promotionalSlides : DEFAULT_PROMOTIONAL_SLIDES,
+          announcementItems: parsed.announcementItems !== undefined ? parsed.announcementItems : DEFAULT_ANNOUNCEMENT_ITEMS,
+          heroBannerActive: parsed.heroBannerActive !== undefined ? parsed.heroBannerActive : DEFAULT_SETTINGS.heroBannerActive,
+          announcementActive: parsed.announcementActive !== undefined ? parsed.announcementActive : DEFAULT_SETTINGS.announcementActive,
+        };
+      }
+      return DEFAULT_SETTINGS;
     } catch {
       return DEFAULT_SETTINGS;
     }
@@ -666,7 +677,29 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
         }
       }
       if (settingsRes.success && settingsRes.settings) {
-        setSettings((prev) => ({ ...DEFAULT_SETTINGS, ...prev, ...(settingsRes.settings as any) }));
+        setSettings((prev) => {
+          const s = settingsRes.settings as any;
+          const merged: StoreSettings = {
+            ...DEFAULT_SETTINGS,
+            ...prev,
+            ...s,
+            // Explicitly preserve empty arrays when the server returns []
+            promotionalSlides: s.promotionalSlides !== undefined
+              ? s.promotionalSlides
+              : (prev.promotionalSlides !== undefined ? prev.promotionalSlides : DEFAULT_PROMOTIONAL_SLIDES),
+            announcementItems: s.announcementItems !== undefined
+              ? s.announcementItems
+              : (prev.announcementItems !== undefined ? prev.announcementItems : DEFAULT_ANNOUNCEMENT_ITEMS),
+            heroBannerActive: s.heroBannerActive !== undefined ? s.heroBannerActive : (prev.heroBannerActive ?? true),
+            announcementActive: s.announcementActive !== undefined ? s.announcementActive : (prev.announcementActive ?? false),
+          };
+          try {
+            localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(merged));
+          } catch (e) {
+            console.warn("Failed to persist settings to localStorage:", e);
+          }
+          return merged;
+        });
       }
       if (reviewsRes.success && Array.isArray(reviewsRes.reviews)) {
         setReviews(reviewsRes.reviews as any);

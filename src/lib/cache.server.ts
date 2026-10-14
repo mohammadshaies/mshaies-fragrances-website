@@ -134,7 +134,9 @@ class ServerCache {
     let count = 0;
     const tagSet = new Set(tags);
     for (const [key, entry] of this.cache.entries()) {
-      if (entry.tags.some((t) => tagSet.has(t))) {
+      const hasMatchingTag = entry.tags.some((t) => tagSet.has(t));
+      const hasMatchingKeyPrefix = Array.from(tagSet).some((t) => key.startsWith(t + ":") || key === t || key.includes(t));
+      if (hasMatchingTag || hasMatchingKeyPrefix) {
         this.cache.delete(key);
         count++;
       }

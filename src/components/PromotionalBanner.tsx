@@ -207,8 +207,9 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
   if (slides.length === 0) return null;
 
   const safeIndex = currentIndex >= slides.length ? 0 : currentIndex;
-  const currentSlide = slides[safeIndex];
-  const isExternal = currentSlide.linkUrl.startsWith("http://") || currentSlide.linkUrl.startsWith("https://");
+  const currentSlide = slides[safeIndex] || slides[0];
+  if (!currentSlide) return null;
+  const isExternal = Boolean(currentSlide.linkUrl && (currentSlide.linkUrl.startsWith("http://") || currentSlide.linkUrl.startsWith("https://")));
 
   const renderIcon = (iconName?: string) => {
     switch (iconName) {

@@ -2109,6 +2109,16 @@ function AdminDashboard() {
   // Settings State Form
   const [settingsForm, setSettingsForm] = useState(settings);
 
+  // Synchronize settingsForm whenever settings are fetched or refreshed from server
+  useEffect(() => {
+    if (settings) {
+      setSettingsForm((prev) => ({
+        ...prev,
+        ...settings,
+      }));
+    }
+  }, [settings]);
+
   // Flacon Sizes State Helpers for Store Settings
   const flaconSizesList: FlaconSizeOption[] = (settingsForm.flaconSizes && settingsForm.flaconSizes.length > 0)
     ? settingsForm.flaconSizes
@@ -2161,7 +2171,7 @@ function AdminDashboard() {
     setBannerPreviewKey((k) => k + 1);
   };
 
-  const handleAddPromotionalSlide = () => {
+  const handleAddPromotionalSlide = async () => {
     const newSlide: PromotionalSlide = {
       id: `slide-custom-${Date.now().toString().slice(-4)}`,
       tag: "Maison Exclusive · New Release",
@@ -2174,32 +2184,91 @@ function AdminDashboard() {
       isEnabled: true,
     };
     const updated = [...promotionalSlidesList, newSlide];
-    const newForm = { ...settingsForm, promotionalSlides: updated };
+    const newForm = { ...settingsForm, promotionalSlides: updated, heroBannerActive: true };
     setSettingsForm(newForm);
-    updateSettings(newForm);
     setEditingSlideIndex(updated.length - 1);
     setBannerPreviewKey((k) => k + 1);
-    toast.success("Added new banner slide! Configure its details below.");
+
+    const toastId = toast.loading("Adding slide & saving to database...");
+    const res = await updateSettings(newForm);
+    if (res.success) {
+      toast.success("✓ Added new banner slide and saved to database!", { id: toastId });
+      refreshDataFromServer();
+    } else {
+      toast.error(res.error || "Failed to save new slide to database.", { id: toastId });
+    }
   };
 
-  const handleRemovePromotionalSlide = (index: number) => {
+  const handleRemovePromotionalSlide = async (index: number) => {
     const updated = promotionalSlidesList.filter((_, i) => i !== index);
-    const newForm = { ...settingsForm, promotionalSlides: updated };
+    const updates: Partial<typeof settingsForm> = {
+      promotionalSlides: updated,
+    };
+    if (updated.length === 0) {
+      updates.heroBannerActive = false;
+    }
+    const newForm = { ...settingsForm, ...updates };
     setSettingsForm(newForm);
-    updateSettings(newForm);
     if (editingSlideIndex === index) setEditingSlideIndex(null);
     else if (editingSlideIndex !== null && editingSlideIndex > index) setEditingSlideIndex(editingSlideIndex - 1);
     setBannerPreviewKey((k) => k + 1);
-    toast.success(updated.length === 0 ? "Deleted slide. Promotional carousel is now hidden." : "Slide removed from promotional carousel.");
+
+    const toastId = toast.loading(
+      updated.length === 0
+        ? "Deleting slide & deactivating promotional carousel in database..."
+        : "Removing slide & saving to database..."
+    );
+    const res = await updateSettings(newForm);
+    if (res.success) {
+      toast.success(
+        updated.length === 0
+          ? "✓ All promotional slides deleted! Banner is deactivated and saved to database."
+          : "✓ Slide removed and saved to database successfully!",
+        { id: toastId }
+      );
+      refreshDataFromServer();
+    } else {
+      toast.error(res.error || "Failed to save slide deletion to database.", { id: toastId });
+    }
   };
 
-  const handleResetPromotionalSlides = () => {
-    const newForm = { ...settingsForm, promotionalSlides: DEFAULT_PROMOTIONAL_SLIDES };
+  const handleResetPromotionalSlides = async () => {
+    const newForm = {
+      ...settingsForm,
+      promotionalSlides: DEFAULT_PROMOTIONAL_SLIDES,
+      heroBannerActive: true,
+    };
     setSettingsForm(newForm);
-    updateSettings(newForm);
     setEditingSlideIndex(null);
     setBannerPreviewKey((k) => k + 1);
-    toast.success("Promotional slides reset to default Maison collection!");
+
+    const toastId = toast.loading("Restoring default slides & saving to database...");
+    const res = await updateSettings(newForm);
+    if (res.success) {
+      toast.success("✓ Promotional slides restored to defaults and saved to database!", { id: toastId });
+      refreshDataFromServer();
+    } else {
+      toast.error(res.error || "Failed to restore slides in database.", { id: toastId });
+    }
+  };
+
+  const handleToggleHeroBannerActive = async (active: boolean) => {
+    const updated = { ...settingsForm, heroBannerActive: active };
+    setSettingsForm(updated);
+    setBannerPreviewKey((k) => k + 1);
+    const toastId = toast.loading(active ? "Activating Promotional Banner in database..." : "Hiding Promotional Banner in database...");
+    const res = await updateSettings(updated);
+    if (res.success) {
+      toast.success(
+        active
+          ? "✓ Promotional Banner is now LIVE across the storefront and saved to database!"
+          : "✓ Promotional Banner REMOVED / HIDDEN from storefront and saved to database!",
+        { id: toastId }
+      );
+      refreshDataFromServer();
+    } else {
+      toast.error(res.error || "Failed to update banner status in database.", { id: toastId });
+    }
   };
 
   const announcementItemsList: AnnouncementItem[] =
@@ -2219,7 +2288,7 @@ function AdminDashboard() {
     setSettingsForm({ ...settingsForm, announcementItems: updated, ...extraSync });
   };
 
-  const handleAddAnnouncementItem = () => {
+  const handleAddAnnouncementItem = async () => {
     const newItem: AnnouncementItem = {
       id: `item-custom-${Date.now().toString().slice(-4)}`,
       badge: "Special Promotion",
@@ -2233,12 +2302,19 @@ function AdminDashboard() {
     const updated = [...announcementItemsList, newItem];
     const newForm = { ...settingsForm, announcementItems: updated, announcementActive: true };
     setSettingsForm(newForm);
-    updateSettings(newForm);
     setEditingTickerIndex(updated.length - 1);
-    toast.success("Added new announcement ticker item!");
+
+    const toastId = toast.loading("Adding announcement item & saving to database...");
+    const res = await updateSettings(newForm);
+    if (res.success) {
+      toast.success("✓ Added new announcement item and saved to database!", { id: toastId });
+      refreshDataFromServer();
+    } else {
+      toast.error(res.error || "Failed to save announcement item to database.", { id: toastId });
+    }
   };
 
-  const handleRemoveAnnouncementItem = (index: number) => {
+  const handleRemoveAnnouncementItem = async (index: number) => {
     const updated = announcementItemsList.filter((_, i) => i !== index);
     const updates: Partial<typeof settingsForm> = {
       announcementItems: updated,
@@ -2253,32 +2329,64 @@ function AdminDashboard() {
     }
     const newForm = { ...settingsForm, ...updates };
     setSettingsForm(newForm);
-    updateSettings(newForm);
     if (editingTickerIndex === index) setEditingTickerIndex(null);
     else if (editingTickerIndex !== null && editingTickerIndex > index) setEditingTickerIndex(editingTickerIndex - 1);
-    toast.success(updated.length === 0 ? "Announcement item deleted. Top bar is now hidden." : "Announcement item removed.");
+
+    const toastId = toast.loading(
+      updated.length === 0
+        ? "Deleting item and hiding announcement bar in database..."
+        : "Removing announcement item & saving to database..."
+    );
+    const res = await updateSettings(newForm);
+    if (res.success) {
+      toast.success(
+        updated.length === 0
+          ? "✓ All announcement items deleted! Top bar is hidden and saved to database."
+          : "✓ Announcement item removed and saved to database successfully!",
+        { id: toastId }
+      );
+      refreshDataFromServer();
+    } else {
+      toast.error(res.error || "Failed to save deletion to database.", { id: toastId });
+    }
   };
 
-  const handleResetAnnouncementItems = () => {
+  const handleResetAnnouncementItems = async () => {
     const updates = {
       ...settingsForm,
       announcementItems: DEFAULT_ANNOUNCEMENT_ITEMS,
       announcementActive: true,
+      announcementText: DEFAULT_ANNOUNCEMENT_ITEMS[0]?.text || "",
+      announcementCode: DEFAULT_ANNOUNCEMENT_ITEMS[0]?.code || "",
     };
     setSettingsForm(updates);
-    updateSettings(updates);
     setEditingTickerIndex(null);
-    toast.success("Announcement items reset to default Maison offers!");
+
+    const toastId = toast.loading("Restoring default offers & saving to database...");
+    const res = await updateSettings(updates);
+    if (res.success) {
+      toast.success("✓ Announcement items restored to defaults and saved to database!", { id: toastId });
+      refreshDataFromServer();
+    } else {
+      toast.error(res.error || "Failed to restore announcement items in database.", { id: toastId });
+    }
   };
 
-  const handleToggleAnnouncementActive = (active: boolean) => {
+  const handleToggleAnnouncementActive = async (active: boolean) => {
     const updated = { ...settingsForm, announcementActive: active };
     setSettingsForm(updated);
-    updateSettings(updated);
-    if (active) {
-      toast.success("Top Announcement Bar is now LIVE on store header!");
+    const toastId = toast.loading(active ? "Activating Announcement Bar in database..." : "Hiding Announcement Bar in database...");
+    const res = await updateSettings(updated);
+    if (res.success) {
+      toast.success(
+        active
+          ? "✓ Top Announcement Bar is now LIVE on store header and saved to database!"
+          : "✓ Top Announcement Bar REMOVED / HIDDEN from store and saved to database!",
+        { id: toastId }
+      );
+      refreshDataFromServer();
     } else {
-      toast.success("Top Announcement Bar REMOVED / HIDDEN from store!");
+      toast.error(res.error || "Failed to update announcement bar status in database.", { id: toastId });
     }
   };
 
@@ -2616,7 +2724,14 @@ function AdminDashboard() {
     setIsSavingSettings(true);
     const toastId = toast.loading("Saving changes to Supabase database...");
     try {
-      const res = await updateSettings(settingsForm);
+      const payload = { ...settingsForm };
+      if (Array.isArray(payload.promotionalSlides) && payload.promotionalSlides.length === 0) {
+        payload.heroBannerActive = false;
+      }
+      if (Array.isArray(payload.announcementItems) && payload.announcementItems.length === 0) {
+        payload.announcementActive = false;
+      }
+      const res = await updateSettings(payload);
       if (res.success) {
         toast.success("✓ All changes saved to Supabase database successfully!", { id: toastId });
         refreshDataFromServer();
@@ -6706,6 +6821,36 @@ function AdminDashboard() {
                 <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 text-[10px] font-semibold">✓ Watches (/watches)</span>
               </div>
 
+              {/* Master Promotional Banner Status & Switch */}
+              <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                settingsForm.heroBannerActive ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-background"
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`size-3 rounded-full ${settingsForm.heroBannerActive ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"}`} />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-bold text-ink">Storefront Promotional Banner Status</p>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        settingsForm.heroBannerActive ? "bg-emerald-500/20 text-emerald-800" : "bg-zinc-500/15 text-zinc-600"
+                      }`}>
+                        {settingsForm.heroBannerActive ? "LIVE ON STOREFRONT" : "HIDDEN / REMOVED"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {settingsForm.heroBannerActive
+                        ? "Promotional banner is published across Home, Shop, Attars, Perfumes, and Watches. Click switch to take it down."
+                        : "Promotional banner is completely hidden and removed from all store pages. Click switch to publish it."}
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.heroBannerActive ?? true}
+                  onChange={(e) => handleToggleHeroBannerActive(e.target.checked)}
+                  className="size-5 accent-gold cursor-pointer"
+                />
+              </div>
+
               {/* Quick 1-Click Campaign Templates */}
               <div className="space-y-2">
                 <p className="text-[11px] uppercase tracking-wider text-ink font-bold">1-Click Campaign Presets:</p>
@@ -6876,7 +7021,7 @@ function AdminDashboard() {
                   <input
                     type="checkbox"
                     checked={settingsForm.heroBannerActive ?? true}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, heroBannerActive: e.target.checked })}
+                    onChange={(e) => handleToggleHeroBannerActive(e.target.checked)}
                     className="size-5 accent-gold cursor-pointer"
                   />
                 </div>

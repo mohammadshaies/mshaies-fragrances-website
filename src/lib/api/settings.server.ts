@@ -139,7 +139,7 @@ export const getPublicSettingsServerFn = createServerFn({ method: "GET" })
           source: "none",
         };
       },
-      600,
+      60,
       ["settings"]
     );
   });
@@ -251,14 +251,40 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
           }
 
           if (hasBannerUpdates) {
-            await client.from("audit_logs").upsert({
+            let existingBannerData: Record<string, any> = {};
+            try {
+              const { data: existingLog } = await client
+                .from("audit_logs")
+                .select("details")
+                .eq("id", "system-config-banners")
+                .maybeSingle();
+              if (existingLog?.details) {
+                existingBannerData = JSON.parse(existingLog.details);
+              }
+            } catch (err) {
+              console.warn("[updateSettingsServerFn] Could not read existing banner log:", err);
+            }
+
+            const definedBannerUpdates = Object.fromEntries(
+              Object.entries(bannerPayload).filter(([_, v]) => v !== undefined)
+            );
+
+            const mergedBannerData = {
+              ...existingBannerData,
+              ...definedBannerUpdates,
+            };
+
+            const { error: bannerUpsertErr } = await client.from("audit_logs").upsert({
               id: "system-config-banners",
               timestamp: new Date().toISOString(),
               action: "BANNER_CONFIG_SYNC",
               category: "Settings",
-              details: JSON.stringify(bannerPayload),
+              details: JSON.stringify(mergedBannerData),
               user: auth.user?.email || "Admin",
             });
+            if (bannerUpsertErr) {
+              console.warn("[updateSettingsServerFn] Banner config upsert failed:", bannerUpsertErr);
+            }
           }
 
           await client.from("audit_logs").insert({
@@ -290,5 +316,6 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
     }
 
     serverCache.invalidateTags("settings");
+    serverCache.invalidateKey("settings:public");
     return { success: true };
   });

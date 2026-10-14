@@ -295,9 +295,11 @@ function ProductDetail() {
         </div>
 
         {/* Promotional Banner */}
-        <div className="mb-6 sm:mb-8">
-          <PromotionalBanner />
-        </div>
+        {settings.heroBannerActive !== false && (settings.promotionalSlides === undefined || (Array.isArray(settings.promotionalSlides) && settings.promotionalSlides.length > 0)) && (
+          <div className="mb-6 sm:mb-8">
+            <PromotionalBanner />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
           {/* Left Column: Product Imagery & Multi-Image Glass Stage */}

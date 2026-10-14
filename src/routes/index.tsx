@@ -25,7 +25,8 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { settings } = useProductsStore();
-  const showBanner = settings.heroBannerActive !== false;
+  const hasSlides = settings.promotionalSlides === undefined || (Array.isArray(settings.promotionalSlides) && settings.promotionalSlides.length > 0);
+  const showBanner = settings.heroBannerActive !== false && hasSlides;
 
   return (
     <>
