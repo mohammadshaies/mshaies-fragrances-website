@@ -48,7 +48,7 @@ export function DealsBanner() {
   };
 
   const configuredItems: AnnouncementItem[] =
-    settings.announcementItems && settings.announcementItems.length > 0
+    settings.announcementItems !== undefined && settings.announcementItems !== null
       ? settings.announcementItems
       : DEFAULT_ANNOUNCEMENT_ITEMS;
 

@@ -2192,9 +2192,10 @@ function AdminDashboard() {
     toast.success("Promotional slides reset to default Maison collection!");
   };
 
-  const announcementItemsList: AnnouncementItem[] = (settingsForm.announcementItems && settingsForm.announcementItems.length > 0)
-    ? settingsForm.announcementItems
-    : DEFAULT_ANNOUNCEMENT_ITEMS;
+  const announcementItemsList: AnnouncementItem[] =
+    settingsForm.announcementItems !== undefined && settingsForm.announcementItems !== null
+      ? settingsForm.announcementItems
+      : DEFAULT_ANNOUNCEMENT_ITEMS;
 
   const [editingTickerIndex, setEditingTickerIndex] = useState<number | null>(null);
 
@@ -2220,25 +2221,42 @@ function AdminDashboard() {
       isEnabled: true,
     };
     const updated = [...announcementItemsList, newItem];
-    setSettingsForm({ ...settingsForm, announcementItems: updated });
+    const newForm = { ...settingsForm, announcementItems: updated, announcementActive: true };
+    setSettingsForm(newForm);
+    updateSettings(newForm);
     setEditingTickerIndex(updated.length - 1);
     toast.success("Added new announcement ticker item!");
   };
 
   const handleRemoveAnnouncementItem = (index: number) => {
-    if (announcementItemsList.length <= 1) {
-      toast.error("You must have at least one ticker item. You can disable the ticker entirely instead.");
-      return;
-    }
     const updated = announcementItemsList.filter((_, i) => i !== index);
-    setSettingsForm({ ...settingsForm, announcementItems: updated });
+    const updates: Partial<typeof settingsForm> = {
+      announcementItems: updated,
+    };
+    if (updated.length === 0) {
+      updates.announcementActive = false;
+      updates.announcementText = "";
+      updates.announcementCode = "";
+    } else if (index === 0) {
+      updates.announcementText = updated[0].text;
+      updates.announcementCode = updated[0].code;
+    }
+    const newForm = { ...settingsForm, ...updates };
+    setSettingsForm(newForm);
+    updateSettings(newForm);
     if (editingTickerIndex === index) setEditingTickerIndex(null);
     else if (editingTickerIndex !== null && editingTickerIndex > index) setEditingTickerIndex(editingTickerIndex - 1);
-    toast.info("Announcement item removed from ticker.");
+    toast.success(updated.length === 0 ? "Announcement item deleted. Top bar is now hidden." : "Announcement item removed.");
   };
 
   const handleResetAnnouncementItems = () => {
-    setSettingsForm({ ...settingsForm, announcementItems: DEFAULT_ANNOUNCEMENT_ITEMS });
+    const updates = {
+      ...settingsForm,
+      announcementItems: DEFAULT_ANNOUNCEMENT_ITEMS,
+      announcementActive: true,
+    };
+    setSettingsForm(updates);
+    updateSettings(updates);
     setEditingTickerIndex(null);
     toast.success("Announcement items reset to default Maison offers!");
   };
@@ -6370,6 +6388,34 @@ function AdminDashboard() {
 
               {/* Ticker Items List */}
               <div className="space-y-3">
+                {announcementItemsList.length === 0 && (
+                  <div className="p-8 text-center rounded-2xl border border-dashed border-border bg-background space-y-3">
+                    <Megaphone className="size-8 text-muted-foreground mx-auto opacity-50" />
+                    <p className="text-sm font-bold text-ink">No Ticker Items</p>
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      All announcement items have been deleted. The top announcement bar is currently hidden.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleAddAnnouncementItem}
+                        className="px-4 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
+                      >
+                        <Plus className="size-3.5" />
+                        <span>Add Ticker Item</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleResetAnnouncementItems}
+                        className="px-4 py-2 rounded-xl border border-border bg-card text-muted-foreground hover:text-ink text-xs font-semibold transition-colors cursor-pointer"
+                      >
+                        <RotateCcw className="size-3.5" />
+                        <span>Restore Defaults</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {announcementItemsList.map((item, tIndex) => {
                   const isEditing = editingTickerIndex === tIndex;
                   const isEnabled = item.isEnabled !== false;
