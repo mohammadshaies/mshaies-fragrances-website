@@ -693,6 +693,9 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
             announcementItems: s.announcementItems !== undefined
               ? s.announcementItems
               : (prev.announcementItems !== undefined ? prev.announcementItems : DEFAULT_ANNOUNCEMENT_ITEMS),
+            flaconSizes: s.flaconSizes !== undefined
+              ? s.flaconSizes
+              : (prev.flaconSizes !== undefined ? prev.flaconSizes : DEFAULT_FLACON_SIZES),
             heroBannerActive: s.heroBannerActive !== undefined ? s.heroBannerActive : (prev.heroBannerActive ?? true),
             announcementActive: s.announcementActive !== undefined ? s.announcementActive : (prev.announcementActive ?? false),
           };
@@ -1251,12 +1254,15 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
 
   // --- STORE SETTINGS & DATA BACKUP ---
   const updateSettings = async (updates: Partial<StoreSettings>): Promise<{ success: boolean; error?: string }> => {
-    setSettings((prev) => ({ ...prev, ...updates }));
-    try {
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({ ...settings, ...updates }));
-    } catch (e) {
-      console.warn("Failed to persist settings to localStorage:", e);
-    }
+    setSettings((prev) => {
+      const merged = { ...prev, ...updates };
+      try {
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(merged));
+      } catch (e) {
+        console.warn("Failed to persist settings to localStorage:", e);
+      }
+      return merged;
+    });
     addAuditLog("Settings Saved", "Settings", "Store parameters, shipping rates, or banner configurations updated.");
 
     const token = getAdminAuthToken();

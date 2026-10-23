@@ -65,7 +65,11 @@ function mapSupabaseSettings(s: any) {
 
 async function enrichBannerConfig(client: any, mapped: any) {
   try {
-    const { data: bannerLog } = await client
+    // Always use admin client if available to bypass RLS policies on audit_logs
+    const queryClient = getSupabaseAdmin() || client;
+    if (!queryClient) return;
+
+    const { data: bannerLog } = await queryClient
       .from("audit_logs")
       .select("details")
       .eq("id", "system-config-banners")
@@ -74,6 +78,7 @@ async function enrichBannerConfig(client: any, mapped: any) {
       const parsed = JSON.parse(bannerLog.details);
       if (Array.isArray(parsed.promotionalSlides)) mapped.promotionalSlides = parsed.promotionalSlides;
       if (Array.isArray(parsed.announcementItems)) mapped.announcementItems = parsed.announcementItems;
+      if (Array.isArray(parsed.flaconSizes)) mapped.flaconSizes = parsed.flaconSizes;
       if (parsed.heroBannerActive !== undefined) mapped.heroBannerActive = parsed.heroBannerActive;
       if (parsed.heroBannerTag !== undefined) mapped.heroBannerTag = parsed.heroBannerTag;
       if (parsed.heroBannerTitle !== undefined) mapped.heroBannerTitle = parsed.heroBannerTitle;
@@ -222,11 +227,11 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
     if (safeSettings.tiktokUrl !== undefined) supabasePayload.tiktok_url = safeSettings.tiktokUrl;
     if (safeSettings.autoLockMinutes !== undefined) supabasePayload.auto_lock_minutes = safeSettings.autoLockMinutes;
     if (safeSettings.adminPin !== undefined) supabasePayload.admin_pin = safeSettings.adminPin;
-    if (safeSettings.flaconSizes !== undefined) supabasePayload.flacon_sizes = safeSettings.flaconSizes;
 
-    const bannerPayload = {
+    const bannerPayload: any = {
       promotionalSlides: safeSettings.promotionalSlides,
       announcementItems: safeSettings.announcementItems,
+      flaconSizes: safeSettings.flaconSizes,
       heroBannerActive: safeSettings.heroBannerActive,
       heroBannerTag: safeSettings.heroBannerTag,
       heroBannerTitle: safeSettings.heroBannerTitle,
@@ -247,9 +252,8 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
         const client = getSupabaseAdmin() || getSupabaseClient();
         if (client) {
           const { error: upsertErr } = await client.from("store_settings").upsert(supabasePayload);
-          if (upsertErr && (upsertErr.message?.includes("flacon_sizes") || (upsertErr as any).code === "42703")) {
-            delete supabasePayload.flacon_sizes;
-            await client.from("store_settings").upsert(supabasePayload);
+          if (upsertErr) {
+            console.warn("[updateSettingsServerFn] Supabase store_settings upsert error:", upsertErr);
           }
 
           if (hasBannerUpdates) {
@@ -305,12 +309,34 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
 
     if (isDatabaseConfigured() && db) {
       try {
+        const drizzlePayload: any = { id: "default", updatedAt: new Date() };
+        if (safeSettings.announcementText !== undefined) drizzlePayload.announcementText = safeSettings.announcementText;
+        if (safeSettings.announcementCode !== undefined) drizzlePayload.announcementCode = safeSettings.announcementCode;
+        if (safeSettings.announcementActive !== undefined) drizzlePayload.announcementActive = safeSettings.announcementActive;
+        if (safeSettings.freeShippingThreshold !== undefined) drizzlePayload.freeShippingThreshold = safeSettings.freeShippingThreshold;
+        if (safeSettings.standardShippingFee !== undefined) drizzlePayload.standardShippingFee = safeSettings.standardShippingFee;
+        if (safeSettings.expressShippingFee !== undefined) drizzlePayload.expressShippingFee = safeSettings.expressShippingFee;
+        if (safeSettings.expressShippingActive !== undefined) drizzlePayload.expressShippingActive = safeSettings.expressShippingActive;
+        if (safeSettings.lahoreLocalFee !== undefined) drizzlePayload.lahoreLocalFee = safeSettings.lahoreLocalFee;
+        if (safeSettings.lahoreLocalActive !== undefined) drizzlePayload.lahoreLocalActive = safeSettings.lahoreLocalActive;
+        if (safeSettings.codFee !== undefined) drizzlePayload.codFee = safeSettings.codFee;
+        if (safeSettings.freeShippingEnabled !== undefined) drizzlePayload.freeShippingEnabled = safeSettings.freeShippingEnabled;
+        if (safeSettings.shippingEstimateDays !== undefined) drizzlePayload.shippingEstimateDays = safeSettings.shippingEstimateDays;
+        if (safeSettings.courierPartners !== undefined) drizzlePayload.courierPartners = safeSettings.courierPartners;
+        if (safeSettings.whatsappNumber !== undefined) drizzlePayload.whatsappNumber = safeSettings.whatsappNumber;
+        if (safeSettings.contactEmail !== undefined) drizzlePayload.contactEmail = safeSettings.contactEmail;
+        if (safeSettings.instagramUrl !== undefined) drizzlePayload.instagramUrl = safeSettings.instagramUrl;
+        if (safeSettings.facebookUrl !== undefined) drizzlePayload.facebookUrl = safeSettings.facebookUrl;
+        if (safeSettings.tiktokUrl !== undefined) drizzlePayload.tiktokUrl = safeSettings.tiktokUrl;
+        if (safeSettings.autoLockMinutes !== undefined) drizzlePayload.autoLockMinutes = safeSettings.autoLockMinutes;
+        if (safeSettings.adminPin !== undefined) drizzlePayload.adminPin = safeSettings.adminPin;
+
         await db
           .insert(schema.storeSettings)
-          .values({ id: "default", ...safeSettings, updatedAt: new Date() } as any)
+          .values(drizzlePayload)
           .onConflictDoUpdate({
             target: schema.storeSettings.id,
-            set: { ...safeSettings, updatedAt: new Date() } as any,
+            set: drizzlePayload,
           });
       } catch (err) {
         console.warn("[updateSettingsServerFn] DB update error:", err);

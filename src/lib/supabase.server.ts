@@ -45,20 +45,32 @@ export const isSupabaseConfigured = () =>
     (supabaseServiceKey || supabaseAnonKey)
   );
 
+// Singleton Supabase clients — created once and reused to prevent connection exhaustion
+let _adminClient: ReturnType<typeof createClient> | null = null;
+let _anonClient: ReturnType<typeof createClient> | null = null;
+
 // Server-side Supabase client with Service Role privileges (bypasses RLS for trusted server logic)
 export const getSupabaseAdmin = () => {
   if (!isSupabaseConfigured()) return null;
-  return createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  if (!_adminClient) {
+    _adminClient = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      realtime: { params: { eventsPerSecond: 0 } },
+    });
+  }
+  return _adminClient;
 };
 
 // Client-compatible Supabase client using Anon Key
 export const getSupabaseClient = () => {
   if (!isSupabaseConfigured()) return null;
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-  });
+  if (!_anonClient) {
+    _anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false },
+      realtime: { params: { eventsPerSecond: 0 } },
+    });
+  }
+  return _anonClient;
 };
 
 import { verifyAdminSessionToken } from "./security/session.server";

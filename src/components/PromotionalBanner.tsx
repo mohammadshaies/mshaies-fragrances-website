@@ -112,7 +112,9 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
 
   // If globally disabled in settings, don't render
   const isActive = settings.heroBannerActive !== false;
-  if (!isActive) return null;
+  if (!isActive || (Array.isArray(settings.promotionalSlides) && settings.promotionalSlides.length === 0)) {
+    return null;
+  }
 
   // Resolve transition style
   const rawAnimation = props.animationType || settings.heroBannerTransitionEffect || settings.heroBannerAnimation || "slide";

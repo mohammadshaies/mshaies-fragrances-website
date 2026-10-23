@@ -2167,8 +2167,13 @@ function AdminDashboard() {
   const [editingSlideIndex, setEditingSlideIndex] = useState<number | null>(null);
 
   const handleUpdatePromotionalSlide = (index: number, updates: Partial<PromotionalSlide>) => {
-    const updated = promotionalSlidesList.map((item, i) => (i === index ? { ...item, ...updates } : item));
-    setSettingsForm({ ...settingsForm, promotionalSlides: updated });
+    setSettingsForm((prev) => {
+      const currentList = Array.isArray(prev.promotionalSlides)
+        ? prev.promotionalSlides
+        : DEFAULT_PROMOTIONAL_SLIDES;
+      const updated = currentList.map((item, i) => (i === index ? { ...item, ...updates } : item));
+      return { ...prev, promotionalSlides: updated };
+    });
     setBannerPreviewKey((k) => k + 1);
   };
 
@@ -2201,7 +2206,10 @@ function AdminDashboard() {
   };
 
   const handleRemovePromotionalSlide = async (index: number) => {
-    const updated = promotionalSlidesList.filter((_, i) => i !== index);
+    const currentList = Array.isArray(settingsForm.promotionalSlides)
+      ? settingsForm.promotionalSlides
+      : DEFAULT_PROMOTIONAL_SLIDES;
+    const updated = currentList.filter((_, i) => i !== index);
     const updates: Partial<typeof settingsForm> = {
       promotionalSlides: updated,
     };
@@ -2227,7 +2235,7 @@ function AdminDashboard() {
           : "✓ Slide removed and saved to database successfully!",
         { id: toastId }
       );
-      refreshDataFromServer();
+      await refreshDataFromServer(true);
     } else {
       toast.error(res.error || "Failed to save slide deletion to database.", { id: toastId });
     }
@@ -2280,13 +2288,18 @@ function AdminDashboard() {
   const [editingTickerIndex, setEditingTickerIndex] = useState<number | null>(null);
 
   const handleUpdateAnnouncementItem = (index: number, updates: Partial<AnnouncementItem>) => {
-    const updated = announcementItemsList.map((item, i) => (i === index ? { ...item, ...updates } : item));
-    const extraSync: Partial<typeof settingsForm> = {};
-    if (index === 0) {
-      if (updates.text !== undefined) extraSync.announcementText = updates.text;
-      if (updates.code !== undefined) extraSync.announcementCode = updates.code;
-    }
-    setSettingsForm({ ...settingsForm, announcementItems: updated, ...extraSync });
+    setSettingsForm((prev) => {
+      const currentList = Array.isArray(prev.announcementItems)
+        ? prev.announcementItems
+        : DEFAULT_ANNOUNCEMENT_ITEMS;
+      const updated = currentList.map((item, i) => (i === index ? { ...item, ...updates } : item));
+      const extraSync: Partial<typeof settingsForm> = {};
+      if (index === 0) {
+        if (updates.text !== undefined) extraSync.announcementText = updates.text;
+        if (updates.code !== undefined) extraSync.announcementCode = updates.code;
+      }
+      return { ...prev, announcementItems: updated, ...extraSync };
+    });
   };
 
   const handleAddAnnouncementItem = async () => {
@@ -2300,7 +2313,10 @@ function AdminDashboard() {
       icon: "sparkles",
       isEnabled: true,
     };
-    const updated = [...announcementItemsList, newItem];
+    const currentList = Array.isArray(settingsForm.announcementItems)
+      ? settingsForm.announcementItems
+      : DEFAULT_ANNOUNCEMENT_ITEMS;
+    const updated = [...currentList, newItem];
     const newForm = { ...settingsForm, announcementItems: updated, announcementActive: true };
     setSettingsForm(newForm);
     setEditingTickerIndex(updated.length - 1);
@@ -2316,7 +2332,10 @@ function AdminDashboard() {
   };
 
   const handleRemoveAnnouncementItem = async (index: number) => {
-    const updated = announcementItemsList.filter((_, i) => i !== index);
+    const currentList = Array.isArray(settingsForm.announcementItems)
+      ? settingsForm.announcementItems
+      : DEFAULT_ANNOUNCEMENT_ITEMS;
+    const updated = currentList.filter((_, i) => i !== index);
     const updates: Partial<typeof settingsForm> = {
       announcementItems: updated,
     };
@@ -2325,8 +2344,8 @@ function AdminDashboard() {
       updates.announcementText = "";
       updates.announcementCode = "";
     } else if (index === 0) {
-      updates.announcementText = updated[0].text;
-      updates.announcementCode = updated[0].code;
+      updates.announcementText = updated[0]?.text || "";
+      updates.announcementCode = updated[0]?.code || "";
     }
     const newForm = { ...settingsForm, ...updates };
     setSettingsForm(newForm);
@@ -2346,7 +2365,7 @@ function AdminDashboard() {
           : "✓ Announcement item removed and saved to database successfully!",
         { id: toastId }
       );
-      refreshDataFromServer();
+      await refreshDataFromServer(true);
     } else {
       toast.error(res.error || "Failed to save deletion to database.", { id: toastId });
     }
@@ -2662,9 +2681,13 @@ function AdminDashboard() {
     setShowAddJobModal(true);
   };
 
-  // Keep settings form in sync
+  // Keep settings form in sync from store on initial load or after saving
+  const isSettingsInitializedRef = useRef(false);
   useEffect(() => {
-    setSettingsForm(settings);
+    if (!isSettingsInitializedRef.current && settings) {
+      setSettingsForm(settings);
+      isSettingsInitializedRef.current = true;
+    }
   }, [settings]);
 
   // Supabase Auth Login (Authoritative & Secure Email/Password with Admin Role Enforcement)
@@ -2720,6 +2743,7 @@ function AdminDashboard() {
 
   // Save Store Settings & Sync to Supabase Database
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [lastSavedStatus, setLastSavedStatus] = useState<string | null>(null);
   const handleSaveSettings = async (e?: React.SyntheticEvent) => {
     if (e) e.preventDefault();
     setIsSavingSettings(true);
@@ -2734,8 +2758,11 @@ function AdminDashboard() {
       }
       const res = await updateSettings(payload);
       if (res.success) {
-        toast.success("✓ All changes saved to Supabase database successfully!", { id: toastId });
-        refreshDataFromServer();
+        const timeStr = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" });
+        setLastSavedStatus(`Saved to Supabase at ${timeStr}`);
+        toast.success(`✓ All changes saved to Supabase database successfully! (${timeStr})`, { id: toastId });
+        setSettingsForm(payload);
+        await refreshDataFromServer(true);
       } else {
         toast.error(res.error || "Failed to save changes to database. Please check your admin session.", { id: toastId });
       }
@@ -6949,9 +6976,17 @@ function AdminDashboard() {
 
               {/* Master Save Button for Top Announcement Bar */}
               <div className="pt-2 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
-                  Changes save to your database and update live on the customer header.
-                </p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    Changes save to your database and update live on the customer header.
+                  </p>
+                  {lastSavedStatus && (
+                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                      <CheckCircle2 className="size-3.5" />
+                      <span>{lastSavedStatus}</span>
+                    </div>
+                  )}
+                </div>
                 <button
                   type="button"
                   disabled={isSavingSettings}
@@ -7732,7 +7767,18 @@ function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-border">
+              <div className="pt-2 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    Saves promotional carousel configuration directly into Supabase.
+                  </p>
+                  {lastSavedStatus && (
+                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                      <CheckCircle2 className="size-3.5" />
+                      <span>{lastSavedStatus}</span>
+                    </div>
+                  )}
+                </div>
                 <button
                   type="button"
                   disabled={isSavingSettings}

@@ -21,6 +21,7 @@ import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { CartDrawer } from "../components/CartDrawer";
 import { AIScentAdvisor } from "../components/AIScentAdvisor";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -300,6 +301,7 @@ function RootComponent() {
             <Footer />
             <CartDrawer />
             <AIScentAdvisor />
+            <Toaster richColors position="top-right" closeButton />
           </div>
         </CartProvider>
       </ProductsStoreProvider>
