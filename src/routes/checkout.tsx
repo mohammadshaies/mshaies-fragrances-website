@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCart, formatPKR } from "@/lib/cart-context";
 import { useProductsStore } from "@/lib/products-store";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { trackInitiateCheckout, trackPurchase } from "@/lib/pixel-tracking";
 import { 
   ShieldCheck, 
   Truck, 
@@ -77,6 +78,13 @@ function CheckoutPage() {
 
   const [loading, setLoading] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
+
+  // Track Checkout Funnel (InitiateCheckout / begin_checkout)
+  useEffect(() => {
+    if (items.length > 0) {
+      trackInitiateCheckout({ items, total: subtotal });
+    }
+  }, []);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const handleCopy = (text: string, label: string) => {
@@ -195,6 +203,14 @@ function CheckoutPage() {
         shipping: shippingFee + codSurcharge,
         total: finalTotal,
         orderStatus: "Confirmed",
+      });
+
+      trackPurchase({
+        orderId,
+        items: orderItems,
+        total: finalTotal,
+        shipping: shippingFee + codSurcharge,
+        currency: "PKR",
       });
 
       clear();

@@ -22,6 +22,7 @@ import { Footer } from "../components/Footer";
 import { CartDrawer } from "../components/CartDrawer";
 import { AIScentAdvisor } from "../components/AIScentAdvisor";
 import { Toaster } from "../components/ui/sonner";
+import { PixelTracker } from "../components/PixelTracker";
 
 function NotFoundComponent() {
   return (
@@ -293,6 +294,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ProductsStoreProvider>
         <CartProvider>
+          <PixelTracker />
           <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
             <Navbar />
             <main className="flex-grow">

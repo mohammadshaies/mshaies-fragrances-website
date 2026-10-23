@@ -60,6 +60,10 @@ function mapSupabaseSettings(s: any) {
     announcementItems: Array.isArray(s.announcement_items)
       ? s.announcement_items
       : (Array.isArray(s.announcementItems) ? s.announcementItems : undefined),
+    metaPixelId: s.meta_pixel_id ?? s.metaPixelId ?? "",
+    metaPixelEnabled: Boolean(s.meta_pixel_enabled ?? s.metaPixelEnabled ?? false),
+    googleTagId: s.google_tag_id ?? s.googleTagId ?? "",
+    googleTagEnabled: Boolean(s.google_tag_enabled ?? s.googleTagEnabled ?? false),
   };
 }
 
@@ -90,6 +94,10 @@ async function enrichBannerConfig(client: any, mapped: any) {
       if (parsed.heroBannerTransitionSpeed !== undefined) mapped.heroBannerTransitionSpeed = parsed.heroBannerTransitionSpeed;
       if (parsed.heroBannerShimmer !== undefined) mapped.heroBannerShimmer = parsed.heroBannerShimmer;
       if (parsed.announcementBackgroundImage !== undefined) mapped.announcementBackgroundImage = parsed.announcementBackgroundImage;
+      if (parsed.metaPixelId !== undefined) mapped.metaPixelId = parsed.metaPixelId;
+      if (parsed.metaPixelEnabled !== undefined) mapped.metaPixelEnabled = parsed.metaPixelEnabled;
+      if (parsed.googleTagId !== undefined) mapped.googleTagId = parsed.googleTagId;
+      if (parsed.googleTagEnabled !== undefined) mapped.googleTagEnabled = parsed.googleTagEnabled;
     }
   } catch (err) {
     // Ignore
@@ -243,6 +251,10 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
       heroBannerTransitionSpeed: safeSettings.heroBannerTransitionSpeed,
       heroBannerShimmer: safeSettings.heroBannerShimmer,
       announcementBackgroundImage: safeSettings.announcementBackgroundImage,
+      metaPixelId: safeSettings.metaPixelId,
+      metaPixelEnabled: safeSettings.metaPixelEnabled,
+      googleTagId: safeSettings.googleTagId,
+      googleTagEnabled: safeSettings.googleTagEnabled,
     };
 
     const hasBannerUpdates = Object.values(bannerPayload).some((v) => v !== undefined);

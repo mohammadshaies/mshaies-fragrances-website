@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useProductsStore, DEFAULT_FLACON_SIZES, getCustomSizeDetails, type FlaconSizeOption } from "@/lib/products-store";
 import { useCart, formatPKR } from "@/lib/cart-context";
+import { trackViewContent } from "@/lib/pixel-tracking";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -44,6 +45,13 @@ function ProductDetail() {
   const navigate = useNavigate();
 
   const product = products.find((p) => p.id === id);
+
+  // Track product view for Meta Pixel & Google Analytics (ViewContent / view_item)
+  useEffect(() => {
+    if (product) {
+      trackViewContent(product);
+    }
+  }, [product?.id]);
 
   // Dynamic Flacon Size Options from Store Settings & Product Customization
   const allStoreSizes = (settings?.flaconSizes && settings.flaconSizes.length > 0)

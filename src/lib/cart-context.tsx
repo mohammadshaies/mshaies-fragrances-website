@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { trackAddToCart } from "./pixel-tracking";
 
 export type Product = {
   id: string;
@@ -36,6 +37,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...prev, { ...p, qty: 1 }];
     });
     setOpen(true);
+    trackAddToCart(p);
   };
   const remove: CartCtx["remove"] = (id) =>
     setItems((prev) => prev.filter((i) => i.id !== id));

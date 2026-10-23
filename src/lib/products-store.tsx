@@ -375,6 +375,11 @@ export type StoreSettings = {
   // Dynamic Banner & Announcement Deck
   promotionalSlides?: PromotionalSlide[];
   announcementItems?: AnnouncementItem[];
+  // Marketing & Advertising Pixels
+  metaPixelId?: string;
+  metaPixelEnabled?: boolean;
+  googleTagId?: string;
+  googleTagEnabled?: boolean;
 };
 
 export const DEFAULT_SETTINGS: StoreSettings = {
@@ -428,6 +433,10 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   flaconSizes: DEFAULT_FLACON_SIZES,
   promotionalSlides: DEFAULT_PROMOTIONAL_SLIDES,
   announcementItems: DEFAULT_ANNOUNCEMENT_ITEMS,
+  metaPixelId: "",
+  metaPixelEnabled: false,
+  googleTagId: "",
+  googleTagEnabled: false,
 };
 
 export const DEFAULT_CATEGORIES: Category[] = [

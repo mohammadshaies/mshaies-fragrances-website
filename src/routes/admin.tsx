@@ -7797,6 +7797,46 @@ function AdminDashboard() {
         {/* TAB 6: WHATSAPP MARKETING BROADCASTS */}
         {activeTab === "marketing" && (
           <div className="space-y-6">
+            {/* Quick Card: Marketing & Conversion Pixels Status */}
+            <div className="rounded-3xl border border-indigo-500/30 bg-card p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="size-11 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 grid place-items-center shrink-0">
+                  <Activity className="size-5 text-indigo-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-serif text-lg text-ink font-bold">Meta Pixel & Google GMP Conversion Tracking</h3>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                      settingsForm.metaPixelEnabled && settingsForm.metaPixelId?.trim()
+                        ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                        : "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20"
+                    }`}>
+                      Meta: {settingsForm.metaPixelEnabled && settingsForm.metaPixelId?.trim() ? "Active" : "Off"}
+                    </span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                      settingsForm.googleTagEnabled && settingsForm.googleTagId?.trim()
+                        ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                        : "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20"
+                    }`}>
+                      Google: {settingsForm.googleTagEnabled && settingsForm.googleTagId?.trim() ? "Active" : "Off"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Live e-commerce tracking on storefront for PageView, ViewContent, AddToCart, InitiateCheckout & Purchases in PKR.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("settings")}
+                className="px-4 py-2.5 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500 hover:text-white text-indigo-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              >
+                <SettingsIcon className="size-3.5" />
+                <span>Configure Tracking Pixels in Settings →</span>
+              </button>
+            </div>
+
             <div>
               <h2 className="font-serif text-2xl text-ink font-bold flex items-center gap-2">
                 <MessageCircle className="size-5 text-emerald-600" />
@@ -8630,6 +8670,266 @@ function AdminDashboard() {
                       )}
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card: Marketing Pixels & Advertising Analytics (Google GMP & Meta Pixel) */}
+            <div className="rounded-3xl border border-border/80 bg-card p-6 sm:p-8 space-y-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-2xl bg-indigo-500/15 border border-indigo-500/40 grid place-items-center shrink-0">
+                    <Activity className="size-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-serif text-xl sm:text-2xl text-ink font-bold">
+                        Marketing Pixels & Advertising Analytics
+                      </h3>
+                      <span className="text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-700 border border-indigo-500/30 px-2.5 py-0.5 rounded-full">
+                        Meta Pixel & Google GMP / GA4
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Enter your tracking IDs below to dynamically activate conversion tracking on the storefront without touching code.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={isSavingSettings}
+                    onClick={handleSaveSettings}
+                    className="btn-gold btn-gold-hover px-5 py-2.5 rounded-full text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    <Check className="size-3.5" />
+                    <span>{isSavingSettings ? "Saving..." : "Save Pixels to Database"}</span>
+                  </button>
+                </div>
+              </div>
+
+              {lastSavedStatus && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-2 text-xs text-emerald-800 font-medium">
+                  <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                  <span>{lastSavedStatus}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 1. Meta (Facebook / Instagram) Pixel */}
+                <div className="rounded-2xl border border-border/80 bg-background/50 p-5 sm:p-6 space-y-4">
+                  <div className="flex items-start justify-between gap-3 pb-3 border-b border-border/60">
+                    <div className="flex items-center gap-2.5">
+                      <div className="size-9 rounded-xl bg-blue-500/15 border border-blue-500/40 grid place-items-center shrink-0">
+                        <Share2 className="size-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-serif text-base text-ink font-bold">Meta (Facebook & Instagram) Pixel</h4>
+                        <p className="text-[11px] text-muted-foreground">For Facebook & Instagram Ads Conversion Tracking</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettingsForm({ ...settingsForm, metaPixelEnabled: !settingsForm.metaPixelEnabled })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        settingsForm.metaPixelEnabled ? "bg-emerald-600" : "bg-zinc-300 dark:bg-zinc-700"
+                      }`}
+                      role="switch"
+                      aria-checked={settingsForm.metaPixelEnabled}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          settingsForm.metaPixelEnabled ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
+                          Meta Pixel ID / Dataset ID
+                        </label>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                            settingsForm.metaPixelEnabled && settingsForm.metaPixelId?.trim()
+                              ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                              : settingsForm.metaPixelEnabled
+                              ? "bg-amber-500/15 text-amber-800 border border-amber-500/30"
+                              : "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20"
+                          }`}
+                        >
+                          {settingsForm.metaPixelEnabled && settingsForm.metaPixelId?.trim()
+                            ? "● Active on Store"
+                            : settingsForm.metaPixelEnabled
+                            ? "⚠ ID Required"
+                            : "○ Disabled"}
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={settingsForm.metaPixelId || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, metaPixelId: e.target.value.trim() })}
+                        placeholder="e.g. 123456789012345"
+                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-sm text-ink font-mono focus:border-gold focus:outline-none placeholder:text-muted-foreground/60"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
+                        Find in <strong className="text-ink">Meta Events Manager</strong> &gt; Data Sources &gt; Settings &gt; Dataset ID. Automatically tracks <code className="text-xs font-mono text-gold-deep">PageView</code>, <code className="text-xs font-mono text-gold-deep">ViewContent</code>, <code className="text-xs font-mono text-gold-deep">AddToCart</code>, <code className="text-xs font-mono text-gold-deep">InitiateCheckout</code>, and <code className="text-xs font-mono text-gold-deep">Purchase</code>.
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-pearl border border-border/80 text-[11px] space-y-1 text-muted-foreground">
+                      <div className="font-semibold text-ink flex items-center gap-1.5">
+                        <Target className="size-3 text-gold-deep" />
+                        <span>Fired Events on Storefront:</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 text-[10px] font-mono pt-1">
+                        <div>✓ PageView (Navigations)</div>
+                        <div>✓ ViewContent (Products)</div>
+                        <div>✓ AddToCart (Cart Drawer)</div>
+                        <div>✓ InitiateCheckout (/checkout)</div>
+                        <div className="col-span-2">✓ Purchase (Order Complete with PKR)</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Google Marketing Platform / Google Tag / GA4 / GTM */}
+                <div className="rounded-2xl border border-border/80 bg-background/50 p-5 sm:p-6 space-y-4">
+                  <div className="flex items-start justify-between gap-3 pb-3 border-b border-border/60">
+                    <div className="flex items-center gap-2.5">
+                      <div className="size-9 rounded-xl bg-red-500/15 border border-red-500/40 grid place-items-center shrink-0">
+                        <Globe className="size-4 text-red-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-serif text-base text-ink font-bold">Google GMP & Google Tag (GA4 / GTM / Ads)</h4>
+                        <p className="text-[11px] text-muted-foreground">Google Analytics 4, Tag Manager, or Ads Conversion</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettingsForm({ ...settingsForm, googleTagEnabled: !settingsForm.googleTagEnabled })}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        settingsForm.googleTagEnabled ? "bg-emerald-600" : "bg-zinc-300 dark:bg-zinc-700"
+                      }`}
+                      role="switch"
+                      aria-checked={settingsForm.googleTagEnabled}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          settingsForm.googleTagEnabled ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
+                          Google Tag / GA4 / GTM ID
+                        </label>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                            settingsForm.googleTagEnabled && settingsForm.googleTagId?.trim()
+                              ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                              : settingsForm.googleTagEnabled
+                              ? "bg-amber-500/15 text-amber-800 border border-amber-500/30"
+                              : "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20"
+                          }`}
+                        >
+                          {settingsForm.googleTagEnabled && settingsForm.googleTagId?.trim()
+                            ? settingsForm.googleTagId.trim().toUpperCase().startsWith("GTM-")
+                              ? "● GTM Active"
+                              : settingsForm.googleTagId.trim().toUpperCase().startsWith("G-")
+                              ? "● GA4 Active"
+                              : "● Active on Store"
+                            : settingsForm.googleTagEnabled
+                            ? "⚠ ID Required"
+                            : "○ Disabled"}
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={settingsForm.googleTagId || ""}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, googleTagId: e.target.value.trim() })}
+                        placeholder="e.g. G-XXXXXXXXXX, GTM-XXXXXXX, or AW-XXXXXXXXX"
+                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-sm text-ink font-mono focus:border-gold focus:outline-none placeholder:text-muted-foreground/60"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">
+                        Supports <strong className="text-ink">G-XXXXXXXXXX</strong> (Google Analytics 4), <strong className="text-ink">GTM-XXXXXXX</strong> (Google Tag Manager), or <strong className="text-ink">AW-XXXXXXXXX</strong> (Google Ads).
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-pearl border border-border/80 text-[11px] space-y-1 text-muted-foreground">
+                      <div className="font-semibold text-ink flex items-center gap-1.5">
+                        <Zap className="size-3 text-gold-deep" />
+                        <span>Google E-commerce Funnel DataLayer Events:</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 text-[10px] font-mono pt-1">
+                        <div>✓ page_view (Routes)</div>
+                        <div>✓ view_item (Catalog)</div>
+                        <div>✓ add_to_cart (Cart actions)</div>
+                        <div>✓ begin_checkout (Checkout)</div>
+                        <div className="col-span-2">✓ purchase (Transaction ID & Total in PKR)</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Test & Diagnostic Bar */}
+              <div className="p-4 rounded-2xl bg-pearl/70 border border-gold/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-8 rounded-lg bg-gold/20 border border-gold/40 grid place-items-center shrink-0">
+                    <Activity className="size-4 text-gold-deep" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-ink">Pixel Diagnostic Simulator</div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Verify that tags respond in your browser console and browser extensions (Meta Pixel Helper / Google Tag Assistant).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        const hasMeta = !!window.fbq;
+                        const hasGoogle = !!window.gtag || !!window.dataLayer;
+                        console.log("[Diagnostic Simulator] Status:", {
+                          metaActive: hasMeta,
+                          metaPixelId: settingsForm.metaPixelId,
+                          metaEnabled: settingsForm.metaPixelEnabled,
+                          googleActive: hasGoogle,
+                          googleTagId: settingsForm.googleTagId,
+                          googleEnabled: settingsForm.googleTagEnabled,
+                        });
+                        if (hasMeta) window.fbq("trackCustom", "MshaiesAdminTestEvent", { time: new Date().toISOString() });
+                        if (window.gtag) window.gtag("event", "mshaies_admin_test", { time: new Date().toISOString() });
+                        toast.success(`Diagnostic ping sent! Meta: ${hasMeta ? "Connected" : "Not mounted yet"}, Google: ${hasGoogle ? "Connected" : "Not mounted yet"}. Check DevTools Console.`);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl border border-border bg-card hover:bg-accent text-xs font-semibold text-ink transition-colors cursor-pointer"
+                  >
+                    Send Diagnostic Ping
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isSavingSettings}
+                    onClick={handleSaveSettings}
+                    className="btn-gold btn-gold-hover px-5 py-2 rounded-xl text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    <Check className="size-3.5" />
+                    <span>{isSavingSettings ? "Saving..." : "Save Settings"}</span>
+                  </button>
                 </div>
               </div>
             </div>
