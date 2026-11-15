@@ -493,6 +493,7 @@ type ProductsStoreContextType = {
   deleteCategory: (name: string) => void;
   // Discount Engine Methods
   addCoupon: (coupon: Omit<Coupon, "id" | "usedCount">) => void;
+  updateCoupon: (id: string, updates: Partial<Coupon>) => void;
   toggleCoupon: (id: string) => void;
   deleteCoupon: (id: string) => void;
   validateCoupon: (code: string, subtotal: number) => ValidateCouponResult;
@@ -1031,6 +1032,23 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const updateCoupon = (id: string, updates: Partial<Coupon>) => {
+    setCoupons((prev) => {
+      const updated = prev.map((c) => (c.id === id ? { ...c, ...updates } : c));
+      try {
+        localStorage.setItem(STORAGE_KEYS.COUPONS, JSON.stringify(updated));
+      } catch {}
+      const target = updated.find((c) => c.id === id);
+      if (target) {
+        const token = getAdminAuthToken();
+        saveCouponServerFn({ data: { authToken: token, coupon: target } }).catch((err) =>
+          console.warn("[saveCouponServerFn]", err)
+        );
+      }
+      return updated;
+    });
+  };
+
   const toggleCoupon = (id: string) => {
     setCoupons((prev) => {
       const updated = prev.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c));
@@ -1453,6 +1471,7 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
         addCategory,
         deleteCategory,
         addCoupon,
+        updateCoupon,
         toggleCoupon,
         deleteCoupon,
         validateCoupon,

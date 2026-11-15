@@ -44,6 +44,7 @@ import {
   Smartphone,
   Calendar,
   Gift,
+  Banknote,
   Check,
   Power,
   Sliders,
@@ -1606,6 +1607,7 @@ function AdminDashboard() {
     addCategory,
     deleteCategory,
     addCoupon,
+    updateCoupon,
     toggleCoupon,
     deleteCoupon,
     updateOrderStatus,
@@ -2106,6 +2108,9 @@ function AdminDashboard() {
     expiryDate: "2026-12-31",
     description: "",
   });
+
+  // Edit Existing Coupon State
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
 
   // Settings State Form
   const [settingsForm, setSettingsForm] = useState(settings);
@@ -2965,14 +2970,31 @@ function AdminDashboard() {
       return;
     }
 
+    if (newCoupon.type === "percent" && (Number(newCoupon.value) <= 0 || Number(newCoupon.value) > 100)) {
+      toast.error("Please enter a valid percentage discount between 1% and 100%.");
+      return;
+    }
+
+    if (newCoupon.type === "flat" && Number(newCoupon.value) <= 0) {
+      toast.error("Please enter a valid discount amount greater than ₨ 0.");
+      return;
+    }
+
+    const defaultDesc =
+      newCoupon.type === "percent"
+        ? `${newCoupon.value}% OFF Entire Order`
+        : newCoupon.type === "flat"
+        ? `Flat ₨ ${Number(newCoupon.value).toLocaleString()} OFF Order`
+        : "Free Nationwide Shipping";
+
     addCoupon({
-      code: newCoupon.code,
+      code: newCoupon.code.toUpperCase().trim(),
       type: newCoupon.type,
-      value: Number(newCoupon.value),
+      value: newCoupon.type === "shipping" ? 0 : Number(newCoupon.value),
       minOrder: Number(newCoupon.minOrder) || 0,
       maxUses: Number(newCoupon.maxUses) || undefined,
       expiryDate: newCoupon.expiryDate || undefined,
-      description: newCoupon.description || `${newCoupon.type === "percent" ? `${newCoupon.value}% OFF` : `₨ ${newCoupon.value} OFF`}`,
+      description: newCoupon.description.trim() || defaultDesc,
       isActive: true,
     });
 
@@ -2986,6 +3008,46 @@ function AdminDashboard() {
       expiryDate: "2026-12-31",
       description: "",
     });
+  };
+
+  const handleSaveEditedCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCoupon) return;
+    if (!editingCoupon.code.trim()) {
+      toast.error("Coupon code cannot be empty.");
+      return;
+    }
+
+    if (editingCoupon.type === "percent" && (Number(editingCoupon.value) <= 0 || Number(editingCoupon.value) > 100)) {
+      toast.error("Please enter a valid percentage discount between 1% and 100%.");
+      return;
+    }
+
+    if (editingCoupon.type === "flat" && Number(editingCoupon.value) <= 0) {
+      toast.error("Please enter a valid discount amount greater than ₨ 0.");
+      return;
+    }
+
+    const defaultDesc =
+      editingCoupon.type === "percent"
+        ? `${editingCoupon.value}% OFF Entire Order`
+        : editingCoupon.type === "flat"
+        ? `Flat ₨ ${Number(editingCoupon.value).toLocaleString()} OFF Order`
+        : "Free Nationwide Shipping";
+
+    updateCoupon(editingCoupon.id, {
+      code: editingCoupon.code.toUpperCase().trim(),
+      type: editingCoupon.type,
+      value: editingCoupon.type === "shipping" ? 0 : Number(editingCoupon.value),
+      minOrder: Number(editingCoupon.minOrder) || 0,
+      maxUses: Number(editingCoupon.maxUses) || undefined,
+      expiryDate: editingCoupon.expiryDate || undefined,
+      description: editingCoupon.description?.trim() || defaultDesc,
+      isActive: editingCoupon.isActive,
+    });
+
+    toast.success(`Coupon ${editingCoupon.code.toUpperCase()} updated successfully!`);
+    setEditingCoupon(null);
   };
 
   const handleGenerateVIPBatch = () => {
@@ -5115,45 +5177,237 @@ function AdminDashboard() {
                     <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
                       Coupon Code *
                     </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. RAMADAN20 or FLASH500"
-                      value={newCoupon.code}
-                      onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-mono font-bold text-ink focus:border-gold focus:outline-none uppercase"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                        Discount Type
-                      </label>
-                      <select
-                        value={newCoupon.type}
-                        onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value as any })}
-                        className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none"
-                      >
-                        <option value="percent">Percentage (% OFF)</option>
-                        <option value="flat">Flat Amount (₨ OFF)</option>
-                        <option value="shipping">Free Shipping</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                        {newCoupon.type === "percent" ? "Discount %" : newCoupon.type === "flat" ? "Discount ₨" : "Shipping Value"}
-                      </label>
+                    <div className="flex gap-2">
                       <input
-                        type="number"
-                        min={1}
-                        value={newCoupon.value}
-                        onChange={(e) => setNewCoupon({ ...newCoupon, value: Number(e.target.value) })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink font-semibold focus:border-gold focus:outline-none"
+                        type="text"
+                        required
+                        placeholder="e.g. RAMADAN20 or FLASH500"
+                        value={newCoupon.code}
+                        onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })}
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-mono font-bold text-ink focus:border-gold focus:outline-none uppercase"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prefixes = ["LUXE", "EID", "VIP", "SAVE", "MAISON"];
+                          const rnd = `${prefixes[Math.floor(Math.random() * prefixes.length)]}${Math.floor(10 + Math.random() * 90)}`;
+                          setNewCoupon({ ...newCoupon, code: rnd });
+                        }}
+                        className="px-3 py-2 rounded-xl border border-border bg-pearl hover:bg-gold hover:text-ink text-xs font-semibold text-muted-foreground transition-colors cursor-pointer shrink-0"
+                        title="Generate random code name"
+                      >
+                        Random
+                      </button>
                     </div>
                   </div>
+
+                  {/* PROMINENT OFFER FORMAT OPTION: IN PERCENT OR IN NUMBER */}
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
+                        Do you want to give offer in percent or in number? *
+                      </label>
+                      <span className="text-[10px] text-gold-deep font-semibold">
+                        Choose Format
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* 1: Percent */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewCoupon({
+                            ...newCoupon,
+                            type: "percent",
+                            value: newCoupon.type === "percent" ? newCoupon.value : 15,
+                          });
+                        }}
+                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          newCoupon.type === "percent"
+                            ? "bg-gold/15 border-gold shadow-xs ring-1 ring-gold text-ink"
+                            : "bg-background border-border/80 hover:border-gold/50 text-muted-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-serif font-bold text-xs sm:text-sm text-ink flex items-center gap-1.5">
+                            <Percent className="size-3.5 text-gold-deep" />
+                            In Percent (%)
+                          </span>
+                          {newCoupon.type === "percent" && (
+                            <span className="size-2 rounded-full bg-gold-deep shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-[10px] leading-tight text-muted-foreground">
+                          e.g. 15% OFF total cart
+                        </p>
+                      </button>
+
+                      {/* 2: In Number */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewCoupon({
+                            ...newCoupon,
+                            type: "flat",
+                            value: newCoupon.type === "flat" ? newCoupon.value : 500,
+                          });
+                        }}
+                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          newCoupon.type === "flat"
+                            ? "bg-emerald-500/15 border-emerald-500 shadow-xs ring-1 ring-emerald-500 text-ink"
+                            : "bg-background border-border/80 hover:border-emerald-500/50 text-muted-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-serif font-bold text-xs sm:text-sm text-ink flex items-center gap-1.5">
+                            <Banknote className="size-3.5 text-emerald-600" />
+                            In Number (₨)
+                          </span>
+                          {newCoupon.type === "flat" && (
+                            <span className="size-2 rounded-full bg-emerald-600 shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-[10px] leading-tight text-muted-foreground">
+                          e.g. Flat ₨ 500 OFF order
+                        </p>
+                      </button>
+
+                      {/* 3: Free Delivery */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewCoupon({
+                            ...newCoupon,
+                            type: "shipping",
+                            value: 0,
+                          });
+                        }}
+                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          newCoupon.type === "shipping"
+                            ? "bg-blue-500/15 border-blue-500 shadow-xs ring-1 ring-blue-500 text-ink"
+                            : "bg-background border-border/80 hover:border-blue-500/50 text-muted-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-serif font-bold text-xs sm:text-sm text-ink flex items-center gap-1.5">
+                            <Truck className="size-3.5 text-blue-600" />
+                            Free Delivery
+                          </span>
+                          {newCoupon.type === "shipping" && (
+                            <span className="size-2 rounded-full bg-blue-600 shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-[10px] leading-tight text-muted-foreground">
+                          ₨ 0 shipping charges
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* DYNAMIC VALUE FIELD */}
+                  {newCoupon.type === "percent" && (
+                    <div className="p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
+                          Discount Percentage (% OFF) *
+                        </label>
+                        <span className="text-[10px] text-amber-700 dark:text-gold font-semibold">
+                          Deducts {newCoupon.value || 0}% from order subtotal
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          required
+                          placeholder="e.g. 15"
+                          value={newCoupon.value || ""}
+                          onChange={(e) => setNewCoupon({ ...newCoupon, value: Number(e.target.value) })}
+                          className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-border bg-background text-sm text-ink font-bold focus:border-gold focus:outline-none"
+                        />
+                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-700 dark:text-gold pointer-events-none">
+                          %
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground font-medium">Quick percent presets:</span>
+                        {[10, 15, 20, 25, 30, 50].map((pct) => (
+                          <button
+                            key={pct}
+                            type="button"
+                            onClick={() => setNewCoupon({ ...newCoupon, value: pct })}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
+                              newCoupon.value === pct
+                                ? "bg-amber-600 text-white border-amber-600"
+                                : "bg-card border-border hover:border-gold text-muted-foreground hover:text-ink"
+                            }`}
+                          >
+                            {pct}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {newCoupon.type === "flat" && (
+                    <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
+                          Discount Amount in Number / PKR (₨) *
+                        </label>
+                        <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                          Deducts flat ₨ {(newCoupon.value || 0).toLocaleString()} directly from total
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-700 pointer-events-none font-serif">
+                          ₨
+                        </div>
+                        <input
+                          type="number"
+                          min={1}
+                          required
+                          placeholder="e.g. 500"
+                          value={newCoupon.value || ""}
+                          onChange={(e) => setNewCoupon({ ...newCoupon, value: Number(e.target.value) })}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink font-mono font-bold focus:border-emerald-500 focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground font-medium">Quick rupee presets:</span>
+                        {[250, 500, 1000, 1500, 2000].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setNewCoupon({ ...newCoupon, value: val })}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
+                              newCoupon.value === val
+                                ? "bg-emerald-600 text-white border-emerald-600"
+                                : "bg-card border-border hover:border-emerald-500 text-muted-foreground hover:text-ink"
+                            }`}
+                          >
+                            ₨ {val.toLocaleString()}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {newCoupon.type === "shipping" && (
+                    <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center gap-3">
+                      <div className="size-9 rounded-xl bg-blue-500/15 border border-blue-500/30 grid place-items-center shrink-0">
+                        <Truck className="size-4 text-blue-600" />
+                      </div>
+                      <div className="text-xs">
+                        <p className="font-bold text-ink">Free Nationwide Shipping Voucher</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Standard and express shipping fees will be automatically waived (₨ 0 delivery).
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -5191,16 +5445,50 @@ function AdminDashboard() {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Special Eid Festive 15% OFF"
+                      placeholder={newCoupon.type === "percent" ? `Special ${newCoupon.value}% OFF Voucher` : newCoupon.type === "flat" ? `Flat ₨ ${newCoupon.value} OFF Privilege Voucher` : "Complimentary Shipping"}
                       value={newCoupon.description}
                       onChange={(e) => setNewCoupon({ ...newCoupon, description: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
                     />
                   </div>
 
+                  {/* Real-time Visual Preview */}
+                  <div className="p-3 rounded-2xl bg-pearl/70 border border-gold/30 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold flex items-center gap-1">
+                        <Sparkles className="size-3 text-gold-deep" /> Live Checkout Preview
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        newCoupon.type === "percent"
+                          ? "bg-amber-500/15 text-amber-800 dark:text-gold border border-amber-500/30"
+                          : newCoupon.type === "flat"
+                          ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30"
+                          : "bg-blue-500/15 text-blue-800 dark:text-blue-400 border border-blue-500/30"
+                      }`}>
+                        {newCoupon.type === "percent" ? "● Offer in Percent" : newCoupon.type === "flat" ? "● Offer in Number" : "● Free Delivery"}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-xs text-ink bg-card px-2 py-0.5 rounded border border-border">
+                        {newCoupon.code.trim() ? newCoupon.code.toUpperCase() : "PROMO-CODE"}
+                      </span>
+                      <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                        {newCoupon.type === "percent"
+                          ? `→ ${newCoupon.value || 0}% OFF Order Subtotal`
+                          : newCoupon.type === "flat"
+                          ? `→ Flat ₨ ${(newCoupon.value || 0).toLocaleString()} OFF Order Total`
+                          : "→ 100% Free Shipping (₨ 0 Delivery)"}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      {newCoupon.minOrder > 0 ? `Requires min spend of ₨ ${newCoupon.minOrder.toLocaleString()}.` : "No minimum order limit."}{" "}
+                      {newCoupon.maxUses ? `Usable up to ${newCoupon.maxUses} times.` : "Unlimited redemptions."}
+                    </p>
+                  </div>
+
                   <button
                     type="submit"
-                    className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2 shadow-lg"
+                    className="w-full btn-gold btn-gold-hover py-3.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2 shadow-lg cursor-pointer"
                   >
                     <Plus className="size-4" />
                     Activate Coupon Code
@@ -5214,7 +5502,7 @@ function AdminDashboard() {
                   <div>
                     <h3 className="font-serif text-xl text-ink font-bold">Active Promo Codes ({coupons.length})</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Coupons work immediately on the checkout page.
+                      Coupons work immediately on the checkout page. You can edit percent/number offers anytime.
                     </p>
                   </div>
                 </div>
@@ -5224,7 +5512,7 @@ function AdminDashboard() {
                     <thead>
                       <tr className="border-b border-border bg-muted/40 uppercase tracking-wider text-[10px] text-muted-foreground">
                         <th className="py-3 px-5">Code</th>
-                        <th className="py-3 px-5">Discount</th>
+                        <th className="py-3 px-5">Discount Offer</th>
                         <th className="py-3 px-5">Min Spend</th>
                         <th className="py-3 px-5">Redeemed</th>
                         <th className="py-3 px-5">Status</th>
@@ -5249,8 +5537,32 @@ function AdminDashboard() {
                             </span>
                             <p className="text-[10px] text-muted-foreground mt-1 truncate max-w-[140px]">{c.description}</p>
                           </td>
-                          <td className="py-4 px-5 font-semibold text-emerald-600">
-                            {c.type === "percent" ? `${c.value}% OFF` : c.type === "flat" ? formatPKR(c.value) : "Free Delivery"}
+                          <td className="py-4 px-5">
+                            {c.type === "percent" ? (
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="inline-flex items-center gap-1 font-bold text-xs text-amber-700 dark:text-gold bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                                  <Percent className="size-3" />
+                                  {c.value}% OFF
+                                </span>
+                                <span className="text-[10px] text-muted-foreground font-medium">In Percent</span>
+                              </div>
+                            ) : c.type === "flat" ? (
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="inline-flex items-center gap-1 font-bold text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md font-mono">
+                                  <Banknote className="size-3" />
+                                  {formatPKR(c.value)} OFF
+                                </span>
+                                <span className="text-[10px] text-muted-foreground font-medium">In Number (₨ Flat)</span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="inline-flex items-center gap-1 font-bold text-xs text-blue-700 dark:text-blue-400 bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 rounded-md">
+                                  <Truck className="size-3" />
+                                  Free Delivery
+                                </span>
+                                <span className="text-[10px] text-muted-foreground font-medium">₨ 0 Shipping</span>
+                              </div>
+                            )}
                           </td>
                           <td className="py-4 px-5 text-muted-foreground">
                             {c.minOrder > 0 ? formatPKR(c.minOrder) : "No min"}
@@ -5264,7 +5576,7 @@ function AdminDashboard() {
                                 toggleCoupon(c.id);
                                 toast.success(`Coupon ${c.code} status updated.`);
                               }}
-                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
                                 c.isActive
                                   ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
                                   : "bg-muted text-muted-foreground border-border"
@@ -5274,16 +5586,25 @@ function AdminDashboard() {
                             </button>
                           </td>
                           <td className="py-4 px-5 text-right">
-                            <button
-                              onClick={() => {
-                                deleteCoupon(c.id);
-                                toast.success(`Deleted coupon ${c.code}`);
-                              }}
-                              className="text-muted-foreground hover:text-destructive p-1"
-                              title="Delete Coupon"
-                            >
-                              <Trash2 className="size-4" />
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => setEditingCoupon({ ...c })}
+                                className="text-muted-foreground hover:text-gold-deep p-1.5 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                                title="Edit Coupon (Change Percent/Number, Value, Limits)"
+                              >
+                                <Edit3 className="size-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  deleteCoupon(c.id);
+                                  toast.success(`Deleted coupon ${c.code}`);
+                                }}
+                                className="text-muted-foreground hover:text-destructive p-1.5 rounded-lg hover:bg-destructive/10 transition-colors cursor-pointer"
+                                title="Delete Coupon"
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )))}
@@ -11027,6 +11348,311 @@ function AdminDashboard() {
                   >
                     Add to Inventory
                   </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* EDIT COUPON MODAL */}
+        {editingCoupon && (
+          <div className="fixed inset-0 z-50 bg-ink/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-card border border-gold/40 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <Percent className="size-5 text-gold-deep" />
+                  <div>
+                    <h3 className="font-serif text-lg font-bold text-ink">
+                      Edit Privilege Voucher: <span className="font-mono text-gold-deep">{editingCoupon.code}</span>
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">Adjust offer type (percent vs number), discount value, or limits</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingCoupon(null)}
+                  className="p-1 rounded-full text-muted-foreground hover:text-ink cursor-pointer"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEditedCoupon} className="space-y-4">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Coupon Code *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingCoupon.code}
+                    onChange={(e) => setEditingCoupon({ ...editingCoupon, code: e.target.value.toUpperCase() })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm font-mono font-bold text-ink focus:border-gold focus:outline-none uppercase"
+                  />
+                </div>
+
+                {/* Offer Option: Percent vs Number */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
+                      Do you want to give offer in percent or in number? *
+                    </label>
+                    <span className="text-[10px] text-gold-deep font-semibold">
+                      Selected: {editingCoupon.type === "percent" ? "Percent (%)" : editingCoupon.type === "flat" ? "Number (₨)" : "Free Delivery"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingCoupon({ ...editingCoupon, type: "percent" })}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        editingCoupon.type === "percent"
+                          ? "bg-gold/15 border-gold shadow-xs ring-1 ring-gold text-ink"
+                          : "bg-background border-border/80 hover:border-gold/50 text-muted-foreground"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <span className="font-serif font-bold text-xs text-ink flex items-center gap-1">
+                          <Percent className="size-3.5 text-gold-deep" />
+                          In Percent (%)
+                        </span>
+                        {editingCoupon.type === "percent" && (
+                          <span className="size-2 rounded-full bg-gold-deep shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">e.g. 15% OFF</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditingCoupon({ ...editingCoupon, type: "flat" })}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        editingCoupon.type === "flat"
+                          ? "bg-emerald-500/15 border-emerald-500 shadow-xs ring-1 ring-emerald-500 text-ink"
+                          : "bg-background border-border/80 hover:border-emerald-500/50 text-muted-foreground"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <span className="font-serif font-bold text-xs text-ink flex items-center gap-1">
+                          <Banknote className="size-3.5 text-emerald-600" />
+                          In Number (₨)
+                        </span>
+                        {editingCoupon.type === "flat" && (
+                          <span className="size-2 rounded-full bg-emerald-600 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">e.g. Flat ₨ 500</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditingCoupon({ ...editingCoupon, type: "shipping", value: 0 })}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        editingCoupon.type === "shipping"
+                          ? "bg-blue-500/15 border-blue-500 shadow-xs ring-1 ring-blue-500 text-ink"
+                          : "bg-background border-border/80 hover:border-blue-500/50 text-muted-foreground"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <span className="font-serif font-bold text-xs text-ink flex items-center gap-1">
+                          <Truck className="size-3.5 text-blue-600" />
+                          Free Delivery
+                        </span>
+                        {editingCoupon.type === "shipping" && (
+                          <span className="size-2 rounded-full bg-blue-600 shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">₨ 0 Shipping</p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Value field */}
+                {editingCoupon.type === "percent" && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
+                        Discount Percentage (% OFF) *
+                      </label>
+                      <span className="text-[10px] text-amber-700 dark:text-gold font-semibold">
+                        Deducts {editingCoupon.value || 0}% from subtotal
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        required
+                        value={editingCoupon.value || ""}
+                        onChange={(e) => setEditingCoupon({ ...editingCoupon, value: Number(e.target.value) })}
+                        className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-border bg-background text-sm text-ink font-bold focus:border-gold focus:outline-none"
+                      />
+                      <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gold-deep pointer-events-none">
+                        %
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                      <span className="text-[10px] text-muted-foreground font-medium">Quick pick:</span>
+                      {[10, 15, 20, 25, 30, 50].map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => setEditingCoupon({ ...editingCoupon, value: pct })}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
+                            editingCoupon.value === pct
+                              ? "bg-amber-600 text-white border-amber-600"
+                              : "bg-card border-border hover:border-gold text-muted-foreground hover:text-ink"
+                          }`}
+                        >
+                          {pct}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {editingCoupon.type === "flat" && (
+                  <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold">
+                        Discount Amount in Number / PKR (₨ Flat) *
+                      </label>
+                      <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                        Deducts flat ₨ {(editingCoupon.value || 0).toLocaleString()} from total
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-700 pointer-events-none font-serif">
+                        ₨
+                      </div>
+                      <input
+                        type="number"
+                        min={1}
+                        required
+                        value={editingCoupon.value || ""}
+                        onChange={(e) => setEditingCoupon({ ...editingCoupon, value: Number(e.target.value) })}
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink font-mono font-bold focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                      <span className="text-[10px] text-muted-foreground font-medium">Quick pick:</span>
+                      {[250, 500, 1000, 1500, 2000].map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setEditingCoupon({ ...editingCoupon, value: val })}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
+                            editingCoupon.value === val
+                              ? "bg-emerald-600 text-white border-emerald-600"
+                              : "bg-card border-border hover:border-emerald-500 text-muted-foreground hover:text-ink"
+                          }`}
+                        >
+                          ₨ {val.toLocaleString()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {editingCoupon.type === "shipping" && (
+                  <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center gap-3">
+                    <Truck className="size-5 text-blue-600 shrink-0" />
+                    <p className="text-xs text-muted-foreground">
+                      This voucher automatically waives all courier shipping fees at checkout.
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                      Min. Order (PKR)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editingCoupon.minOrder}
+                      onChange={(e) => setEditingCoupon({ ...editingCoupon, minOrder: Number(e.target.value) })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                      Max Redemptions
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="Unlimited"
+                      value={editingCoupon.maxUses || ""}
+                      onChange={(e) => setEditingCoupon({ ...editingCoupon, maxUses: Number(e.target.value) || undefined })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Campaign Description
+                  </label>
+                  <input
+                    type="text"
+                    value={editingCoupon.description}
+                    onChange={(e) => setEditingCoupon({ ...editingCoupon, description: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-pearl border border-border">
+                  <div>
+                    <span className="text-xs font-bold text-ink block">Voucher Active Status</span>
+                    <span className="text-[10px] text-muted-foreground">Toggle whether customers can use this code right now</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingCoupon({ ...editingCoupon, isActive: !editingCoupon.isActive })}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
+                      editingCoupon.isActive
+                        ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+                        : "bg-muted text-muted-foreground border-border"
+                    }`}
+                  >
+                    {editingCoupon.isActive ? "● Active on Store" : "○ Disabled"}
+                  </button>
+                </div>
+
+                <div className="pt-3 flex items-center justify-between border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      deleteCoupon(editingCoupon.id);
+                      toast.success(`Deleted coupon ${editingCoupon.code}`);
+                      setEditingCoupon(null);
+                    }}
+                    className="px-4 py-2 rounded-full border border-destructive/30 text-destructive hover:bg-destructive/10 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Trash2 className="size-3.5" />
+                    Delete
+                  </button>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingCoupon(null)}
+                      className="px-4 py-2 rounded-full border border-border text-xs text-muted-foreground hover:text-ink cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-gold btn-gold-hover px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Check className="size-3.5" />
+                      <span>Save Changes</span>
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
