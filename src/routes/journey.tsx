@@ -6,7 +6,8 @@ export const Route = createFileRoute("/journey")({
     meta: [
       { title: "The Scent Journey — M.shaies Fragrances" },
       { name: "description", content: "Explore how our perfumes unfold. From first breath to the lasting trail of aged Cambodian oud and warm amber." }
-    ]
+    ],
+    links: [{ rel: "canonical", href: "https://mshaies.com/journey" }],
   }),
   component: Journey,
 });

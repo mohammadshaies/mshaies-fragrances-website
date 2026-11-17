@@ -16,6 +16,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 
 // Global Layout Components
 import { ProductsStoreProvider } from "../lib/products-store";
+import { getProductsServerFn } from "../lib/api/products.server";
+import { getPublicSettingsServerFn } from "../lib/api/settings.server";
 import { CartProvider } from "../lib/cart-context";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
@@ -136,7 +138,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/logo-icon.png", type: "image/png" },
       { rel: "shortcut icon", href: "/logo-icon.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/logo-icon.png" },
-      { rel: "canonical", href: "https://mshaies.com/" },
       { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -144,6 +145,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" },
     ],
   }),
+  loader: async () => {
+    try {
+      const [prodRes, settingsRes] = await Promise.all([
+        getProductsServerFn(),
+        getPublicSettingsServerFn(),
+      ]);
+      return {
+        initialProducts: prodRes?.success && Array.isArray(prodRes.products) ? (prodRes.products as any[]) : [],
+        initialSettings: settingsRes?.success && settingsRes.settings ? (settingsRes.settings as any) : null,
+      };
+    } catch {
+      return { initialProducts: [], initialSettings: null };
+    }
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -286,10 +301,14 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const loaderData = Route.useLoaderData();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ProductsStoreProvider>
+      <ProductsStoreProvider
+        initialProducts={loaderData?.initialProducts}
+        initialSettings={loaderData?.initialSettings}
+      >
         <CartProvider>
           <PixelTracker />
           <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">

@@ -18,6 +18,10 @@ Allow: /support
 Allow: /careers
 Allow: /product/
 Allow: /product/*
+Allow: /api/product-image/
+Allow: /api/product-image/*
+Allow: /api/sitemap.xml
+Allow: /sitemap.xml
 
 # Disallow private administrative, staff, and transactional customer routes
 Disallow: /admin
@@ -28,8 +32,6 @@ Disallow: /checkout/
 Disallow: /checkout/*
 Disallow: /invoice/
 Disallow: /invoice/*
-Disallow: /api/
-Disallow: /api/*
 Disallow: /_server/
 Disallow: /_server/*
 
@@ -37,12 +39,15 @@ Disallow: /_server/*
 User-agent: Googlebot
 Allow: /
 Allow: /public/
+Allow: /api/product-image/
 Disallow: /admin
 Disallow: /checkout
 Disallow: /invoice/
 
 User-agent: Googlebot-Image
 Allow: /
+Allow: /api/product-image/
+Allow: /api/product-image/*
 Allow: /product-*.png
 Allow: /product-*.jpg
 Allow: /logo-*.png

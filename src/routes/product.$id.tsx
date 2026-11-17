@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useProductsStore, DEFAULT_FLACON_SIZES, getCustomSizeDetails, type FlaconSizeOption } from "@/lib/products-store";
+import { useProductsStore, DEFAULT_FLACON_SIZES, getCustomSizeDetails, type FlaconSizeOption, type Product } from "@/lib/products-store";
 import { useCart, formatPKR } from "@/lib/cart-context";
 import { trackViewContent } from "@/lib/pixel-tracking";
 import { useState, useEffect, useMemo } from "react";
@@ -33,18 +33,68 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PromotionalBanner } from "@/components/PromotionalBanner";
+import { getProductsServerFn } from "@/lib/api/products.server";
 
 export const Route = createFileRoute("/product/$id")({
+  loader: async ({ params }) => {
+    try {
+      const res = await getProductsServerFn();
+      const found = res?.products?.find((p: any) => p.id === params.id) || null;
+      return { initialProduct: found };
+    } catch {
+      return { initialProduct: null };
+    }
+  },
+  head: ({ loaderData, params }) => {
+    const p = loaderData?.initialProduct as any;
+    const canonicalUrl = `https://mshaies.com/product/${params.id}`;
+    if (!p) {
+      return {
+        meta: [
+          { title: "Luxury Fragrance Collection — M.shaies Haute Parfumerie Pakistan" },
+        ],
+        links: [{ rel: "canonical", href: canonicalUrl }],
+      };
+    }
+    const seoImageUrl = `https://mshaies.com/api/product-image/${encodeURIComponent(p.id)}`;
+    const desc = (
+      p.description ||
+      `${p.name} (${p.volume}) — ${p.tagline || p.notes}. Handcrafted luxury ${p.category} in Pakistan by M.shaies Fragrances. Price: ₨ ${Number(p.price).toLocaleString()}.`
+    ).slice(0, 165);
+    return {
+      meta: [
+        { title: `${p.name} (${p.volume}) — Buy Online in Pakistan | M.shaies Fragrances` },
+        { name: "description", content: desc },
+        {
+          name: "keywords",
+          content: `${p.name}, ${p.category} Pakistan, ${p.notes || ""}, ${
+            p.inspiredBy ? p.inspiredBy + " inspired perfume pakistan, " : ""
+          }M.shaies Fragrances, buy ${String(p.category || "attar").toLowerCase()} online pakistan`,
+        },
+        { property: "og:title", content: `${p.name} — M.shaies Haute Parfumerie` },
+        { property: "og:description", content: desc },
+        { property: "og:type", content: "product" },
+        { property: "og:url", content: canonicalUrl },
+        { property: "og:image", content: seoImageUrl },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: `${p.name} — ₨ ${Number(p.price).toLocaleString()}` },
+        { name: "twitter:description", content: desc },
+        { name: "twitter:image", content: seoImageUrl },
+      ],
+      links: [{ rel: "canonical", href: canonicalUrl }],
+    };
+  },
   component: ProductDetail,
 });
 
 function ProductDetail() {
   const { id } = Route.useParams();
+  const loaderData = Route.useLoaderData();
   const { products, settings, addReview, voteHelpful, getProductReviews, getProductRating } = useProductsStore();
   const { add, setOpen } = useCart();
   const navigate = useNavigate();
 
-  const product = products.find((p) => p.id === id);
+  const product = products.find((p) => p.id === id) || (loaderData?.initialProduct as Product | undefined);
 
   // Track product view for Meta Pixel & Google Analytics (ViewContent / view_item)
   useEffect(() => {
@@ -243,43 +293,74 @@ function ProductDetail() {
   };
 
   const productSchema = product ? {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    name: product.name,
-    image: [
-      product.image.startsWith("http") ? product.image : `https://mshaies.com${product.image}`,
-      ...(product.images || []).map((img) => img.startsWith("http") ? img : `https://mshaies.com${img}`)
-    ],
-    description: product.description || `${product.name} - ${product.tagline || product.notes}. Handcrafted luxury ${product.category} by M.shaies Haute Parfumerie.`,
-    sku: product.id,
-    mpn: product.id,
-    brand: {
-      "@type": "Brand",
-      name: "M.shaies Haute Parfumerie"
-    },
-    category: product.category,
-    offers: {
-      "@type": "Offer",
-      url: `https://mshaies.com/product/${product.id}`,
-      priceCurrency: "PKR",
-      price: calculatedPrice,
-      priceValidUntil: "2027-12-31",
-      itemCondition: "https://schema.org/NewCondition",
-      availability: !isOutOfStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      seller: {
-        "@type": "Organization",
-        name: "M.shaies Haute Parfumerie"
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Product",
+        name: product.name,
+        image: (product.images && product.images.length > 0 ? product.images : [product.image]).map(
+          (img: string, idx: number) =>
+            img.startsWith("data:")
+              ? `https://mshaies.com/api/product-image/${encodeURIComponent(product.id)}${idx > 0 ? `?index=${idx}` : ""}`
+              : img.startsWith("http")
+              ? img
+              : `https://mshaies.com${img}`
+        ),
+        description: product.description || `${product.name} - ${product.tagline || product.notes}. Handcrafted luxury ${product.category} by M.shaies Haute Parfumerie.`,
+        sku: product.id,
+        mpn: product.id,
+        brand: {
+          "@type": "Brand",
+          name: "M.shaies Haute Parfumerie"
+        },
+        category: product.category,
+        offers: {
+          "@type": "Offer",
+          url: `https://mshaies.com/product/${product.id}`,
+          priceCurrency: "PKR",
+          price: calculatedPrice,
+          priceValidUntil: "2027-12-31",
+          itemCondition: "https://schema.org/NewCondition",
+          availability: !isOutOfStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          seller: {
+            "@type": "Organization",
+            name: "M.shaies Haute Parfumerie"
+          }
+        },
+        ...(ratingInfo?.count > 0 ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: ratingInfo.average.toFixed(1),
+            reviewCount: ratingInfo.count,
+            bestRating: "5",
+            worstRating: "1"
+          }
+        } : {})
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://mshaies.com/"
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: product.category || "Shop",
+            item: "https://mshaies.com/shop"
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: product.name,
+            item: `https://mshaies.com/product/${product.id}`
+          }
+        ]
       }
-    },
-    ...(ratingInfo?.count > 0 ? {
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: ratingInfo.average.toFixed(1),
-        reviewCount: ratingInfo.count,
-        bestRating: "5",
-        worstRating: "1"
-      }
-    } : {})
+    ]
   } : null;
 
   return (

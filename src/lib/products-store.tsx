@@ -558,8 +558,19 @@ if (typeof window !== "undefined") {
   } catch {}
 }
 
-export function ProductsStoreProvider({ children }: { children: ReactNode }) {
+export function ProductsStoreProvider({
+  children,
+  initialProducts,
+  initialSettings,
+}: {
+  children: ReactNode;
+  initialProducts?: Product[];
+  initialSettings?: Partial<StoreSettings> | null;
+}) {
   const [products, setProducts] = useState<Product[]>(() => {
+    if (Array.isArray(initialProducts) && initialProducts.length > 0) {
+      return initialProducts;
+    }
     if (typeof window === "undefined") return DEFAULT_PRODUCTS;
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
@@ -604,6 +615,16 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
   });
 
   const [settings, setSettings] = useState<StoreSettings>(() => {
+    if (initialSettings && Object.keys(initialSettings).length > 0) {
+      return {
+        ...DEFAULT_SETTINGS,
+        ...initialSettings,
+        promotionalSlides: initialSettings.promotionalSlides !== undefined ? initialSettings.promotionalSlides : DEFAULT_PROMOTIONAL_SLIDES,
+        announcementItems: initialSettings.announcementItems !== undefined ? initialSettings.announcementItems : DEFAULT_ANNOUNCEMENT_ITEMS,
+        heroBannerActive: initialSettings.heroBannerActive !== undefined ? initialSettings.heroBannerActive : DEFAULT_SETTINGS.heroBannerActive,
+        announcementActive: initialSettings.announcementActive !== undefined ? initialSettings.announcementActive : DEFAULT_SETTINGS.announcementActive,
+      };
+    }
     if (typeof window === "undefined") return DEFAULT_SETTINGS;
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);

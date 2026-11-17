@@ -14,6 +14,7 @@ export const Route = createFileRoute("/careers")({
           "Join the artisanal team at M.shaies Fragrances. Explore career opportunities in perfumery, retail concierge, and luxury commerce across Pakistan.",
       },
     ],
+    links: [{ rel: "canonical", href: "https://mshaies.com/careers" }],
   }),
   component: CareersPage,
 });
