@@ -1,7 +1,7 @@
 ﻿import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { db, schema, isDatabaseConfigured } from "../db/client.server";
-import { verifyAdminSession } from "../supabase.server";
+import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 
 export const exportDatabaseBackupServerFn = createServerFn({ method: "POST" })
   .validator(z.object({ authToken: z.string().optional() }))
@@ -9,6 +9,33 @@ export const exportDatabaseBackupServerFn = createServerFn({ method: "POST" })
     const auth = await verifyAdminSession(data.authToken);
     if (!auth.valid) {
       return { success: false, error: auth.error || "Unauthorized admin action." };
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseAdmin() || getSupabaseClient();
+        if (client) {
+          const [pRes, oRes, cRes, sRes, aRes] = await Promise.all([
+            client.from("products").select("*"),
+            client.from("orders").select("*"),
+            client.from("coupons").select("*"),
+            client.from("store_settings").select("*"),
+            client.from("audit_logs").select("*"),
+          ]);
+          const backupData = {
+            version: "4.0-supabase",
+            exportDate: new Date().toISOString(),
+            products: pRes.data || [],
+            orders: oRes.data || [],
+            coupons: cRes.data || [],
+            settings: sRes.data?.[0] || null,
+            auditLogs: aRes.data || [],
+          };
+          return { success: true, backupJson: JSON.stringify(backupData, null, 2) };
+        }
+      } catch (err: any) {
+        console.warn("[exportDatabaseBackupServerFn] Supabase export error:", err);
+      }
     }
 
     if (isDatabaseConfigured() && db) {

@@ -98,6 +98,19 @@ async function enrichBannerConfig(client: any, mapped: any) {
       if (parsed.metaPixelEnabled !== undefined) mapped.metaPixelEnabled = parsed.metaPixelEnabled;
       if (parsed.googleTagId !== undefined) mapped.googleTagId = parsed.googleTagId;
       if (parsed.googleTagEnabled !== undefined) mapped.googleTagEnabled = parsed.googleTagEnabled;
+      if (parsed.paymentAccountTitle !== undefined) mapped.paymentAccountTitle = parsed.paymentAccountTitle;
+      if (parsed.paymentAccountNumber !== undefined) mapped.paymentAccountNumber = parsed.paymentAccountNumber;
+      if (parsed.paymentAccountFormatted !== undefined) mapped.paymentAccountFormatted = parsed.paymentAccountFormatted;
+      if (parsed.paymentWhatsapp !== undefined) mapped.paymentWhatsapp = parsed.paymentWhatsapp;
+      if (parsed.jazzcashActive !== undefined) mapped.jazzcashActive = parsed.jazzcashActive;
+      if (parsed.easypaisaActive !== undefined) mapped.easypaisaActive = parsed.easypaisaActive;
+      if (parsed.nayapayActive !== undefined) mapped.nayapayActive = parsed.nayapayActive;
+      if (parsed.jazzcashTitle !== undefined) mapped.jazzcashTitle = parsed.jazzcashTitle;
+      if (parsed.jazzcashNumber !== undefined) mapped.jazzcashNumber = parsed.jazzcashNumber;
+      if (parsed.easypaisaTitle !== undefined) mapped.easypaisaTitle = parsed.easypaisaTitle;
+      if (parsed.easypaisaNumber !== undefined) mapped.easypaisaNumber = parsed.easypaisaNumber;
+      if (parsed.nayapayTitle !== undefined) mapped.nayapayTitle = parsed.nayapayTitle;
+      if (parsed.nayapayNumber !== undefined) mapped.nayapayNumber = parsed.nayapayNumber;
     }
   } catch (err) {
     // Ignore
@@ -255,6 +268,19 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
       metaPixelEnabled: safeSettings.metaPixelEnabled,
       googleTagId: safeSettings.googleTagId,
       googleTagEnabled: safeSettings.googleTagEnabled,
+      paymentAccountTitle: safeSettings.paymentAccountTitle,
+      paymentAccountNumber: safeSettings.paymentAccountNumber,
+      paymentAccountFormatted: safeSettings.paymentAccountFormatted,
+      paymentWhatsapp: safeSettings.paymentWhatsapp,
+      jazzcashActive: safeSettings.jazzcashActive,
+      easypaisaActive: safeSettings.easypaisaActive,
+      nayapayActive: safeSettings.nayapayActive,
+      jazzcashTitle: safeSettings.jazzcashTitle,
+      jazzcashNumber: safeSettings.jazzcashNumber,
+      easypaisaTitle: safeSettings.easypaisaTitle,
+      easypaisaNumber: safeSettings.easypaisaNumber,
+      nayapayTitle: safeSettings.nayapayTitle,
+      nayapayNumber: safeSettings.nayapayNumber,
     };
 
     const hasBannerUpdates = Object.values(bannerPayload).some((v) => v !== undefined);

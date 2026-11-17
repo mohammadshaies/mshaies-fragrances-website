@@ -845,12 +845,15 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
         return { success: false, error: res.error || "Failed to save product to Supabase." };
       }
 
-      setProducts((prev) => [fullProd, ...prev.filter((p) => p.id !== fullProd.id)]);
-      try {
-        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify([fullProd, ...products.filter((p) => p.id !== fullProd.id)]));
-      } catch (e) {
-        console.warn(e);
-      }
+      setProducts((prev) => {
+        const next = [fullProd, ...prev.filter((p) => p.id !== fullProd.id)];
+        try {
+          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
+        } catch (e) {
+          console.warn(e);
+        }
+        return next;
+      });
       addAuditLog("Product Added", "Product", `Added new fragrance "${newProd.name}" priced at ₨ ${newProd.price.toLocaleString()}`);
 
       return { success: true, product: fullProd };
@@ -876,12 +879,15 @@ export function ProductsStoreProvider({ children }: { children: ReactNode }) {
         return { success: false, error: res.error || "Failed to update product in Supabase." };
       }
 
-      setProducts((prev) => prev.map((p) => (p.id === id ? merged : p)));
-      try {
-        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products.map((p) => (p.id === id ? merged : p))));
-      } catch (e) {
-        console.warn(e);
-      }
+      setProducts((prev) => {
+        const next = prev.map((p) => (p.id === id ? merged : p));
+        try {
+          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
+        } catch (e) {
+          console.warn(e);
+        }
+        return next;
+      });
       addAuditLog("Product Modified", "Product", `Updated configuration for "${updates.name || id}"`);
 
       return { success: true };

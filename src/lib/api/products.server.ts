@@ -5,7 +5,33 @@ import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminS
 import { eq } from "drizzle-orm";
 import { serverCache } from "../cache.server";
 
+function parseAccentMetadata(accent: any): { sizes?: string[]; images?: string[]; rawAccent?: string } {
+  if (typeof accent === "string" && accent.trim().startsWith("{")) {
+    try {
+      const parsed = JSON.parse(accent);
+      if (parsed && typeof parsed === "object") {
+        return {
+          sizes: Array.isArray(parsed.sizes) ? parsed.sizes : undefined,
+          images: Array.isArray(parsed.images) && parsed.images.length > 0 ? parsed.images : undefined,
+          rawAccent: typeof parsed.accent === "string" ? parsed.accent : undefined,
+        };
+      }
+    } catch {
+      // Fallback to raw accent string
+    }
+  }
+  return { rawAccent: typeof accent === "string" ? accent : undefined };
+}
+
 function mapSupabaseProduct(row: any) {
+  const accentMeta = parseAccentMetadata(row.accent);
+  const primaryImage = row.image || accentMeta.images?.[0] || "/product-box.jpg";
+  const resolvedImages = Array.isArray(row.images) && row.images.length > 0
+    ? row.images
+    : (accentMeta.images && accentMeta.images.length > 0
+        ? accentMeta.images
+        : [primaryImage]);
+
   return {
     id: row.id,
     name: row.name,
@@ -18,9 +44,9 @@ function mapSupabaseProduct(row: any) {
     topNotes: row.top_notes || row.topNotes || undefined,
     heartNotes: row.heart_notes || row.heartNotes || undefined,
     baseNotes: row.base_notes || row.baseNotes || undefined,
-    image: row.image || "/product-box.jpg",
-    images: Array.isArray(row.images) ? row.images : (row.image ? [row.image] : undefined),
-    accent: row.accent || undefined,
+    image: primaryImage,
+    images: resolvedImages,
+    accent: accentMeta.rawAccent || undefined,
     description: row.description || "",
     isFeatured: Boolean(row.is_featured ?? row.isFeatured),
     gender: row.gender || "Unisex",
@@ -37,17 +63,26 @@ function mapSupabaseProduct(row: any) {
       ? row.available_sizes
       : (Array.isArray(row.availableSizes)
           ? row.availableSizes
-          : (typeof row.accent === "string" && row.accent.startsWith('{"sizes":')
-              ? (() => { try { return JSON.parse(row.accent).sizes; } catch { return undefined; } })()
-              : undefined)),
+          : accentMeta.sizes),
   };
 }
 
 function productToSupabaseRow(p: any) {
-  let accentValue = p.accent || null;
-  if (Array.isArray(p.availableSizes)) {
-    accentValue = JSON.stringify({ sizes: p.availableSizes });
-  }
+  const accentMeta = parseAccentMetadata(p.accent);
+  const resolvedImages = Array.isArray(p.images) && p.images.length > 0
+    ? p.images
+    : (accentMeta.images || (p.image ? [p.image] : ["/product-box.jpg"]));
+  const primaryImage = resolvedImages[0] || p.image || "/product-box.jpg";
+  const resolvedSizes = Array.isArray(p.availableSizes) ? p.availableSizes : accentMeta.sizes;
+
+  const accentPayload: Record<string, any> = {};
+  if (resolvedSizes !== undefined) accentPayload.sizes = resolvedSizes;
+  if (resolvedImages && resolvedImages.length > 0) accentPayload.images = resolvedImages;
+  if (accentMeta.rawAccent) accentPayload.accent = accentMeta.rawAccent;
+
+  const accentValue = Object.keys(accentPayload).length > 0
+    ? JSON.stringify(accentPayload)
+    : (p.accent || null);
 
   return {
     id: p.id,
@@ -61,7 +96,7 @@ function productToSupabaseRow(p: any) {
     top_notes: p.topNotes || null,
     heart_notes: p.heartNotes || null,
     base_notes: p.baseNotes || null,
-    image: p.image || "/product-box.jpg",
+    image: primaryImage,
     accent: accentValue,
     description: p.description || "",
     is_featured: Boolean(p.isFeatured),

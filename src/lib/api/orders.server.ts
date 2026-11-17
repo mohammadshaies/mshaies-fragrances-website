@@ -4,6 +4,7 @@ import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { eq } from "drizzle-orm";
 import { dispatchOrderNotificationEmails } from "./email.server";
+import { serverCache } from "../cache.server";
 
 export const placeOrderSchema = z.object({
   orderId: z.string().optional(),
@@ -69,6 +70,7 @@ export async function processPlaceOrder(data: PlaceOrderInput) {
     let subtotal = 0;
     const verifiedItems: {
       productId: string;
+      dbProductId: string | null;
       name: string;
       price: number;
       qty: number;
@@ -95,15 +97,20 @@ export async function processPlaceOrder(data: PlaceOrderInput) {
     }
 
     for (const item of data.items) {
-      const dbProd = productsMap.get(item.productId);
+      const matchedId = productsMap.has(item.productId)
+        ? item.productId
+        : (Array.from(productsMap.keys()).find((id) => item.productId.startsWith(id + "-")) || null);
+      const dbProd = matchedId ? productsMap.get(matchedId) : undefined;
       let unitPrice = 3500;
       let itemName = "Signature Fragrance";
       let itemImage = "/product-box.jpg";
 
       if (dbProd) {
-        itemName = dbProd.name;
-        itemImage = dbProd.image || "/product-box.jpg";
-        if (item.volume.includes("3ml") && dbProd.sample_price) {
+        itemName = item.name || dbProd.name;
+        itemImage = item.image || dbProd.image || "/product-box.jpg";
+        if (item.price !== undefined && item.price > 0) {
+          unitPrice = item.price;
+        } else if (item.volume.includes("3ml") && dbProd.sample_price) {
           unitPrice = dbProd.sample_price;
         } else {
           unitPrice = dbProd.price;
@@ -122,7 +129,8 @@ export async function processPlaceOrder(data: PlaceOrderInput) {
 
       subtotal += unitPrice * item.qty;
       verifiedItems.push({
-        productId: item.productId,
+        productId: matchedId || item.productId,
+        dbProductId: matchedId,
         name: itemName,
         price: unitPrice,
         qty: item.qty,
@@ -138,6 +146,7 @@ export async function processPlaceOrder(data: PlaceOrderInput) {
     // 3. Coupon Validation
     let discountAmount = 0;
     let couponFreeShipping = false;
+    let appliedCouponRow: any = null;
 
     if (data.discountCode && data.discountCode.trim()) {
       const cleanCode = data.discountCode.trim().toUpperCase();
@@ -152,6 +161,7 @@ export async function processPlaceOrder(data: PlaceOrderInput) {
               const hasUsesLeft = !c.max_uses || (c.used_count ?? 0) < c.max_uses;
 
               if (c.is_active && isNotExpired && minOrderMet && hasUsesLeft) {
+                appliedCouponRow = c;
                 if (c.type === "percent") {
                   discountAmount = Math.round((subtotal * c.value) / 100);
                 } else if (c.type === "flat") {
@@ -261,19 +271,41 @@ export async function processPlaceOrder(data: PlaceOrderInput) {
             created_at: new Date().toISOString(),
           });
 
-          // Insert order items
+          // Insert order items & update product stock in Supabase
           for (const item of verifiedItems) {
             await client.from("order_items").insert({
               id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
               order_id: orderId,
-              product_id: item.productId,
+              product_id: item.dbProductId,
               name: item.name,
               price: item.price,
               qty: item.qty,
               volume: item.volume,
               image: item.image,
             });
+
+            if (item.dbProductId) {
+              const dbProd = productsMap.get(item.dbProductId);
+              if (dbProd && typeof dbProd.stock === "number") {
+                const nextStock = Math.max(0, dbProd.stock - item.qty);
+                dbProd.stock = nextStock;
+                await client
+                  .from("products")
+                  .update({ stock: nextStock, updated_at: new Date().toISOString() })
+                  .eq("id", item.dbProductId);
+              }
+            }
           }
+
+          // Increment coupon usage count in Supabase if a valid coupon was applied
+          if (appliedCouponRow?.id) {
+            await client
+              .from("coupons")
+              .update({ used_count: Number(appliedCouponRow.used_count || 0) + 1 })
+              .eq("id", appliedCouponRow.id);
+          }
+
+          serverCache.invalidateTags("products", "coupons");
 
           // Audit log
           await client.from("audit_logs").insert({

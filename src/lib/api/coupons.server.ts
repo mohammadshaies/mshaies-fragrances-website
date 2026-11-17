@@ -156,7 +156,7 @@ export const saveCouponServerFn = createServerFn({ method: "POST" })
         id: z.string().optional(),
         code: z.string().min(2),
         type: z.enum(["percent", "flat", "shipping"]),
-        value: z.number().positive(),
+        value: z.number().nonnegative(),
         minOrder: z.number().default(0),
         maxUses: z.number().optional(),
         usedCount: z.number().default(0),

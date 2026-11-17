@@ -133,7 +133,7 @@ const AUTH_SESSION_KEY = "mshaies_staff_auth_v2";
  * Optimizes an uploaded image client-side to responsive web dimensions (max 1000px)
  * and exports as crisp WebP/JPEG data URL for storage and instant rendering.
  */
-function compressImageFile(file: File, maxWidth = 1000, maxHeight = 1000, quality = 0.88): Promise<string> {
+function compressImageFile(file: File, maxWidth = 900, maxHeight = 900, quality = 0.82): Promise<string> {
   return new Promise((resolve, reject) => {
     if (typeof window === "undefined") {
       reject(new Error("Window is not available"));
@@ -203,9 +203,12 @@ function ProductGalleryManager({ images, onChange, urlInput, setUrlInput }: Prod
 
   const handleUploadFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    e.target.value = "";
     if (files.length === 0) return;
 
-    const remainingSlots = 5 - currentImages.length;
+    const isDefaultPlaceholderOnly = currentImages.length === 1 && currentImages[0] === "/product-box.jpg";
+    const baseImages = isDefaultPlaceholderOnly ? [] : currentImages;
+    const remainingSlots = 5 - baseImages.length;
     if (remainingSlots <= 0) {
       toast.error("Maximum 5 photos reached for this product.");
       return;
@@ -220,8 +223,9 @@ function ProductGalleryManager({ images, onChange, urlInput, setUrlInput }: Prod
         const compressed = await compressImageFile(file);
         processedUrls.push(compressed);
       }
-      onChange([...currentImages, ...processedUrls]);
-      toast.success(`Added ${processedUrls.length} photo(s) to gallery!`, { id: "gallery-upload" });
+      const nextImages = [...baseImages, ...processedUrls];
+      onChange(nextImages);
+      toast.success(`Added ${processedUrls.length} photo(s) to gallery (${nextImages.length}/5)! Click Save below to store in database.`, { id: "gallery-upload" });
     } catch (err: any) {
       toast.error(err?.message || "Failed to process image file.", { id: "gallery-upload" });
     }
@@ -232,21 +236,25 @@ function ProductGalleryManager({ images, onChange, urlInput, setUrlInput }: Prod
       toast.error("Please enter a valid image URL or path.");
       return;
     }
-    if (currentImages.length >= 5) {
+    const isDefaultPlaceholderOnly = currentImages.length === 1 && currentImages[0] === "/product-box.jpg";
+    const baseImages = isDefaultPlaceholderOnly ? [] : currentImages;
+    if (baseImages.length >= 5) {
       toast.error("Maximum 5 photos reached.");
       return;
     }
-    onChange([...currentImages, urlInput.trim()]);
+    onChange([...baseImages, urlInput.trim()]);
     setUrlInput("");
     toast.success("Added image to gallery!");
   };
 
   const handleAddPreset = (url: string) => {
-    if (currentImages.length >= 5) {
+    const isDefaultPlaceholderOnly = currentImages.length === 1 && currentImages[0] === "/product-box.jpg";
+    const baseImages = isDefaultPlaceholderOnly ? [] : currentImages;
+    if (baseImages.length >= 5) {
       toast.error("Maximum 5 photos reached.");
       return;
     }
-    onChange([...currentImages, url]);
+    onChange([...baseImages, url]);
     toast.success("Added preset photo to gallery!");
   };
 
@@ -2791,6 +2799,13 @@ function AdminDashboard() {
 
     const toastId = toast.loading(`Saving "${newProduct.name}" to Supabase catalog...`);
 
+    const baseNewImages = (newProduct.images && newProduct.images.length > 0)
+      ? newProduct.images
+      : [newProduct.image || "/product-box.jpg"];
+    const finalNewImages = newGalleryUrlInput.trim() && baseNewImages.length < 5
+      ? [...(baseNewImages.length === 1 && baseNewImages[0] === "/product-box.jpg" ? [] : baseNewImages), newGalleryUrlInput.trim()]
+      : baseNewImages;
+
     const res = await addProduct({
       name: newProduct.name,
       price: Number(newProduct.price),
@@ -2802,10 +2817,8 @@ function AdminDashboard() {
       topNotes: newProduct.topNotes,
       heartNotes: newProduct.heartNotes,
       baseNotes: newProduct.baseNotes,
-      image: newProduct.images?.[0] || newProduct.image || "/product-box.jpg",
-      images: (newProduct.images && newProduct.images.length > 0)
-        ? newProduct.images
-        : [newProduct.image || "/product-box.jpg"],
+      image: finalNewImages[0] || "/product-box.jpg",
+      images: finalNewImages,
       description: newProduct.description,
       isFeatured: newProduct.isFeatured,
       gender: newProduct.gender,
@@ -2820,7 +2833,9 @@ function AdminDashboard() {
 
     if (res.success) {
       toast.success(`Successfully added "${newProduct.name}" to catalog!`, { id: toastId });
+      setNewGalleryUrlInput("");
       setShowAddModal(false);
+      await refreshDataFromServer(true);
       setNewProduct({
         name: "",
         price: 12000,
@@ -10445,6 +10460,13 @@ function AdminDashboard() {
                   setIsSavingProduct(true);
                   const toastId = toast.loading(`Saving "${editingProduct.name}" to Supabase database...`);
                   try {
+                    const baseEditImages = (editingProduct.images && editingProduct.images.length > 0)
+                      ? editingProduct.images
+                      : [editingProduct.image || "/product-box.jpg"];
+                    const finalEditImages = editGalleryUrlInput.trim() && baseEditImages.length < 5
+                      ? [...(baseEditImages.length === 1 && baseEditImages[0] === "/product-box.jpg" ? [] : baseEditImages), editGalleryUrlInput.trim()]
+                      : baseEditImages;
+
                     const res = await updateProduct(editingProduct.id, {
                       name: editingProduct.name.trim(),
                       price: Number(editingProduct.price),
@@ -10452,12 +10474,13 @@ function AdminDashboard() {
                       volume: editingProduct.volume.trim(),
                       stock: Number(editingProduct.stock || 0),
                       notes: editingProduct.notes || "",
+                      topNotes: editingProduct.topNotes,
+                      heartNotes: editingProduct.heartNotes,
+                      baseNotes: editingProduct.baseNotes,
                       tagline: editingProduct.tagline || "",
                       description: editingProduct.description || "",
-                      image: editingProduct.images?.[0] || editingProduct.image || "/product-box.jpg",
-                      images: (editingProduct.images && editingProduct.images.length > 0)
-                        ? editingProduct.images
-                        : [editingProduct.image || "/product-box.jpg"],
+                      image: finalEditImages[0] || "/product-box.jpg",
+                      images: finalEditImages,
                       isFeatured: Boolean(editingProduct.isFeatured),
                       gender: editingProduct.gender || "Unisex",
                       longevityHours: Number(editingProduct.longevityHours || 18),
@@ -10469,9 +10492,10 @@ function AdminDashboard() {
                       availableSizes: editingProduct.availableSizes,
                     });
                     if (res.success) {
-                      toast.success(`✓ "${editingProduct.name}" saved to Supabase database successfully!`, { id: toastId });
+                      toast.success(`✓ "${editingProduct.name}" (${finalEditImages.length} photo${finalEditImages.length === 1 ? "" : "s"}) saved to Supabase database!`, { id: toastId });
+                      setEditGalleryUrlInput("");
                       setEditingProduct(null);
-                      refreshDataFromServer();
+                      await refreshDataFromServer(true);
                     } else {
                       toast.error(res.error || "Failed to update product in Supabase database.", { id: toastId });
                     }
