@@ -80,23 +80,32 @@ export const adminVerifyPinServerFn = createServerFn({ method: "POST" })
 export const adminLoginServerFn = createServerFn({ method: "POST" })
   .validator(
     z.object({
-      email: z.string().email(),
-      password: z.string().min(1),
+      email: z.string().email().max(150),
+      password: z.string().min(1).max(200),
     })
   )
   .handler(async ({ data }) => {
+    const cleanEmail = data.email.trim().toLowerCase();
+    const rateCheck = isRateLimited(cleanEmail);
+    if (rateCheck.limited) {
+      return {
+        success: false,
+        error: `Too many failed sign-in attempts. Please wait ${rateCheck.retryAfterSeconds} seconds before trying again.`,
+      };
+    }
+
     // 1. Supabase Auth Mode (Primary, Authoritative, & Secure)
     if (isSupabaseConfigured()) {
       const client = getSupabaseClient();
       if (client) {
         try {
-          const cleanEmail = data.email.trim().toLowerCase();
           const { data: authData, error } = await client.auth.signInWithPassword({
             email: cleanEmail,
             password: data.password,
           });
 
           if (error) {
+            recordFailedAttempt(cleanEmail);
             return {
               success: false,
               error: error.message || "Invalid email or password.",
@@ -168,9 +177,15 @@ export const adminLoginServerFn = createServerFn({ method: "POST" })
               console.warn("[adminLoginServerFn] Audit log insert warning:", auditErr);
             }
 
+            resetAttempts(cleanEmail);
+            const signedSessionToken = createAdminSessionToken({
+              id: authData.user.id,
+              email: authData.user.email,
+            });
+
             return {
               success: true,
-              token: authData.session.access_token,
+              token: signedSessionToken,
               user: {
                 id: authData.user.id,
                 email: authData.user.email,

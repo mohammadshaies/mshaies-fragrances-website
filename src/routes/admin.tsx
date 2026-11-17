@@ -14,7 +14,7 @@ import {
   type AnnouncementItem
 } from "@/lib/products-store";
 import { formatPKR } from "@/lib/cart-context";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { 
   Package, 
   Tag, 
@@ -1655,7 +1655,7 @@ function AdminDashboard() {
             localStorage.setItem("mshaies_admin_email", res.user.email);
             sessionStorage.setItem(AUTH_SESSION_KEY, "true");
             localStorage.setItem(AUTH_SESSION_KEY, "true");
-            refreshDataFromServer();
+            refreshDataFromServer(true);
           } else {
             setIsAuthenticated(false);
             sessionStorage.removeItem("mshaies_admin_token");
@@ -2721,7 +2721,7 @@ function AdminDashboard() {
         localStorage.setItem("mshaies_admin_email", authedEmail);
         setCurrentAdminEmail(authedEmail);
         setIsAuthenticated(true);
-        refreshDataFromServer();
+        refreshDataFromServer(true);
         setAdminPassword("");
         toast.success(`Authenticated as administrator (${authedEmail})`);
       } else {

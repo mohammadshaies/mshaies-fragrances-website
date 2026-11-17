@@ -19,6 +19,9 @@ export const Route = createFileRoute("/")({
         content: "Signature scents that define your presence. In Stock & Ready to Dispatch.",
       },
     ],
+    links: [
+      { rel: "preload", href: "/bottle-poster.webp", as: "image", type: "image/webp" },
+    ],
   }),
   component: Index,
 });

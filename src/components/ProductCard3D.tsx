@@ -59,7 +59,13 @@ const MobileProductCard = memo(function MobileProductCard({ product }: { product
     e.preventDefault();
     e.stopPropagation();
     if (isOutOfStock) return;
-    add({ id: product.id, name: product.name, price: product.price });
+    add({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      volume: product.volume,
+    });
     toast.success(`Added ${product.name} to shopping bag!`);
   };
 
@@ -208,7 +214,13 @@ function DesktopProductCard({ product }: { product: Product }) {
     e.preventDefault();
     e.stopPropagation();
     if (isOutOfStock) return;
-    add({ id: product.id, name: product.name, price: product.price });
+    add({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      volume: product.volume,
+    });
     toast.success(`Added ${product.name} to shopping bag!`);
   };
 

@@ -71,12 +71,12 @@ export const getReviewsServerFn = createServerFn({ method: "POST" })
 export const addReviewServerFn = createServerFn({ method: "POST" })
   .validator(
     z.object({
-      productId: z.string(),
-      author: z.string().min(1),
-      city: z.string().default("Pakistan"),
+      productId: z.string().min(1).max(100).trim(),
+      author: z.string().min(1).max(80).trim(),
+      city: z.string().max(80).trim().default("Pakistan"),
       rating: z.number().int().min(1).max(5),
-      title: z.string().min(1),
-      comment: z.string().min(3),
+      title: z.string().min(1).max(150).trim(),
+      comment: z.string().min(3).max(2000).trim(),
     })
   )
   .handler(async ({ data }) => {

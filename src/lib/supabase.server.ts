@@ -46,14 +46,14 @@ export const isSupabaseConfigured = () =>
   );
 
 // Singleton Supabase clients — created once and reused to prevent connection exhaustion
-let _adminClient: ReturnType<typeof createClient> | null = null;
-let _anonClient: ReturnType<typeof createClient> | null = null;
+let _adminClient: ReturnType<typeof createClient<any>> | null = null;
+let _anonClient: ReturnType<typeof createClient<any>> | null = null;
 
 // Server-side Supabase client with Service Role privileges (bypasses RLS for trusted server logic)
 export const getSupabaseAdmin = () => {
   if (!isSupabaseConfigured()) return null;
   if (!_adminClient) {
-    _adminClient = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
+    _adminClient = createClient<any>(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
       realtime: { params: { eventsPerSecond: 0 } },
     });
@@ -65,7 +65,7 @@ export const getSupabaseAdmin = () => {
 export const getSupabaseClient = () => {
   if (!isSupabaseConfigured()) return null;
   if (!_anonClient) {
-    _anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+    _anonClient = createClient<any>(supabaseUrl, supabaseAnonKey, {
       auth: { persistSession: false },
       realtime: { params: { eventsPerSecond: 0 } },
     });
@@ -109,7 +109,7 @@ export async function verifyAdminSession(token?: string | null): Promise<{ valid
             userRole === "superadmin";
 
           // Also check admin_users table
-          if (!hasAdminRole) {
+          if (!hasAdminRole && email) {
             try {
               const { data: adminRow } = await client
                 .from("admin_users")

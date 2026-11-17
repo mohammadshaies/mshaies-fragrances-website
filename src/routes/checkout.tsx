@@ -3,6 +3,7 @@ import { useCart, formatPKR } from "@/lib/cart-context";
 import { useProductsStore } from "@/lib/products-store";
 import { useState, useEffect } from "react";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/pixel-tracking";
+import { validateCouponServerFn } from "@/lib/api/coupons.server";
 import { 
   ShieldCheck, 
   Truck, 
@@ -126,7 +127,7 @@ function CheckoutPage() {
     .slice(0, 3);
 
   // Apply Coupon Handler
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!couponInput.trim()) {
       toast.error("Please enter a coupon code.");
@@ -143,7 +144,26 @@ function CheckoutPage() {
       });
       toast.success(result.message);
       setCouponInput("");
-    } else {
+      return;
+    }
+
+    try {
+      const srv = await validateCouponServerFn({
+        data: { code: couponInput.trim(), subtotal },
+      });
+      if (srv.valid && srv.coupon) {
+        setAppliedCoupon({
+          code: srv.coupon.code,
+          discountAmount: srv.discountAmount,
+          freeShipping: !!srv.freeShipping,
+          description: srv.coupon.description || `${srv.coupon.code} Applied`,
+        });
+        toast.success(srv.message);
+        setCouponInput("");
+      } else {
+        toast.error(srv.message || result.message);
+      }
+    } catch {
       toast.error(result.message);
     }
   };
@@ -181,8 +201,8 @@ function CheckoutPage() {
           name: i.name,
           price: i.price,
           qty: i.qty,
-          volume: prod?.volume || "12ml Pure Attar",
-          image: prod?.image || "/product-box.jpg",
+          volume: i.volume || prod?.volume || "12ml Pure Attar",
+          image: i.image || prod?.image || "/product-box.jpg",
         };
       });
 

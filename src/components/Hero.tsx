@@ -27,9 +27,15 @@ export function Hero() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Begin dynamic import chunk download immediately after hydration
+  // Begin dynamic import chunk download after initial paint to prioritize LCP and interactivity
   useEffect(() => {
-    loadBottle3D();
+    const win = window as any;
+    if (typeof win.requestIdleCallback === "function") {
+      const id = win.requestIdleCallback(() => loadBottle3D(), { timeout: 600 });
+      return () => win.cancelIdleCallback?.(id);
+    }
+    const timer = setTimeout(() => loadBottle3D(), 120);
+    return () => clearTimeout(timer);
   }, []);
 
   // Smoothly scroll down to the product catalog

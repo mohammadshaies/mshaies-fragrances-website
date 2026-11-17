@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FeaturedFragrances } from "@/components/FeaturedFragrances";
 import { PromotionalBanner } from "@/components/PromotionalBanner";
+import { useProductsStore } from "@/lib/products-store";
 
 export const Route = createFileRoute("/watches")({
   head: () => ({

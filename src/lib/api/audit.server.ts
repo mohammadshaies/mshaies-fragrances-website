@@ -58,13 +58,16 @@ export const addAuditLogServerFn = createServerFn({ method: "POST" })
   .validator(
     z.object({
       authToken: z.string().optional(),
-      action: z.string(),
+      action: z.string().min(1).max(200),
       category: z.enum(["Product", "Stock", "Order", "Discount", "Settings", "System"]),
-      details: z.string(),
+      details: z.string().max(5000),
     })
   )
   .handler(async ({ data }) => {
     const auth = await verifyAdminSession(data.authToken);
+    if (!auth.valid) {
+      return { success: false, error: auth.error || "Unauthorized admin action." };
+    }
     const user = auth.user?.email || "Staff Admin";
 
     const logRecord = {

@@ -133,9 +133,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: "https://mshaies.com/logo-wordmark.png" },
     ],
     links: [
-      { rel: "preload", href: "/bottle-poster.webp", as: "image", type: "image/webp" },
-      { rel: "preload", href: "/attar-bottle-model.glb", as: "fetch", crossOrigin: "anonymous" },
-      { rel: "preload", href: "/draco/draco_decoder.wasm", as: "fetch", crossOrigin: "anonymous" },
       { rel: "icon", href: "/logo-icon.png", type: "image/png" },
       { rel: "shortcut icon", href: "/logo-icon.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/logo-icon.png" },

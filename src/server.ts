@@ -38,6 +38,15 @@ function attachSecurityHeaders(response: Response): Response {
   if (!newHeaders.has("X-XSS-Protection")) {
     newHeaders.set("X-XSS-Protection", "1; mode=block");
   }
+  if (!newHeaders.has("Strict-Transport-Security")) {
+    newHeaders.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  }
+  if (!newHeaders.has("X-DNS-Prefetch-Control")) {
+    newHeaders.set("X-DNS-Prefetch-Control", "on");
+  }
+  if (!newHeaders.has("Cross-Origin-Opener-Policy")) {
+    newHeaders.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  }
 
   return new Response(response.body, {
     status: response.status,
