@@ -179,15 +179,21 @@ export function FeaturedFragrances({
       <div className="mx-auto max-w-7xl px-3.5 sm:px-8">
         
         {/* =================================================================== */}
-        {/* SECTION HEADER                                                      */}
+        {/* SECTION HEADER (H1 on standalone catalog pages, H2 on Homepage)     */}
         {/* =================================================================== */}
         <div className="text-center max-w-2xl mx-auto mb-4 sm:mb-8 px-2">
           <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-gold-deep mb-1.5 sm:mb-3 font-semibold leading-relaxed">
             {subtitle}
           </p>
-          <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl tracking-tight text-ink">
-            {title}
-          </h2>
+          {showAll ? (
+            <h1 className="font-serif text-2xl sm:text-4xl lg:text-5xl tracking-tight text-ink">
+              {title}
+            </h1>
+          ) : (
+            <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl tracking-tight text-ink">
+              {title}
+            </h2>
+          )}
           <div className="hairline-gold w-16 sm:w-24 mx-auto mt-2 sm:mt-4 opacity-70" />
         </div>
 

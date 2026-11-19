@@ -37,7 +37,11 @@ function Shop() {
           <PromotionalBanner />
         </div>
       )}
-      <FeaturedFragrances showAll={true} />
+      <FeaturedFragrances
+        showAll={true}
+        title="Pure Attars & Luxury Perfumes Collection"
+        subtitle="100% Alcohol-Free Attar Oils & 35% Extrait Perfumes Delivered Across Pakistan"
+      />
     </div>
   );
 }

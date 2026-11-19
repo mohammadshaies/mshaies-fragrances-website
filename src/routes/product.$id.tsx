@@ -455,16 +455,38 @@ function ProductDetail() {
         />
       )}
       <div className="mx-auto max-w-7xl px-4 sm:px-8">
-        {/* Breadcrumb */}
-        <div className="mb-6 sm:mb-8">
+        {/* Semantic SEO Breadcrumb & Internal Category Links */}
+        <nav aria-label="Breadcrumb" className="mb-6 sm:mb-8 flex flex-wrap items-center justify-between gap-3">
           <Link
             to="/shop"
+            title="Browse All M.shaies Pure Attars & Luxury Perfumes"
             className="text-xs uppercase tracking-wider text-muted-foreground hover:text-gold-deep flex items-center gap-2 w-fit transition-colors min-h-[44px] py-2"
           >
             <ArrowLeft className="size-3.5" />
             Back to Collection
           </Link>
-        </div>
+          <ol className="flex items-center gap-2 text-xs text-muted-foreground">
+            <li>
+              <Link to="/" title="M.shaies Fragrances Pakistan Home" className="hover:text-gold-deep transition-colors">
+                Home
+              </Link>
+            </li>
+            <li aria-hidden="true">/</li>
+            <li>
+              <Link
+                to={product.category === "Attars" ? "/attars" : product.category === "Perfumes" ? "/perfumes" : product.category === "Watches" ? "/watches" : "/shop"}
+                title={`Explore ${product.category} in Pakistan`}
+                className="hover:text-gold-deep transition-colors"
+              >
+                {product.category || "Collection"}
+              </Link>
+            </li>
+            <li aria-hidden="true">/</li>
+            <li className="text-ink font-semibold truncate max-w-[180px] sm:max-w-[260px]" aria-current="page">
+              {product.name}
+            </li>
+          </ol>
+        </nav>
 
         {/* Promotional Banner */}
         {settings.heroBannerActive !== false && (settings.promotionalSlides === undefined || (Array.isArray(settings.promotionalSlides) && settings.promotionalSlides.length > 0)) && (

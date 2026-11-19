@@ -77,14 +77,14 @@ export function Hero() {
                 <span>Maison 2026</span>
               </div>
 
-              {/* Mobile Main Headline */}
-              <h1 className="font-serif text-[21px] xs:text-[24px] sm:text-3xl leading-[1.12] text-ink font-bold tracking-tight">
+              {/* Mobile Main Headline (uses semantic presentation wrapper so page has strictly 1 H1 tag in DOM) */}
+              <div role="heading" aria-level={2} className="font-serif text-[21px] xs:text-[24px] sm:text-3xl leading-[1.12] text-ink font-bold tracking-tight">
                 The Essence of <br />
                 <span className="gold-gradient-text font-bold">Luxury.</span>
                 <span className="block text-[11px] xs:text-xs font-sans font-normal text-muted-foreground mt-0.5">
                   Crafted for Pakistan
                 </span>
-              </h1>
+              </div>
 
               {/* Mobile Subtitle & Value Proposition */}
               <p className="mt-1.5 text-[10px] xs:text-[11.5px] text-muted-foreground leading-snug line-clamp-2 sm:line-clamp-3">

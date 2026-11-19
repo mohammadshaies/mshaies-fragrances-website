@@ -1,5 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
+import { Link } from "@tanstack/react-router";
 
 const NOTES = [
   {
@@ -35,11 +36,11 @@ export function ScentJourney() {
       <div className="relative mx-auto max-w-5xl px-5 sm:px-8">
         <div className="text-center mb-10 sm:mb-20">
           <p className="text-[11px] uppercase tracking-[0.3em] text-gold-deep mb-3 sm:mb-4">An Immersive Journey</p>
-          <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl tracking-tight text-ink">
+          <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl tracking-tight text-ink">
             The Scent <span className="italic gold-gradient-text">Unfolds.</span>
-          </h2>
+          </h1>
           <p className="mt-4 sm:mt-5 text-xs sm:text-base text-muted-foreground max-w-xl mx-auto">
-            Every fragrance is a composition in three movements. Scroll to follow the arc.
+            Every M.shaies pure attar and extrait de parfum is a composition in three movements—from bright top notes to a lasting 16+ hour base trail.
           </p>
         </div>
 
@@ -116,6 +117,36 @@ export function ScentJourney() {
               );
             })}
           </ul>
+        </div>
+
+        {/* Internal Collection Links for SEO Crawlability & User Flow */}
+        <div className="mt-14 sm:mt-24 pt-8 border-t border-gold/30 text-center space-y-4">
+          <h2 className="font-serif text-xl sm:text-2xl text-ink">
+            Experience the Notes on Your Skin
+          </h2>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/attars"
+              title="Explore 100% Pure Alcohol-Free Attar Oils in Pakistan"
+              className="btn-gold btn-gold-hover px-5 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold"
+            >
+              Explore Pure Attar Oils
+            </Link>
+            <Link
+              to="/perfumes"
+              title="Explore 35% Extrait De Parfum Luxury Sprays in Pakistan"
+              className="px-5 py-2.5 rounded-full border border-gold/50 bg-card hover:bg-pearl text-xs uppercase tracking-widest font-semibold text-ink transition-colors"
+            >
+              Explore Extrait Perfumes
+            </Link>
+            <Link
+              to="/shop"
+              title="View Complete M.shaies Fragrance Catalog"
+              className="px-5 py-2.5 rounded-full border border-border bg-background hover:bg-pearl text-xs uppercase tracking-widest font-semibold text-muted-foreground hover:text-ink transition-colors"
+            >
+              Browse All Fragrances
+            </Link>
+          </div>
         </div>
       </div>
     </section>
