@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProductsStore, type Order, type OrderItem } from "@/lib/products-store";
 import { formatPKR } from "@/lib/cart-context";
 import { getOrderByIdServerFn } from "@/lib/api/orders.server";
+import { printDeliveryLabel } from "@/lib/delivery-label";
 import { 
   Printer, 
   ArrowLeft, 
@@ -215,6 +216,15 @@ function InvoicePage() {
                   <span>Share Link</span>
                 </>
               )}
+            </button>
+
+            <button
+              onClick={() => printDeliveryLabel(order)}
+              type="button"
+              className="px-4 py-2 rounded-full border border-gold bg-pearl text-ink hover:bg-gold text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+            >
+              <Truck className="size-3.5 text-gold-deep" />
+              Print Delivery Slip
             </button>
 
             <button

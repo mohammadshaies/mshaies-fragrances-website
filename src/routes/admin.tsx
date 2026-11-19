@@ -90,8 +90,10 @@ import {
   ChevronUp,
   ChevronDown,
   Info,
+  Printer,
 } from "lucide-react";
 import { toast } from "sonner";
+import { printDeliveryLabel } from "@/lib/delivery-label";
 import { adminLoginServerFn, verifyAdminStatusServerFn } from "@/lib/api/auth.server";
 import { getCacheStatsServerFn, purgeServerCacheFn } from "@/lib/api/cache.server";
 import { getEmailConfigServerFn, saveEmailConfigServerFn, testEmailServerFn } from "@/lib/api/email.server";
@@ -5642,6 +5644,21 @@ function AdminDashboard() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5">
                   <button
+                    type="button"
+                    onClick={() => {
+                      if (filteredOrders.length === 0) {
+                        toast.error("No orders available to print.");
+                        return;
+                      }
+                      printDeliveryLabel(filteredOrders);
+                    }}
+                    className="btn-gold btn-gold-hover px-4 py-2 rounded-full text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+                    title="Print courier delivery parcel slips with customer details for all filtered orders"
+                  >
+                    <Printer className="size-3.5" />
+                    Print Delivery Slips ({filteredOrders.length})
+                  </button>
+                  <button
                     onClick={handleExportCourierCSV}
                     className="px-4 py-2 rounded-full border border-gold/60 bg-gold/15 text-xs uppercase tracking-wider text-ink font-bold flex items-center gap-1.5 hover:bg-gold transition-colors shrink-0 shadow-xs"
                     title="Export in bulk booking format for TCS Connect and Leopards CMS"
@@ -5865,6 +5882,14 @@ function AdminDashboard() {
                           <td className="py-4 px-5 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
+                                type="button"
+                                onClick={() => printDeliveryLabel(o)}
+                                className="p-1.5 rounded-lg border border-gold bg-gold/15 text-ink hover:bg-gold transition-colors cursor-pointer"
+                                title={`Print Delivery Parcel Slip & Customer Details for Order #${o.id}`}
+                              >
+                                <Printer className="size-4 text-gold-deep" />
+                              </button>
+                              <button
                                 onClick={() => {
                                   setDispatchOrder(o);
                                   setCourierNameInput(o.courierName || "TCS Express");
@@ -5931,8 +5956,25 @@ function AdminDashboard() {
                     </button>
                   </div>
 
-                  <div className="p-3 rounded-2xl bg-pearl/60 border border-border/80 text-xs space-y-1">
-                    <p><span className="font-semibold text-ink">Customer:</span> {dispatchOrder.customerName} ({dispatchOrder.phone})</p>
+                  <div className="p-3 rounded-2xl bg-pearl/60 border border-border/80 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <p><span className="font-semibold text-ink">Customer:</span> {dispatchOrder.customerName} ({dispatchOrder.phone})</p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          printDeliveryLabel({
+                            ...dispatchOrder,
+                            courierName: courierNameInput || dispatchOrder.courierName,
+                            trackingNumber: trackingNumberInput || dispatchOrder.trackingNumber,
+                          })
+                        }
+                        className="px-2.5 py-1 rounded-full bg-gold/20 border border-gold text-[10px] font-bold text-ink hover:bg-gold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Printer className="size-3 text-gold-deep" />
+                        Print Delivery Slip
+                      </button>
+                    </div>
+                    <p><span className="font-semibold text-ink">Address:</span> {dispatchOrder.address}</p>
                     <p><span className="font-semibold text-ink">Destination:</span> {dispatchOrder.city}</p>
                     <p><span className="font-semibold text-ink">COD Amount:</span> {dispatchOrder.paymentMethod === "cod" ? formatPKR(dispatchOrder.total) : "Paid Online"}</p>
                   </div>
