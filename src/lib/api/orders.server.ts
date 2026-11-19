@@ -89,7 +89,7 @@ export async function processPlaceOrder(rawData: PlaceOrderInput) {
 
     // 1. Fetch settings for shipping rates
     let freeShippingThreshold = 5000;
-    let standardShippingFee = 250;
+    let standardShippingFee = 400;
     let expressShippingFee = 450;
     let lahoreLocalFee = 150;
     let codFee = 400;

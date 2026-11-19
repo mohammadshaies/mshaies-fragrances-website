@@ -104,21 +104,15 @@ function CheckoutPage() {
     setTimeout(() => setCopiedField(null), 2500);
   };
 
-  // Dynamic Shipping Calculation from Store Settings
+  // Dynamic Shipping Calculation — Single Standard Courier Delivery (₨ 400)
   const freeThreshold = settings?.freeShippingThreshold ?? 5000;
   const isFreeEligible = (settings?.freeShippingEnabled !== false && subtotal >= freeThreshold) || appliedCoupon?.freeShipping;
-
-  let baseShippingRate = settings?.standardShippingFee ?? 400;
-  if (shippingMethod === "express" && settings?.expressShippingActive !== false) {
-    baseShippingRate = settings?.expressShippingFee ?? 450;
-  } else if (shippingMethod === "lahoreLocal" && city.toLowerCase() === "lahore" && settings?.lahoreLocalActive !== false) {
-    baseShippingRate = settings?.lahoreLocalFee ?? 150;
-  }
+  const baseShippingRate = settings?.standardShippingFee ?? 400;
 
   const shippingFee = items.length === 0 
     ? 0 
     : isFreeEligible 
-      ? (shippingMethod === "express" ? Math.max(0, (settings?.expressShippingFee ?? 450) - (settings?.standardShippingFee ?? 400)) : 0)
+      ? 0
       : baseShippingRate;
 
   // COD Handling Surcharge (₨ 0 default)
@@ -503,12 +497,12 @@ function CheckoutPage() {
               </div>
             </div>
 
-            {/* Section 2: Choose Delivery Method */}
+            {/* Section 2: Delivery Method (Single Standard Courier Delivery — ₨ 400) */}
             <div className="p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl bg-card border border-border/80 shadow-sm space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2.5">
                   <Truck className="size-5 text-gold-deep" />
-                  <h2 className="font-serif text-xl text-ink font-semibold">2. Choose Delivery Method</h2>
+                  <h2 className="font-serif text-xl text-ink font-semibold">2. Delivery Method</h2>
                 </div>
                 {isFreeEligible && (
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-700 border border-emerald-500/40">
@@ -517,82 +511,25 @@ function CheckoutPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Standard Courier */}
-                <button
-                  type="button"
-                  onClick={() => setShippingMethod("standard")}
-                  className={`p-4 rounded-2xl border text-left transition-all flex items-start justify-between cursor-pointer ${
-                    shippingMethod === "standard"
-                      ? "border-gold bg-pearl text-ink font-bold shadow-sm ring-1 ring-gold"
-                      : "border-border bg-card text-muted-foreground hover:text-ink hover:border-gold/50"
-                  }`}
-                >
+              <div>
+                {/* Single Standard Courier Delivery Option */}
+                <div className="p-4 rounded-2xl border border-gold bg-pearl text-ink font-bold shadow-sm ring-1 ring-gold flex items-center justify-between">
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold text-ink">Standard Courier Delivery</p>
+                    <div className="flex items-center gap-2">
+                      <Truck className="size-4 text-gold-deep shrink-0" />
+                      <p className="text-sm font-semibold text-ink">Standard Courier Delivery</p>
+                    </div>
                     <p className="text-[11px] font-normal text-muted-foreground">
-                      {settings?.shippingEstimateDays || "2-4 Business Days"} · {settings?.courierPartners || "TCS & Leopards"}
+                      {settings?.shippingEstimateDays || "2-4 Business Days"} · {settings?.courierPartners || "TCS Express & Leopards Courier"} (Nationwide Pakistan)
                     </p>
                   </div>
-                  <span className="font-serif text-xs font-bold text-ink shrink-0 ml-2">
-                    {isFreeEligible ? <span className="text-emerald-600 uppercase">FREE</span> : formatPKR(settings?.standardShippingFee ?? 400)}
-                  </span>
-                </button>
-
-                {/* Express Flight Dispatch */}
-                {settings?.expressShippingActive !== false && (
-                  <button
-                    type="button"
-                    onClick={() => setShippingMethod("express")}
-                    className={`p-4 rounded-2xl border text-left transition-all flex items-start justify-between cursor-pointer ${
-                      shippingMethod === "express"
-                        ? "border-gold bg-pearl text-ink font-bold shadow-sm ring-1 ring-gold"
-                        : "border-border bg-card text-muted-foreground hover:text-ink hover:border-gold/50"
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold text-ink">VIP Express Flight Dispatch</span>
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-700 font-bold uppercase">Fast</span>
-                      </div>
-                      <p className="text-[11px] font-normal text-muted-foreground">
-                        24-48 Hours Express Air Dispatch
-                      </p>
-                    </div>
-                    <span className="font-serif text-xs font-bold text-gold-deep shrink-0 ml-2">
-                      {isFreeEligible 
-                        ? formatPKR(Math.max(0, (settings?.expressShippingFee ?? 450) - (settings?.standardShippingFee ?? 400)))
-                        : formatPKR(settings?.expressShippingFee ?? 450)
-                      }
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <span className="font-serif text-sm font-bold text-ink">
+                      {isFreeEligible ? <span className="text-emerald-600 uppercase">FREE</span> : formatPKR(settings?.standardShippingFee ?? 400)}
                     </span>
-                  </button>
-                )}
-
-                {/* Lahore Local Studio Delivery */}
-                {city.toLowerCase() === "lahore" && settings?.lahoreLocalActive !== false && (
-                  <button
-                    type="button"
-                    onClick={() => setShippingMethod("lahoreLocal")}
-                    className={`sm:col-span-2 p-4 rounded-2xl border text-left transition-all flex items-start justify-between cursor-pointer ${
-                      shippingMethod === "lahoreLocal"
-                        ? "border-gold bg-pearl text-ink font-bold shadow-sm ring-1 ring-gold"
-                        : "border-border bg-card text-muted-foreground hover:text-ink hover:border-gold/50"
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold text-ink">Same-Day Local Rider Delivery</span>
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-gold/30 text-ink font-bold uppercase">In Stock</span>
-                      </div>
-                      <p className="text-[11px] font-normal text-muted-foreground">
-                        Direct express bike rider for prompt local delivery
-                      </p>
-                    </div>
-                    <span className="font-serif text-xs font-bold text-ink shrink-0 ml-2">
-                      {isFreeEligible ? <span className="text-emerald-600 uppercase">FREE</span> : formatPKR(settings?.lahoreLocalFee ?? 150)}
-                    </span>
-                  </button>
-                )}
+                    <CheckCircle2 className="size-4 text-gold-deep shrink-0" />
+                  </div>
+                </div>
               </div>
             </div>
 
