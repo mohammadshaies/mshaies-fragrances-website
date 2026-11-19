@@ -5,6 +5,23 @@ import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminS
 import { eq } from "drizzle-orm";
 import { dispatchOrderNotificationEmails } from "./email.server";
 import { serverCache } from "../cache.server";
+import { sanitizeText, verifyEmailAddress, redactSensitiveData } from "../security/sanitize";
+
+const orderRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkOrderRateLimit(identifier: string): boolean {
+  const now = Date.now();
+  const entry = orderRateLimitMap.get(identifier);
+  if (!entry || now > entry.resetAt) {
+    orderRateLimitMap.set(identifier, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 8) {
+    return false;
+  }
+  entry.count += 1;
+  return true;
+}
 
 export const placeOrderSchema = z.object({
   orderId: z.string().optional(),
@@ -34,9 +51,40 @@ export const placeOrderSchema = z.object({
 
 export type PlaceOrderInput = z.infer<typeof placeOrderSchema>;
 
-export async function processPlaceOrder(data: PlaceOrderInput) {
-    if (data.items.length === 0) {
+export async function processPlaceOrder(rawData: PlaceOrderInput) {
+    if (rawData.items.length === 0) {
       return { success: false, error: "Cannot place an order with empty cart." };
+    }
+
+    // Validate optional email address when provided
+    let verifiedEmail = "";
+    if (rawData.email && rawData.email.trim()) {
+      const emailCheck = verifyEmailAddress(rawData.email);
+      if (!emailCheck.valid) {
+        return { success: false, error: emailCheck.error || "Please provide a valid email address." };
+      }
+      verifiedEmail = emailCheck.normalized;
+    }
+
+    // Sanitize all user-supplied text fields against XSS / injection
+    const data: PlaceOrderInput = {
+      ...rawData,
+      customerName: sanitizeText(rawData.customerName, 100),
+      email: verifiedEmail || undefined,
+      phone: sanitizeText(rawData.phone, 25),
+      address: sanitizeText(rawData.address, 300),
+      city: sanitizeText(rawData.city, 100),
+      postalCode: rawData.postalCode ? sanitizeText(rawData.postalCode, 20) : undefined,
+      transactionId: rawData.transactionId ? sanitizeText(rawData.transactionId, 100) : undefined,
+      discountCode: rawData.discountCode ? sanitizeText(rawData.discountCode, 50) : undefined,
+      giftMessage: rawData.giftMessage ? sanitizeText(rawData.giftMessage, 500) : undefined,
+    };
+
+    if (!checkOrderRateLimit(data.phone || verifiedEmail || "anonymous")) {
+      return {
+        success: false,
+        error: "Too many order requests in a short period. Please wait a minute before trying again.",
+      };
     }
 
     // 1. Fetch settings for shipping rates
@@ -106,14 +154,17 @@ export async function processPlaceOrder(data: PlaceOrderInput) {
       let itemImage = "/product-box.jpg";
 
       if (dbProd) {
-        itemName = item.name || dbProd.name;
-        itemImage = item.image || dbProd.image || "/product-box.jpg";
-        if (item.price !== undefined && item.price > 0) {
+        itemName = sanitizeText(dbProd.name || item.name, 200);
+        itemImage = dbProd.image || item.image || "/product-box.jpg";
+        const dbBasePrice = Number(dbProd.price || 0);
+        const dbSamplePrice = Number(dbProd.sample_price || 0);
+        if (item.volume.toLowerCase().includes("3ml") && dbSamplePrice > 0) {
+          unitPrice = dbSamplePrice;
+        } else if (item.price !== undefined && item.price >= dbBasePrice && dbBasePrice > 0) {
+          // Allow legitimate higher-volume multiplier price (>= base price), never allow tampered price below dbBasePrice
           unitPrice = item.price;
-        } else if (item.volume.includes("3ml") && dbProd.sample_price) {
-          unitPrice = dbProd.sample_price;
         } else {
-          unitPrice = dbProd.price;
+          unitPrice = dbBasePrice > 0 ? dbBasePrice : 3500;
         }
       } else {
         if (item.price !== undefined && item.price >= 0) {

@@ -4,6 +4,21 @@ import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured } from "../supabase.server";
 import { eq, sql } from "drizzle-orm";
 import { serverCache } from "../cache.server";
+import { sanitizeText, redactSensitiveData } from "../security/sanitize";
+
+const reviewRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkReviewRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = reviewRateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    reviewRateLimitMap.set(key, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 5) return false;
+  entry.count += 1;
+  return true;
+}
 
 function mapSupabaseReview(r: any) {
   return {
@@ -80,14 +95,27 @@ export const addReviewServerFn = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ data }) => {
+    const cleanAuthor = sanitizeText(data.author, 80);
+    const cleanCity = sanitizeText(data.city || "Pakistan", 80);
+    const cleanTitle = sanitizeText(data.title, 150);
+    const cleanComment = sanitizeText(data.comment, 2000);
+
+    if (!cleanAuthor || !cleanTitle || cleanComment.length < 3) {
+      return { success: false, error: "Review content contains invalid or empty text." };
+    }
+
+    if (!checkReviewRateLimit(`${data.productId}:${cleanAuthor.toLowerCase()}`)) {
+      return { success: false, error: "Too many reviews submitted. Please wait a minute." };
+    }
+
     const newRecord = {
       id: `rev-${Date.now()}`,
-      productId: data.productId,
-      author: data.author,
-      city: data.city,
+      productId: sanitizeText(data.productId, 100),
+      author: cleanAuthor,
+      city: cleanCity,
       rating: data.rating,
-      title: data.title,
-      comment: data.comment,
+      title: cleanTitle,
+      comment: cleanComment,
       date: new Date().toISOString().split("T")[0],
       verified: false,
       helpfulCount: 0,

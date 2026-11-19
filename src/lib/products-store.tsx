@@ -543,6 +543,7 @@ if (typeof window !== "undefined") {
       "mshaies_reviews_v1", "mshaies_reviews_v2", "mshaies_reviews_v3", "mshaies_reviews_v4",
       "mshaies_audit_logs_v1", "mshaies_audit_logs_v2", "mshaies_audit_logs_v3", "mshaies_audit_logs_v4",
       "mshaies_jobs_v1", "mshaies_jobs_v2", "mshaies_jobs_v3", "mshaies_jobs_v4",
+      "mshaies_admin_token",
     ];
     legacyKeys.forEach((key) => localStorage.removeItem(key));
   } catch {}
@@ -738,7 +739,7 @@ export function ProductsStoreProvider({
       }
 
       const adminToken = typeof sessionStorage !== "undefined"
-        ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+        ? sessionStorage.getItem("mshaies_admin_token")
         : null;
       if (adminToken) {
         const [ordersRes, couponsRes, auditRes] = await Promise.all([
@@ -780,7 +781,7 @@ export function ProductsStoreProvider({
   const purgeCache = async () => {
     try {
       const adminToken = typeof sessionStorage !== "undefined"
-        ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+        ? sessionStorage.getItem("mshaies_admin_token")
         : null;
       await purgeServerCacheFn({ data: { authToken: adminToken || undefined } });
     } catch (e) {
@@ -812,11 +813,7 @@ export function ProductsStoreProvider({
   const getAdminAuthToken = (): string | undefined => {
     if (typeof window === "undefined") return undefined;
     try {
-      return (
-        sessionStorage.getItem("mshaies_admin_token") ||
-        localStorage.getItem("mshaies_admin_token") ||
-        undefined
-      );
+      return sessionStorage.getItem("mshaies_admin_token") || undefined;
     } catch {
       return undefined;
     }
@@ -943,9 +940,7 @@ export function ProductsStoreProvider({
     addAuditLog("Stock Adjusted", "Stock", `Restocked "${found?.name || id}" to ${newStock} units`);
 
     if (found) {
-      const token = typeof sessionStorage !== "undefined"
-        ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
-        : undefined;
+      const token = getAdminAuthToken();
       saveProductServerFn({
         data: {
           authToken: token,
@@ -991,9 +986,7 @@ export function ProductsStoreProvider({
     }
 
     if (cleanList.length > 0) {
-      const token = typeof sessionStorage !== "undefined"
-        ? sessionStorage.getItem("mshaies_admin_token") || (typeof localStorage !== "undefined" ? localStorage.getItem("mshaies_admin_token") : null) || undefined
-        : undefined;
+      const token = getAdminAuthToken();
 
       if (!token) {
         return { count: 0, error: "Administrative authorization token missing. Please sign in again." };

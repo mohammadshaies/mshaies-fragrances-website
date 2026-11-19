@@ -1643,33 +1643,32 @@ function AdminDashboard() {
 
   useEffect(() => {
     setMounted(true);
-    const storedToken =
-      sessionStorage.getItem("mshaies_admin_token") ||
-      localStorage.getItem("mshaies_admin_token");
+    // Keep auth tokens strictly out of localStorage; migrate any legacy localStorage token to ephemeral sessionStorage and purge localStorage
+    try {
+      const legacyLocalToken = localStorage.getItem("mshaies_admin_token");
+      if (legacyLocalToken && !sessionStorage.getItem("mshaies_admin_token")) {
+        sessionStorage.setItem("mshaies_admin_token", legacyLocalToken);
+      }
+      localStorage.removeItem("mshaies_admin_token");
+      localStorage.removeItem(AUTH_SESSION_KEY);
+    } catch {}
+
+    const storedToken = sessionStorage.getItem("mshaies_admin_token");
 
     if (storedToken) {
-      try {
-        sessionStorage.setItem("mshaies_admin_token", storedToken);
-        localStorage.setItem("mshaies_admin_token", storedToken);
-      } catch {}
       verifyAdminStatusServerFn({ data: { authToken: storedToken } })
         .then((res) => {
           if (res.valid && res.user?.email) {
             setIsAuthenticated(true);
             setCurrentAdminEmail(res.user.email);
             sessionStorage.setItem("mshaies_admin_token", storedToken);
-            localStorage.setItem("mshaies_admin_token", storedToken);
             sessionStorage.setItem("mshaies_admin_email", res.user.email);
-            localStorage.setItem("mshaies_admin_email", res.user.email);
             sessionStorage.setItem(AUTH_SESSION_KEY, "true");
-            localStorage.setItem(AUTH_SESSION_KEY, "true");
             refreshDataFromServer(true);
           } else {
             setIsAuthenticated(false);
             sessionStorage.removeItem("mshaies_admin_token");
-            localStorage.removeItem("mshaies_admin_token");
             sessionStorage.removeItem(AUTH_SESSION_KEY);
-            localStorage.removeItem(AUTH_SESSION_KEY);
           }
         })
         .catch(() => {
@@ -1678,7 +1677,6 @@ function AdminDashboard() {
     } else {
       setIsAuthenticated(false);
       sessionStorage.removeItem(AUTH_SESSION_KEY);
-      localStorage.removeItem(AUTH_SESSION_KEY);
     }
 
   }, []);
@@ -1838,7 +1836,7 @@ function AdminDashboard() {
   const fetchCacheStats = async () => {
     try {
       const adminToken = typeof sessionStorage !== "undefined"
-        ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+        ? sessionStorage.getItem("mshaies_admin_token")
         : null;
       if (!adminToken) return;
       const res = await getCacheStatsServerFn({ data: { authToken: adminToken } });
@@ -1905,7 +1903,7 @@ function AdminDashboard() {
     try {
       const adminToken =
         typeof sessionStorage !== "undefined"
-          ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+          ? sessionStorage.getItem("mshaies_admin_token")
           : null;
       if (!adminToken) return;
       const res = await getEmailConfigServerFn({ data: { authToken: adminToken } });
@@ -1941,7 +1939,7 @@ function AdminDashboard() {
     try {
       const adminToken =
         typeof sessionStorage !== "undefined"
-          ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+          ? sessionStorage.getItem("mshaies_admin_token")
           : null;
       const res = await saveEmailConfigServerFn({
         data: {
@@ -1972,7 +1970,7 @@ function AdminDashboard() {
     try {
       const adminToken =
         typeof sessionStorage !== "undefined"
-          ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+          ? sessionStorage.getItem("mshaies_admin_token")
           : null;
       const res = await testEmailServerFn({
         data: {
@@ -1998,7 +1996,7 @@ function AdminDashboard() {
     try {
       const adminToken =
         typeof sessionStorage !== "undefined"
-          ? sessionStorage.getItem("mshaies_admin_token") || localStorage.getItem("mshaies_admin_token")
+          ? sessionStorage.getItem("mshaies_admin_token")
           : null;
       const res = await resendOrderNotificationServerFn({
         data: {
@@ -2722,11 +2720,10 @@ function AdminDashboard() {
       if (res.success && res.token) {
         sessionStorage.setItem("mshaies_admin_token", res.token);
         sessionStorage.setItem(AUTH_SESSION_KEY, "true");
-        localStorage.setItem("mshaies_admin_token", res.token);
-        localStorage.setItem(AUTH_SESSION_KEY, "true");
+        localStorage.removeItem("mshaies_admin_token");
+        localStorage.removeItem(AUTH_SESSION_KEY);
         const authedEmail = res.user?.email || adminEmail.trim();
         sessionStorage.setItem("mshaies_admin_email", authedEmail);
-        localStorage.setItem("mshaies_admin_email", authedEmail);
         setCurrentAdminEmail(authedEmail);
         setIsAuthenticated(true);
         refreshDataFromServer(true);

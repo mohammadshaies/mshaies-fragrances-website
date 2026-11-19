@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { db, schema, isDatabaseConfigured } from "../db/client.server";
-import { createAdminSessionToken } from "../security/session.server";
+import { createAdminSessionToken, verifyPasswordSecurely } from "../security/session.server";
+import { verifyEmailAddress, redactSensitiveData } from "../security/sanitize";
 
 // Rate limiting & lockout tracking for brute-force prevention
 interface AttemptRecord {
@@ -85,7 +86,14 @@ export const adminLoginServerFn = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ data }) => {
-    const cleanEmail = data.email.trim().toLowerCase();
+    const emailVerification = verifyEmailAddress(data.email);
+    if (!emailVerification.valid) {
+      return {
+        success: false,
+        error: emailVerification.error || "Please provide a valid email address.",
+      };
+    }
+    const cleanEmail = emailVerification.normalized;
     const rateCheck = isRateLimited(cleanEmail);
     if (rateCheck.limited) {
       return {
@@ -108,12 +116,27 @@ export const adminLoginServerFn = createServerFn({ method: "POST" })
             recordFailedAttempt(cleanEmail);
             return {
               success: false,
-              error: error.message || "Invalid email or password.",
+              error: "Invalid email or password.",
             };
           }
 
           if (authData?.user && authData?.session) {
             const user = authData.user;
+
+            // Verify email confirmation status in Supabase Auth
+            const isEmailConfirmed = Boolean(
+              user.email_confirmed_at || (user as any).confirmed_at
+            );
+            if (!isEmailConfirmed) {
+              try {
+                await client.auth.signOut();
+              } catch {}
+              return {
+                success: false,
+                error: "Email address is not verified. Please verify your administrator email in Supabase Auth.",
+              };
+            }
+
             const appRole = (user.app_metadata as any)?.role;
             const userRole = (user.user_metadata as any)?.role;
 
@@ -194,24 +217,25 @@ export const adminLoginServerFn = createServerFn({ method: "POST" })
             };
           }
         } catch (err: any) {
-          console.error("[adminLoginServerFn] Supabase Auth exception:", err);
+          console.error("[adminLoginServerFn] Supabase Auth exception:", redactSensitiveData(err));
           return {
             success: false,
-            error: err?.message || "Failed to communicate with Supabase Auth.",
+            error: "Authentication service unavailable. Please try again.",
           };
         }
       }
     }
 
-    // 2. Strict Fallback only if Supabase is offline AND explicit server environment variables exist
+    // 2. Strict Fallback only if Supabase is offline AND explicit server environment variables exist (supports salted scrypt hashes via ADMIN_PASSWORD_HASH)
     const expectedEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-    const expectedPassword = process.env.ADMIN_PASSWORD?.trim();
+    const expectedPasswordOrHash = (process.env.ADMIN_PASSWORD_HASH || process.env.ADMIN_PASSWORD)?.trim();
 
-    if (expectedEmail && expectedPassword) {
-      const emailMatches = safeCompare(data.email.trim().toLowerCase(), expectedEmail);
-      const passMatches = safeCompare(data.password, expectedPassword);
+    if (expectedEmail && expectedPasswordOrHash) {
+      const emailMatches = safeCompare(cleanEmail, expectedEmail);
+      const passMatches = verifyPasswordSecurely(data.password, expectedPasswordOrHash);
 
       if (emailMatches && passMatches) {
+        resetAttempts(cleanEmail);
         const token = createAdminSessionToken({
           id: "master-admin",
           email: expectedEmail,
@@ -227,6 +251,7 @@ export const adminLoginServerFn = createServerFn({ method: "POST" })
           },
         };
       }
+      recordFailedAttempt(cleanEmail);
     }
 
     return {

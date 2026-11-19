@@ -18,6 +18,7 @@ export default defineConfig({
   vite: {
     build: {
       chunkSizeWarningLimit: 3000,
+      sourcemap: false,
     },
   },
 });

@@ -124,3 +124,85 @@ export function verifyAdminSessionToken(
     return { valid: false, error: "Malformed session payload." };
   }
 }
+
+/**
+ * Cryptographically hashes a password using salted scrypt (N=16384, r=8, p=1, 64-byte key).
+ * Output format: scrypt$<saltHex>$<derivedKeyHex>
+ */
+export function hashPasswordSecurely(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const derivedKey = crypto.scryptSync(password, salt, 64, { N: 16384, r: 8, p: 1 }).toString("hex");
+  return `scrypt$${salt}$${derivedKey}`;
+}
+
+/**
+ * Verifies a plaintext password against a stored scrypt hash (or timing-safe comparison fallback).
+ */
+export function verifyPasswordSecurely(password: string, storedPasswordOrHash: string): boolean {
+  if (!password || !storedPasswordOrHash) return false;
+
+  if (storedPasswordOrHash.startsWith("scrypt$")) {
+    const parts = storedPasswordOrHash.split("$");
+    if (parts.length !== 3) return false;
+    const [, salt, expectedHex] = parts;
+    try {
+      const derived = crypto.scryptSync(password, salt, 64, { N: 16384, r: 8, p: 1 });
+      const expectedBuf = Buffer.from(expectedHex, "hex");
+      if (derived.length !== expectedBuf.length) return false;
+      return crypto.timingSafeEqual(derived, expectedBuf);
+    } catch {
+      return false;
+    }
+  }
+
+  // Constant-time comparison for raw environment secret fallback
+  const aBuf = Buffer.from(password, "utf8");
+  const bBuf = Buffer.from(storedPasswordOrHash, "utf8");
+  if (aBuf.length !== bBuf.length) return false;
+  return crypto.timingSafeEqual(aBuf, bBuf);
+}
+
+/**
+ * Verifies incoming webhook HMAC-SHA256 signatures with replay-attack timestamp protection (5 min window).
+ * Accepts signatures in either raw hex or "sha256=<hex>" format.
+ */
+export function verifyWebhookSignature(params: {
+  rawBody: string;
+  signatureHeader?: string | null;
+  timestampHeader?: string | null;
+  webhookSecret?: string | null;
+}): { valid: boolean; error?: string } {
+  const { rawBody, signatureHeader, timestampHeader, webhookSecret } = params;
+  const secret = (webhookSecret || process.env.WEBHOOK_SECRET || getSessionSecret()).trim();
+
+  if (!signatureHeader || typeof signatureHeader !== "string") {
+    return { valid: false, error: "Missing webhook signature header." };
+  }
+
+  // Optional replay window verification when X-Webhook-Timestamp is provided
+  if (timestampHeader) {
+    const ts = Number(timestampHeader);
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (!Number.isFinite(ts) || Math.abs(nowSec - ts) > 300) {
+      return { valid: false, error: "Webhook timestamp expired or outside 5-minute replay tolerance." };
+    }
+  }
+
+  const cleanSig = signatureHeader.replace(/^sha256=/i, "").trim();
+  const signedPayload = timestampHeader ? `${timestampHeader}.${rawBody}` : rawBody;
+  const expectedHex = crypto.createHmac("sha256", secret).update(signedPayload, "utf8").digest("hex");
+
+  try {
+    const sigBuf = Buffer.from(cleanSig, "hex");
+    const expBuf = Buffer.from(expectedHex, "hex");
+    if (sigBuf.length === 0 || sigBuf.length !== expBuf.length) {
+      return { valid: false, error: "Invalid webhook signature." };
+    }
+    if (!crypto.timingSafeEqual(sigBuf, expBuf)) {
+      return { valid: false, error: "Webhook signature verification failed." };
+    }
+    return { valid: true };
+  } catch {
+    return { valid: false, error: "Malformed webhook signature encoding." };
+  }
+}

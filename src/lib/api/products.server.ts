@@ -4,6 +4,7 @@ import { db, schema, isDatabaseConfigured } from "../db/client.server";
 import { getSupabaseAdmin, getSupabaseClient, isSupabaseConfigured, verifyAdminSession } from "../supabase.server";
 import { eq } from "drizzle-orm";
 import { serverCache } from "../cache.server";
+import { sanitizeText, validateImageUpload, redactSensitiveData } from "../security/sanitize";
 
 function parseAccentMetadata(accent: any): { sizes?: string[]; images?: string[]; rawAccent?: string } {
   if (typeof accent === "string" && accent.trim().startsWith("{")) {
@@ -203,10 +204,48 @@ export const saveProductServerFn = createServerFn({ method: "POST" })
       return { success: false, error: auth.error || "Unauthorized admin action." };
     }
 
-    const prodId = data.product.id || data.product.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    // Validate primary image upload & multi-image gallery uploads against MIME/SVG-XSS/magic-byte rules
+    const primaryImgCheck = validateImageUpload(data.product.image);
+    if (!primaryImgCheck.valid) {
+      return { success: false, error: primaryImgCheck.error || "Invalid primary product image." };
+    }
+
+    const sanitizedGallery: string[] = [];
+    if (Array.isArray(data.product.images)) {
+      for (const rawImg of data.product.images.slice(0, 8)) {
+        const imgCheck = validateImageUpload(rawImg);
+        if (!imgCheck.valid) {
+          return { success: false, error: imgCheck.error || "One of the uploaded gallery images is invalid." };
+        }
+        sanitizedGallery.push(imgCheck.sanitized);
+      }
+    }
+
+    const cleanName = sanitizeText(data.product.name, 160);
+    if (!cleanName) {
+      return { success: false, error: "Product name cannot be empty." };
+    }
+
+    const prodId = data.product.id
+      ? sanitizeText(data.product.id, 120).replace(/[^a-zA-Z0-9_-]/g, "")
+      : cleanName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
     const productRecord = {
       ...data.product,
       id: prodId,
+      name: cleanName,
+      category: sanitizeText(data.product.category, 60) || "Attars",
+      volume: sanitizeText(data.product.volume, 60) || "12ml Pure Attar",
+      tagline: data.product.tagline ? sanitizeText(data.product.tagline, 300) : "",
+      notes: data.product.notes ? sanitizeText(data.product.notes, 300) : "",
+      topNotes: data.product.topNotes ? sanitizeText(data.product.topNotes, 200) : null,
+      heartNotes: data.product.heartNotes ? sanitizeText(data.product.heartNotes, 200) : null,
+      baseNotes: data.product.baseNotes ? sanitizeText(data.product.baseNotes, 200) : null,
+      description: data.product.description ? sanitizeText(data.product.description, 3000) : "",
+      inspiredBy: data.product.inspiredBy ? sanitizeText(data.product.inspiredBy, 160) : null,
+      batchNumber: data.product.batchNumber ? sanitizeText(data.product.batchNumber, 60) : "MSH-2026-B1",
+      image: primaryImgCheck.sanitized,
+      images: sanitizedGallery.length > 0 ? sanitizedGallery : [primaryImgCheck.sanitized],
       updatedAt: new Date(),
     };
 
