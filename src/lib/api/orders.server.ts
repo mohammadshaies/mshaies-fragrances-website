@@ -821,5 +821,138 @@ export const resendOrderNotificationServerFn = createServerFn({ method: "POST" }
     };
   });
 
+export const updateOrderContactDetailsSchema = z.object({
+  orderId: z.string().min(1).max(60),
+  customerName: z.string().min(1).max(100).trim(),
+  phone: z.string().min(8).max(25).trim(),
+  email: z.string().max(150).optional(),
+  address: z.string().min(3).max(300).trim(),
+  city: z.string().min(2).max(120).trim(),
+  postalCode: z.string().max(20).optional(),
+});
+
+export const updateOrderContactDetailsServerFn = createServerFn({ method: "POST" })
+  .validator(updateOrderContactDetailsSchema)
+  .handler(async ({ data }) => {
+    let verifiedEmail = "";
+    if (data.email && data.email.trim()) {
+      const emailCheck = verifyEmailAddress(data.email);
+      if (!emailCheck.valid) {
+        return { success: false, error: emailCheck.error || "Please enter a valid email address." };
+      }
+      verifiedEmail = emailCheck.normalized;
+    }
+
+    const cleanName = sanitizeText(data.customerName, 100);
+    const cleanPhone = sanitizeText(data.phone, 25);
+    const cleanAddress = sanitizeText(data.address, 300);
+    const cleanCity = sanitizeText(data.city, 120);
+    const cleanPostal = data.postalCode ? sanitizeText(data.postalCode, 20) : "";
+
+    if (!cleanName || !cleanPhone || !cleanAddress || !cleanCity) {
+      return { success: false, error: "Name, phone number, street address, and city/state are required." };
+    }
+
+    const existingRes = await processGetOrderById({ orderId: data.orderId });
+    if (!existingRes.success || !existingRes.order) {
+      return { success: false, error: "Order not found." };
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseAdmin() || getSupabaseClient();
+        if (client) {
+          const updatePayload: Record<string, any> = {
+            customer_name: cleanName,
+            phone: cleanPhone,
+            email: verifiedEmail || null,
+            address: cleanAddress,
+            city: cleanCity,
+          };
+          if (cleanPostal !== undefined) {
+            updatePayload.postal_code = cleanPostal || null;
+          }
+
+          const { error: upErr } = await client
+            .from("orders")
+            .update(updatePayload)
+            .eq("id", data.orderId);
+
+          if (upErr) {
+            // Fallback without postal_code if column is absent
+            const { postal_code, ...fallbackPayload } = updatePayload;
+            await client.from("orders").update(fallbackPayload).eq("id", data.orderId);
+          }
+
+          await client.from("audit_logs").insert({
+            id: `log-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            action: "Customer Contact Corrected",
+            category: "Order",
+            details: `Order #${data.orderId} contact details updated (${cleanName}, ${cleanPhone}, ${verifiedEmail || "no-email"}, ${cleanCity}).`,
+            user: cleanName,
+          });
+        }
+      } catch (err) {
+        console.warn("[updateOrderContactDetailsServerFn] Supabase update error:", redactSensitiveData(err));
+      }
+    }
+
+    if (isDatabaseConfigured() && db) {
+      try {
+        await db
+          .update(schema.orders)
+          .set({
+            customerName: cleanName,
+            phone: cleanPhone,
+            email: verifiedEmail || null,
+            address: cleanAddress,
+            city: cleanCity,
+            postalCode: cleanPostal || null,
+          })
+          .where(eq(schema.orders.id, data.orderId));
+      } catch (err) {
+        console.warn("[updateOrderContactDetailsServerFn] DB update error:", redactSensitiveData(err));
+      }
+    }
+
+    // If a valid email is present, dispatch the updated confirmation invoice to the corrected email
+    if (verifiedEmail) {
+      const ord = existingRes.order;
+      dispatchOrderNotificationEmails({
+        id: ord.id,
+        customerName: cleanName,
+        email: verifiedEmail,
+        phone: cleanPhone,
+        address: cleanAddress,
+        city: cleanCity,
+        postalCode: cleanPostal || null,
+        paymentMethod: ord.paymentMethod,
+        paymentStatus: ord.paymentStatus,
+        transactionId: ord.transactionId || null,
+        subtotal: ord.subtotal,
+        discountCode: ord.discountCode || null,
+        discountAmount: ord.discountAmount || 0,
+        shipping: ord.shipping,
+        total: ord.total,
+        courierName: ord.courierName || null,
+        date: ord.date || new Date().toISOString().split("T")[0],
+        items: ord.items || [],
+      }).catch(() => {});
+    }
+
+    return {
+      success: true,
+      updated: {
+        customerName: cleanName,
+        phone: cleanPhone,
+        email: verifiedEmail,
+        address: cleanAddress,
+        city: cleanCity,
+        postalCode: cleanPostal || undefined,
+      },
+    };
+  });
+
 
 

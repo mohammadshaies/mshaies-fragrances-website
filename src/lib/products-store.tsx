@@ -10,6 +10,7 @@ import {
   getOrdersServerFn,
   updateOrderStatusServerFn,
   updatePaymentStatusServerFn,
+  updateOrderContactDetailsServerFn,
 } from "./api/orders.server";
 import {
   validateCouponServerFn,
@@ -491,6 +492,17 @@ type ProductsStoreContextType = {
   placeOrder: (orderData: Omit<Order, "id" | "date">) => Promise<string>;
   updateOrderStatus: (id: string, status: Order["orderStatus"], courier?: string, tracking?: string) => void;
   updatePaymentStatus: (id: string, paymentStatus: Order["paymentStatus"]) => void;
+  updateOrderCustomerDetails: (
+    id: string,
+    updates: {
+      customerName: string;
+      phone: string;
+      email?: string;
+      address: string;
+      city: string;
+      postalCode?: string;
+    }
+  ) => Promise<{ success: boolean; error?: string }>;
   getOrder: (id: string) => Order | undefined;
   // Review System Methods
   reviews: ProductReview[];
@@ -1289,6 +1301,57 @@ export function ProductsStoreProvider({
     return orders.find((o) => o.id === id);
   };
 
+  const updateOrderCustomerDetails = async (
+    id: string,
+    updates: {
+      customerName: string;
+      phone: string;
+      email?: string;
+      address: string;
+      city: string;
+      postalCode?: string;
+    }
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await updateOrderContactDetailsServerFn({
+        data: {
+          orderId: id,
+          ...updates,
+        },
+      });
+      if (!res.success) {
+        return { success: false, error: res.error || "Failed to update contact details." };
+      }
+      setOrders((prev) => {
+        const next = prev.map((o) =>
+          o.id === id
+            ? {
+                ...o,
+                customerName: res.updated?.customerName ?? updates.customerName,
+                phone: res.updated?.phone ?? updates.phone,
+                email: res.updated?.email ?? updates.email,
+                address: res.updated?.address ?? updates.address,
+                city: res.updated?.city ?? updates.city,
+                postalCode: res.updated?.postalCode ?? updates.postalCode,
+              }
+            : o
+        );
+        try {
+          localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+      addAuditLog(
+        "Order Contact Corrected",
+        "Order",
+        `Updated contact/delivery details for Order #${id} (${updates.customerName}, ${updates.phone})`
+      );
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to update contact details." };
+    }
+  };
+
   // --- STORE SETTINGS & DATA BACKUP ---
   const updateSettings = async (updates: Partial<StoreSettings>): Promise<{ success: boolean; error?: string }> => {
     setSettings((prev) => {
@@ -1488,6 +1551,7 @@ export function ProductsStoreProvider({
         placeOrder,
         updateOrderStatus,
         updatePaymentStatus,
+        updateOrderCustomerDetails,
         getOrder,
         addReview,
         voteHelpful,

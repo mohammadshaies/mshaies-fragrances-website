@@ -374,6 +374,12 @@ function CheckoutPage() {
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
                   />
+                  {phone.trim().length > 0 && phone.replace(/\D/g, "").length < 10 && (
+                    <p className="text-[10px] text-amber-600 font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle className="size-3 shrink-0" />
+                      Phone number looks incomplete ({phone.replace(/\D/g, "").length} digits). Please verify your 11-digit mobile number.
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -393,9 +399,41 @@ function CheckoutPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Official order invoice & dispatch tracking slip will be emailed directly to this address.
-                  </p>
+                  {(() => {
+                    const lowerEmail = email.trim().toLowerCase();
+                    const typoMap: Record<string, string> = {
+                      "gmial.com": "gmail.com",
+                      "gamil.com": "gmail.com",
+                      "gmal.com": "gmail.com",
+                      "gmail.con": "gmail.com",
+                      "gmail.co": "gmail.com",
+                      "yahooo.com": "yahoo.com",
+                      "yaho.com": "yahoo.com",
+                      "hotmial.com": "hotmail.com",
+                      "outlok.com": "outlook.com",
+                    };
+                    const parts = lowerEmail.split("@");
+                    if (parts.length === 2 && typoMap[parts[1]]) {
+                      const suggested = `${parts[0]}@${typoMap[parts[1]]}`;
+                      return (
+                        <div className="mt-1.5 p-2 rounded-lg bg-amber-500/15 border border-amber-500/40 flex items-center justify-between gap-2 text-[11px] text-amber-900">
+                          <span>Did you mean <strong>{suggested}</strong>?</span>
+                          <button
+                            type="button"
+                            onClick={() => setEmail(suggested)}
+                            className="px-2 py-0.5 rounded bg-gold text-ink font-bold text-[10px] uppercase tracking-wider cursor-pointer"
+                          >
+                            Click to Fix
+                          </button>
+                        </div>
+                      );
+                    }
+                    return (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Official order invoice & dispatch tracking slip will be emailed directly to this address. (You can also edit/correct this on your invoice after ordering).
+                      </p>
+                    );
+                  })()}
                 </div>
 
                 <div className="sm:col-span-2">
@@ -413,37 +451,54 @@ function CheckoutPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                    State / Province *
-                  </label>
-                  <select
-                    required
-                    value={stateProvince}
-                    autoComplete="address-level1"
-                    onChange={(e) => setStateProvince(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
-                  >
-                    {STATES.map((st) => (
-                      <option key={st} value={st}>{st}</option>
-                    ))}
-                  </select>
-                </div>
+                <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
+                      State / Province *
+                    </label>
+                    <select
+                      required
+                      value={stateProvince}
+                      autoComplete="address-level1"
+                      onChange={(e) => setStateProvince(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
+                    >
+                      {STATES.map((st) => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                    City *
-                  </label>
-                  <select
-                    value={city}
-                    autoComplete="address-level2"
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
-                  >
-                    {CITIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
+                      City *
+                    </label>
+                    <select
+                      value={city}
+                      autoComplete="address-level2"
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
+                    >
+                      {CITIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
+                      Postal Code <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      placeholder="e.g. 54000 (Optional)"
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

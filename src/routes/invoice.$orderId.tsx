@@ -26,7 +26,10 @@ import {
   Smartphone,
   CreditCard,
   Building2,
+  Edit3,
+  X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/invoice/$orderId")({
   component: InvoicePage,
@@ -79,12 +82,22 @@ function numberToWordsPKR(num: number): string {
 
 function InvoicePage() {
   const { orderId } = Route.useParams();
-  const { getOrder } = useProductsStore();
+  const { getOrder, updateOrderCustomerDetails } = useProductsStore();
 
   const localOrder = getOrder(orderId);
   const [serverOrder, setServerOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(!localOrder);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Customer Contact & Delivery Correction State
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editCity, setEditCity] = useState("");
+  const [editPostalCode, setEditPostalCode] = useState("");
+  const [isSavingContact, setIsSavingContact] = useState(false);
 
   useEffect(() => {
     if (!localOrder && orderId) {
@@ -101,6 +114,60 @@ function InvoicePage() {
   }, [localOrder, orderId]);
 
   const order = localOrder || serverOrder;
+
+  const openEditContactModal = () => {
+    if (!order) return;
+    setEditName(order.customerName || "");
+    setEditPhone(order.phone || "");
+    setEditEmail(order.email || "");
+    setEditAddress(order.address || "");
+    setEditCity(order.city || "");
+    setEditPostalCode(order.postalCode || "");
+    setIsEditingContact(true);
+  };
+
+  const handleSaveContactCorrection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!order) return;
+    if (!editName.trim() || !editPhone.trim() || !editAddress.trim() || !editCity.trim()) {
+      toast.error("Please fill in your name, phone number, street address, and city/state.");
+      return;
+    }
+
+    setIsSavingContact(true);
+    try {
+      const res = await updateOrderCustomerDetails(order.id, {
+        customerName: editName.trim(),
+        phone: editPhone.trim(),
+        email: editEmail.trim() || undefined,
+        address: editAddress.trim(),
+        city: editCity.trim(),
+        postalCode: editPostalCode.trim() || undefined,
+      });
+
+      if (res.success) {
+        if (serverOrder) {
+          setServerOrder({
+            ...serverOrder,
+            customerName: editName.trim(),
+            phone: editPhone.trim(),
+            email: editEmail.trim(),
+            address: editAddress.trim(),
+            city: editCity.trim(),
+            postalCode: editPostalCode.trim() || undefined,
+          });
+        }
+        setIsEditingContact(false);
+        toast.success("Your contact & delivery details have been updated!");
+      } else {
+        toast.error(res.error || "Could not update details. Please check your email format.");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update details.");
+    } finally {
+      setIsSavingContact(false);
+    }
+  };
 
   const handlePrint = () => {
     window.print();
@@ -300,22 +367,168 @@ function InvoicePage() {
           </div>
         )}
 
-        {/* Email Notification Status Badge */}
+        {/* Email Notification Status Badge + 1-Click Mistake Correction Option */}
         <div className="print:hidden mb-6 flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl bg-pearl/60 border border-gold/30 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Mail className="size-4 text-gold-deep" />
+            <Mail className="size-4 text-gold-deep shrink-0" />
             <span>
               {order.email ? (
-                <>Official invoice dispatched to <strong className="text-ink">{order.email}</strong></>
+                <>Official invoice dispatched to <strong className="text-ink">{order.email}</strong> · Phone: <strong className="text-ink font-mono">{order.phone}</strong></>
               ) : (
-                <>Atelier ledger updated · Notification routed to <strong className="text-ink">m.shaiesfragrances@gmail.com</strong></>
+                <>Phone: <strong className="text-ink font-mono">{order.phone}</strong> · Add your email to receive a digital invoice copy</>
               )}
             </span>
           </div>
-          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-500/15 px-2.5 py-0.5 rounded-full">
-            ✓ Digital Record Synced
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openEditContactModal}
+              className="px-3 py-1 rounded-full bg-gold/20 border border-gold text-ink hover:bg-gold font-bold text-[11px] inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Edit3 className="size-3 text-gold-deep" />
+              Wrong Email, Phone or Address? Edit Here
+            </button>
+            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-500/15 px-2.5 py-0.5 rounded-full">
+              ✓ Synced
+            </span>
+          </div>
         </div>
+
+        {/* Inline Contact & Delivery Correction Panel (Hidden on Print) */}
+        {isEditingContact && (
+          <form
+            onSubmit={handleSaveContactCorrection}
+            className="print:hidden mb-6 p-5 sm:p-6 rounded-2xl bg-card border-2 border-gold shadow-lg space-y-4"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Edit3 className="size-4 text-gold-deep" />
+                <h3 className="font-serif text-base sm:text-lg font-bold text-ink">
+                  Correct Your Email, Phone Number, or Delivery Address
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditingContact(false)}
+                className="size-7 rounded-full hover:bg-muted grid place-items-center text-muted-foreground cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
+                  Phone Number (WhatsApp Active) *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="0300 1234567"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm font-mono text-ink focus:border-gold focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
+                  Email Address (For Invoice Copy)
+                </label>
+                <input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
+                  City &amp; State / Province *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editCity}
+                  onChange={(e) => setEditCity(e.target.value)}
+                  placeholder="e.g. Lahore, Punjab"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                />
+              </div>
+
+              <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Complete Street Address *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                    placeholder="House/Apartment #, Street, Block, Area"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
+                    Postal Code <span className="font-normal text-muted-foreground">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editPostalCode}
+                    onChange={(e) => setEditPostalCode(e.target.value)}
+                    placeholder="Optional"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsEditingContact(false)}
+                className="px-4 py-2 rounded-full border border-border text-xs font-semibold text-muted-foreground hover:bg-muted cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSavingContact}
+                className="btn-gold btn-gold-hover px-5 py-2 rounded-full text-xs uppercase tracking-wider font-bold flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {isSavingContact ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="size-3.5" />
+                    Save Corrected Details
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* ========================================================================= */}
         {/* OFFICIAL LUXURY INVOICE SHEET (PRINTS ON A4 PORTRAIT)                     */}
@@ -374,10 +587,21 @@ function InvoicePage() {
               
               {/* Box 1: Billed & Delivered To */}
               <div className="p-4 rounded-xl bg-pearl/40 border border-gold/25 space-y-1">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-gold-deep font-bold flex items-center gap-1 mb-2">
-                  <Building2 className="size-3 text-gold-deep" />
-                  Billed & Delivered To
-                </span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-gold-deep font-bold flex items-center gap-1">
+                    <Building2 className="size-3 text-gold-deep" />
+                    Billed & Delivered To
+                  </span>
+                  <button
+                    type="button"
+                    onClick={openEditContactModal}
+                    className="print:hidden text-[10px] font-bold text-gold-deep hover:underline inline-flex items-center gap-1 cursor-pointer"
+                    title="Edit or correct your email, phone number, or delivery address"
+                  >
+                    <Edit3 className="size-2.5" />
+                    Edit
+                  </button>
+                </div>
                 <p className="font-serif text-sm font-bold text-ink">{order.customerName}</p>
                 <p className="text-muted-foreground leading-relaxed">
                   {order.address}
