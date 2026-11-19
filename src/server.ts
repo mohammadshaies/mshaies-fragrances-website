@@ -41,8 +41,8 @@ async function fetchCatalogForSeo(): Promise<any[]> {
 async function handleDynamicSitemap(request: Request): Promise<Response> {
   const reqUrl = new URL(request.url);
   const baseUrl = reqUrl.hostname.includes("localhost") || reqUrl.hostname.includes("127.0.0.1")
-    ? "https://mshaiesfragrances.com"
-    : `${reqUrl.protocol}//${reqUrl.host}`;
+    ? "https://www.mshaiesfragrances.com"
+    : "https://www.mshaiesfragrances.com";
   const today = new Date().toISOString().split("T")[0];
   const products = await fetchCatalogForSeo();
 

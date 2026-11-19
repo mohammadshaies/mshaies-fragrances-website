@@ -6,14 +6,21 @@ import { useProductsStore } from "@/lib/products-store";
 export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
-      { title: "Shop All Fragrances — M.shaies Luxury Perfumes Pakistan" },
+      { title: "Shop Pure Attars & Luxury Perfumes Online — M.shaies Fragrances Pakistan" },
       {
         name: "description",
         content:
-          "Browse all hand-poured pure attar oils, luxury ouds, and concentrated perfumes. Free shipping nationwide in Pakistan on orders over ₨ 5,000.",
+          "Browse all hand-poured 100% alcohol-free pure attar oils, Millionaire Attar, CEO Pure Attar, Lady Million, Cherry Blossom & concentrated EDP perfumes in Pakistan. Nationwide COD & Free Shipping over ₨ 5,000.",
       },
+      {
+        name: "keywords",
+        content:
+          "shop attar online Pakistan, buy perfumes online Pakistan, M.shaies catalog, Millionaire Attar price in Pakistan, CEO Pure Attar, Lady Million Attar, Cherry Blossom Attar, pure attar price in Pakistan",
+      },
+      { property: "og:title", content: "Shop All Fragrances — M.shaies Haute Parfumerie Pakistan" },
+      { property: "og:url", content: "https://www.mshaiesfragrances.com/shop" },
     ],
-    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/shop" }],
+    links: [{ rel: "canonical", href: "https://www.mshaiesfragrances.com/shop" }],
   }),
   component: Shop,
 });

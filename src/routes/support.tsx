@@ -18,14 +18,19 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/support")({
   head: () => ({
     meta: [
-      { title: "Customer Support & FAQs — M.shaies Fragrances" },
+      { title: "Customer Support, Delivery & FAQs — M.shaies Fragrances Pakistan" },
       {
         name: "description",
         content:
-          "Need help with an order, delivery tracking, or fragrance recommendation? Contact our customer concierge team or browse frequently asked questions.",
+          "Frequently asked questions about M.shaies Fragrances delivery in Pakistan (2–4 business days), Cash on Delivery (COD), JazzCash/Easypaisa, 100% pure alcohol-free attars, and 7-day exchanges.",
+      },
+      {
+        name: "keywords",
+        content:
+          "M.shaies delivery time Pakistan, cash on delivery perfumes Pakistan, pure alcohol free attar FAQ, M.shaies return exchange policy, JazzCash Easypaisa perfume order",
       },
     ],
-    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/support" }],
+    links: [{ rel: "canonical", href: "https://www.mshaiesfragrances.com/support" }],
   }),
   component: SupportPage,
 });
@@ -76,8 +81,25 @@ function SupportPage() {
     }, 1200);
   };
 
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.a,
+      },
+    })),
+  };
+
   return (
     <div className="pt-20 sm:pt-28 pb-14 sm:pb-20 bg-background min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         
         {/* Header */}

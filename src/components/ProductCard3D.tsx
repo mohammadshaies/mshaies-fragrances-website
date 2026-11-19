@@ -77,7 +77,8 @@ const MobileProductCard = memo(function MobileProductCard({ product }: { product
           to="/product/$id"
           params={{ id: product.id }}
           className="flex flex-col flex-1 cursor-pointer no-underline text-inherit"
-          aria-label={`View ${product.name}`}
+          aria-label={`View ${product.name} (${product.volume})`}
+          title={`Buy ${product.name} (${product.volume}) online in Pakistan — ${formatPKR(product.price)}`}
         >
           {/* Product Image & Badges */}
           <div className="relative h-44 xs:h-52 sm:h-64 overflow-hidden rounded-t-2xl bg-gradient-to-b from-pearl/80 via-pearl/40 to-muted/60 flex items-center justify-center p-3 xs:p-4">
@@ -111,7 +112,8 @@ const MobileProductCard = memo(function MobileProductCard({ product }: { product
             <div className="w-full h-full flex items-center justify-center pointer-events-none">
               <img
                 src={product.image}
-                alt={product.name}
+                alt={`${product.name} (${product.volume}) — ${product.category} in Pakistan | M.shaies Fragrances`}
+                title={`${product.name} (${product.volume}) — ${formatPKR(product.price)}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full h-full object-contain max-h-[135px] xs:max-h-[165px]"
@@ -254,7 +256,8 @@ function DesktopProductCard({ product }: { product: Product }) {
           to="/product/$id"
           params={{ id: product.id }}
           className="flex flex-col flex-1 cursor-pointer no-underline text-inherit"
-          aria-label={`View ${product.name}`}
+          aria-label={`View ${product.name} (${product.volume})`}
+          title={`Buy ${product.name} (${product.volume}) online in Pakistan — ${formatPKR(product.price)}`}
         >
           {/* TOP HALF: Product Image & Badges */}
           <div
@@ -305,7 +308,8 @@ function DesktopProductCard({ product }: { product: Product }) {
             >
               <img
                 src={product.image}
-                alt={product.name}
+                alt={`${product.name} (${product.volume}) — ${product.category} in Pakistan | M.shaies Fragrances`}
+                title={`${product.name} (${product.volume}) — ${formatPKR(product.price)}`}
                 loading="lazy"
                 decoding="async"
                 className="w-full h-full object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.18)] max-h-[135px] xs:max-h-[165px] sm:max-h-none"

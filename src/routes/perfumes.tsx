@@ -6,14 +6,21 @@ import { useProductsStore } from "@/lib/products-store";
 export const Route = createFileRoute("/perfumes")({
   head: () => ({
     meta: [
-      { title: "Luxury Perfumes (EDP) — M.shaies Fragrances" },
+      { title: "Long-Lasting Luxury Perfumes (35% Extrait EDP) in Pakistan — M.shaies" },
       {
         name: "description",
         content:
-          "Experience long-lasting Extrait De Parfum sprays crafted for Pakistan's climate. Desert Gold and Velvet Saffron with exceptional projection.",
+          "Experience long-lasting 35% oil concentration Extrait De Parfum sprays crafted for Pakistan's climate. High-projection luxury perfumes for men and women with nationwide COD delivery.",
       },
+      {
+        name: "keywords",
+        content:
+          "long lasting perfumes in Pakistan, best perfumes in Pakistan, 35% extrait de parfum Pakistan, luxury EDP sprays Karachi Lahore Islamabad, mens perfumes Pakistan, womens perfumes Pakistan",
+      },
+      { property: "og:title", content: "Luxury Perfumes (35% Extrait EDP) — M.shaies Fragrances" },
+      { property: "og:url", content: "https://www.mshaiesfragrances.com/perfumes" },
     ],
-    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/perfumes" }],
+    links: [{ rel: "canonical", href: "https://www.mshaiesfragrances.com/perfumes" }],
   }),
   component: PerfumesPage,
 });

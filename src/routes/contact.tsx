@@ -7,10 +7,11 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact Us — M.shaies Fragrances" },
-      { name: "description", content: "Get in touch with M.shaies Maison. Send us an inquiry or reach our concierge helpline." }
+      { title: "Contact M.shaies Fragrances — WhatsApp Concierge & Support Pakistan" },
+      { name: "description", content: "Contact M.shaies Fragrances in Pakistan via WhatsApp (+92 339 0001829) or email (info@mshaies.com) for fragrance recommendations, bulk orders, and nationwide delivery assistance." },
+      { name: "keywords", content: "contact M.shaies Fragrances, M.shaies WhatsApp number, perfume store customer service Pakistan, fragrance consultation Pakistan" },
     ],
-    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/contact" }],
+    links: [{ rel: "canonical", href: "https://www.mshaiesfragrances.com/contact" }],
   }),
   component: Contact,
 });

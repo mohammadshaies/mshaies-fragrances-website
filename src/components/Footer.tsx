@@ -32,7 +32,10 @@ export function Footer() {
           <div className="sm:col-span-2 md:col-span-1 space-y-3 flex flex-col items-center sm:items-start">
             <img 
               src="/logo-wordmark.png" 
-              alt="M.shaies Fragrances" 
+              alt="M.shaies Fragrances — Pure Attars & Luxury Perfumes in Pakistan" 
+              title="M.shaies Haute Parfumerie Pakistan"
+              loading="lazy"
+              decoding="async"
               className="h-10 w-auto object-contain mx-auto sm:mx-0" 
             />
             <p className="text-xs text-muted-foreground leading-relaxed pt-1 max-w-sm mx-auto sm:mx-0">
@@ -47,22 +50,22 @@ export function Footer() {
             </p>
             <ul className="space-y-2 text-xs">
               <li>
-                <Link to="/shop" className="text-muted-foreground hover:text-gold-deep transition-colors">
+                <Link to="/shop" title="Shop All Pure Attars & Luxury Perfumes in Pakistan" className="text-muted-foreground hover:text-gold-deep transition-colors">
                   All Products
                 </Link>
               </li>
               <li>
-                <Link to="/attars" className="text-muted-foreground hover:text-gold-deep transition-colors">
+                <Link to="/attars" title="100% Pure Alcohol-Free Attar Oils in Pakistan" className="text-muted-foreground hover:text-gold-deep transition-colors">
                   Pure Attar Oils
                 </Link>
               </li>
               <li>
-                <Link to="/perfumes" className="text-muted-foreground hover:text-gold-deep transition-colors">
+                <Link to="/perfumes" title="Long-Lasting 35% Extrait De Parfum Sprays in Pakistan" className="text-muted-foreground hover:text-gold-deep transition-colors">
                   Luxury Perfumes (EDP)
                 </Link>
               </li>
               <li>
-                <Link to="/watches" className="text-muted-foreground hover:text-gold-deep transition-colors">
+                <Link to="/watches" title="Luxury Watches & Horology Timepieces in Pakistan" className="text-muted-foreground hover:text-gold-deep transition-colors">
                   Maison Watches
                 </Link>
               </li>
@@ -76,17 +79,22 @@ export function Footer() {
             </p>
             <ul className="space-y-2 text-xs">
               <li>
-                <Link to="/about" className="text-muted-foreground hover:text-gold-deep transition-colors">
+                <Link to="/about" title="About M.shaies Fragrances & Artisanal Heritage" className="text-muted-foreground hover:text-gold-deep transition-colors">
                   About Us & Story
                 </Link>
               </li>
               <li>
-                <Link to="/journey" className="text-muted-foreground hover:text-gold-deep transition-colors">
+                <Link to="/journey" title="Explore the Fragrance Notes Pyramid & Scent Journey" className="text-muted-foreground hover:text-gold-deep transition-colors">
                   The Scent Journey
                 </Link>
               </li>
               <li>
-                <Link to="/careers" className="text-gold-deep hover:underline font-semibold transition-colors inline-flex items-center gap-1 justify-center sm:justify-start">
+                <Link to="/contact" title="Contact M.shaies Fragrances Customer Concierge" className="text-muted-foreground hover:text-gold-deep transition-colors">
+                  Contact the Maison
+                </Link>
+              </li>
+              <li>
+                <Link to="/careers" title="Careers & Job Openings at M.shaies Fragrances" className="text-gold-deep hover:underline font-semibold transition-colors inline-flex items-center gap-1 justify-center sm:justify-start">
                   Careers (We're Hiring) ✨
                 </Link>
               </li>
@@ -100,12 +108,12 @@ export function Footer() {
             </p>
             <ul className="space-y-2 text-xs">
               <li>
-                <Link to="/support" className="text-muted-foreground hover:text-gold-deep transition-colors">
+                <Link to="/support" title="Delivery, Cash on Delivery & Exchange FAQs" className="text-muted-foreground hover:text-gold-deep transition-colors">
                   Help & FAQs
                 </Link>
               </li>
               <li>
-                <Link to="/checkout" className="text-muted-foreground hover:text-gold-deep transition-colors">
+                <Link to="/checkout" title="Secure Cash on Delivery & Online Checkout" className="text-muted-foreground hover:text-gold-deep transition-colors">
                   Secure Checkout
                 </Link>
               </li>

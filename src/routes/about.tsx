@@ -6,13 +6,17 @@ import { Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "Our Story & Heritage — M.shaies Haute Parfumerie Pakistan" },
+      { title: "Our Story & Artisanal Heritage — M.shaies Haute Parfumerie Pakistan" },
       { 
         name: "description", 
-        content: "Discover the human journey behind M.shaies Fragrances. Handcrafted pure attars, high-projection extrait perfumes, and horology created for Pakistan with soul, passion, and uncompromising artistry." 
-      }
+        content: "Discover the artisanal heritage behind M.shaies Fragrances. Hand-poured 100% alcohol-free pure attars, high-projection extrait perfumes, and luxury timepieces crafted in Pakistan." 
+      },
+      {
+        name: "keywords",
+        content: "about M.shaies Fragrances, Pakistani perfume brand, artisanal perfumery Pakistan, handmade attar oils Pakistan, M.shaies story",
+      },
     ],
-    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/about" }],
+    links: [{ rel: "canonical", href: "https://www.mshaiesfragrances.com/about" }],
   }),
   component: About,
 });

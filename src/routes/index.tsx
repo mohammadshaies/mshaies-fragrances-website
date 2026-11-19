@@ -7,20 +7,26 @@ import { useProductsStore } from "@/lib/products-store";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "M.shaies Fragrances — Luxury Perfumes for Pakistan" },
+      { title: "M.shaies Fragrances — Pure Attars & Luxury Perfumes in Pakistan" },
       {
         name: "description",
         content:
-          "Discover signature luxury fragrances crafted for Pakistan. Oud Al-Jamil, Midnight Rose & Desert Gold. Free nationwide shipping over ₨ 5,000.",
+          "Shop M.shaies Fragrances in Pakistan. 100% alcohol-free pure attars (Millionaire Attar, CEO Pure Attar, Lady Million, Cherry Blossom) & 35% Extrait Perfumes. Cash on Delivery & Free Shipping over ₨ 5,000.",
       },
-      { property: "og:title", content: "M.shaies Fragrances — The Essence of Luxury" },
+      {
+        name: "keywords",
+        content:
+          "M.shaies Fragrances, best attar in Pakistan, pure attar oils Pakistan, Millionaire Attar, CEO Pure Attar, Lady Million Attar, Cherry Blossom Pure Attar, long lasting perfumes Pakistan, non-alcoholic attar online",
+      },
+      { property: "og:title", content: "M.shaies Fragrances — Pure Attars & Luxury Perfumes in Pakistan" },
       {
         property: "og:description",
-        content: "Signature scents that define your presence. In Stock & Ready to Dispatch.",
+        content: "100% Alcohol-Free Pure Attars & 35% Extrait Perfumes crafted for Pakistan. Starting from ₨ 1,499 with nationwide COD delivery.",
       },
+      { property: "og:url", content: "https://www.mshaiesfragrances.com/" },
     ],
     links: [
-      { rel: "canonical", href: "https://mshaiesfragrances.com/" },
+      { rel: "canonical", href: "https://www.mshaiesfragrances.com/" },
       { rel: "preload", href: "/bottle-poster.webp", as: "image", type: "image/webp" },
     ],
   }),

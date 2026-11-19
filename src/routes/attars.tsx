@@ -6,14 +6,21 @@ import { useProductsStore } from "@/lib/products-store";
 export const Route = createFileRoute("/attars")({
   head: () => ({
     meta: [
-      { title: "Pure Attar Oils — M.shaies Fragrances" },
+      { title: "100% Pure Alcohol-Free Attar Oils in Pakistan — M.shaies Fragrances" },
       {
         name: "description",
         content:
-          "Discover pure concentrated attar oils hand-poured in Pakistan. Aged Cambodian Oud, Midnight Rose, and Royal Ambergris in luxury flacons delivered nationwide.",
+          "Buy 100% alcohol-free pure concentrated attar oils in Pakistan. Shop Millionaire Attar (1 Million inspired), CEO Pure Attar, Lady Million & Cherry Blossom Pure Attar with 16+ hours longevity.",
       },
+      {
+        name: "keywords",
+        content:
+          "pure attar oils Pakistan, alcohol free attar Pakistan, best attar for men in Pakistan, best attar for women Pakistan, Millionaire Attar, CEO Pure Attar, Lady Million Attar, Cherry Blossom Attar, Jummah attar oil",
+      },
+      { property: "og:title", content: "Pure Attar Oils Collection — M.shaies Fragrances Pakistan" },
+      { property: "og:url", content: "https://www.mshaiesfragrances.com/attars" },
     ],
-    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/attars" }],
+    links: [{ rel: "canonical", href: "https://www.mshaiesfragrances.com/attars" }],
   }),
   component: AttarsPage,
 });

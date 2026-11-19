@@ -143,11 +143,39 @@ export function FeaturedFragrances({
     return showAll ? sorted : sorted.filter((p) => p.isFeatured !== false);
   }, [filteredProducts, sortBy, showAll]);
 
+  const itemListSchema = useMemo(() => {
+    if (!displayProducts || displayProducts.length === 0) return null;
+    return {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: title,
+      description: subtitle,
+      numberOfItems: displayProducts.length,
+      itemListElement: displayProducts.slice(0, 24).map((p, idx) => ({
+        "@type": "ListItem",
+        position: idx + 1,
+        url: `https://www.mshaiesfragrances.com/product/${p.id}`,
+        name: p.name,
+        image: p.image?.startsWith("data:")
+          ? `https://www.mshaiesfragrances.com/api/product-image/${encodeURIComponent(p.id)}`
+          : p.image?.startsWith("http")
+          ? p.image
+          : `https://www.mshaiesfragrances.com${p.image || "/product-box.jpg"}`,
+      })),
+    };
+  }, [displayProducts, title, subtitle]);
+
   return (
     <section 
       id="shop" 
       className="py-6 sm:py-16 bg-background relative overflow-hidden"
     >
+      {itemListSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+        />
+      )}
       <div className="mx-auto max-w-7xl px-3.5 sm:px-8">
         
         {/* =================================================================== */}

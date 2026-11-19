@@ -47,7 +47,7 @@ export const Route = createFileRoute("/product/$id")({
   },
   head: ({ loaderData, params }) => {
     const p = loaderData?.initialProduct as any;
-    const canonicalUrl = `https://mshaiesfragrances.com/product/${params.id}`;
+    const canonicalUrl = `https://www.mshaiesfragrances.com/product/${params.id}`;
     if (!p) {
       return {
         meta: [
@@ -56,28 +56,29 @@ export const Route = createFileRoute("/product/$id")({
         links: [{ rel: "canonical", href: canonicalUrl }],
       };
     }
-    const seoImageUrl = `https://mshaiesfragrances.com/api/product-image/${encodeURIComponent(p.id)}`;
+    const seoImageUrl = `https://www.mshaiesfragrances.com/api/product-image/${encodeURIComponent(p.id)}`;
     const desc = (
       p.description ||
-      `${p.name} (${p.volume}) — ${p.tagline || p.notes}. Handcrafted luxury ${p.category} in Pakistan by M.shaies Fragrances. Price: ₨ ${Number(p.price).toLocaleString()}.`
+      `Buy ${p.name} (${p.volume}) online in Pakistan for ₨ ${Number(p.price).toLocaleString()}. ${p.tagline || p.notes}. 100% pure long-lasting ${p.category} by M.shaies Fragrances with nationwide COD delivery.`
     ).slice(0, 165);
     return {
       meta: [
-        { title: `${p.name} (${p.volume}) — Buy Online in Pakistan | M.shaies Fragrances` },
+        { title: `${p.name} (${p.volume}) — Price ₨ ${Number(p.price).toLocaleString()} in Pakistan | M.shaies Fragrances` },
         { name: "description", content: desc },
         {
           name: "keywords",
-          content: `${p.name}, ${p.category} Pakistan, ${p.notes || ""}, ${
-            p.inspiredBy ? p.inspiredBy + " inspired perfume pakistan, " : ""
-          }M.shaies Fragrances, buy ${String(p.category || "attar").toLowerCase()} online pakistan`,
+          content: `${p.name}, ${p.name} price in Pakistan, ${p.category} Pakistan, ${p.notes || ""}, ${
+            p.inspiredBy ? p.inspiredBy + " inspired attar perfume pakistan, " : ""
+          }M.shaies Fragrances, buy ${String(p.category || "attar").toLowerCase()} online pakistan, pure alcohol free attar`,
         },
-        { property: "og:title", content: `${p.name} — M.shaies Haute Parfumerie` },
+        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1" },
+        { property: "og:title", content: `${p.name} (${p.volume}) — ₨ ${Number(p.price).toLocaleString()} | M.shaies Fragrances` },
         { property: "og:description", content: desc },
         { property: "og:type", content: "product" },
         { property: "og:url", content: canonicalUrl },
         { property: "og:image", content: seoImageUrl },
         { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: `${p.name} — ₨ ${Number(p.price).toLocaleString()}` },
+        { name: "twitter:title", content: `${p.name} — ₨ ${Number(p.price).toLocaleString()} | M.shaies Pakistan` },
         { name: "twitter:description", content: desc },
         { name: "twitter:image", content: seoImageUrl },
       ],
@@ -348,12 +349,12 @@ function ProductDetail() {
         image: (product.images && product.images.length > 0 ? product.images : [product.image]).map(
           (img: string, idx: number) =>
             img.startsWith("data:")
-              ? `https://mshaiesfragrances.com/api/product-image/${encodeURIComponent(product.id)}${idx > 0 ? `?index=${idx}` : ""}`
+              ? `https://www.mshaiesfragrances.com/api/product-image/${encodeURIComponent(product.id)}${idx > 0 ? `?index=${idx}` : ""}`
               : img.startsWith("http")
               ? img
-              : `https://mshaiesfragrances.com${img}`
+              : `https://www.mshaiesfragrances.com${img}`
         ),
-        description: product.description || `${product.name} - ${product.tagline || product.notes}. Handcrafted luxury ${product.category} by M.shaies Haute Parfumerie.`,
+        description: product.description || `${product.name} (${product.volume}) - ${product.tagline || product.notes}. Handcrafted luxury ${product.category} in Pakistan by M.shaies Haute Parfumerie.`,
         sku: product.id,
         mpn: product.id,
         brand: {
@@ -363,7 +364,7 @@ function ProductDetail() {
         category: product.category,
         offers: {
           "@type": "Offer",
-          url: `https://mshaiesfragrances.com/product/${product.id}`,
+          url: `https://www.mshaiesfragrances.com/product/${product.id}`,
           priceCurrency: "PKR",
           price: calculatedPrice,
           priceValidUntil: "2027-12-31",
@@ -372,6 +373,41 @@ function ProductDetail() {
           seller: {
             "@type": "Organization",
             name: "M.shaies Haute Parfumerie"
+          },
+          shippingDetails: {
+            "@type": "OfferShippingDetails",
+            shippingRate: {
+              "@type": "MonetaryAmount",
+              value: calculatedPrice >= 5000 ? 0 : 250,
+              currency: "PKR"
+            },
+            shippingDestination: {
+              "@type": "DefinedRegion",
+              addressCountry: "PK"
+            },
+            deliveryTime: {
+              "@type": "ShippingDeliveryTime",
+              handlingTime: {
+                "@type": "QuantitativeValue",
+                minValue: 0,
+                maxValue: 1,
+                unitCode: "DAY"
+              },
+              transitTime: {
+                "@type": "QuantitativeValue",
+                minValue: 2,
+                maxValue: 4,
+                unitCode: "DAY"
+              }
+            }
+          },
+          hasMerchantReturnPolicy: {
+            "@type": "MerchantReturnPolicy",
+            applicableCountry: "PK",
+            returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+            merchantReturnDays: 7,
+            returnMethod: "https://schema.org/ReturnByMail",
+            returnFees: "https://schema.org/FreeReturn"
           }
         },
         ...(ratingInfo?.count > 0 ? {
@@ -391,19 +427,19 @@ function ProductDetail() {
             "@type": "ListItem",
             position: 1,
             name: "Home",
-            item: "https://mshaiesfragrances.com/"
+            item: "https://www.mshaiesfragrances.com/"
           },
           {
             "@type": "ListItem",
             position: 2,
             name: product.category || "Shop",
-            item: "https://mshaiesfragrances.com/shop"
+            item: "https://www.mshaiesfragrances.com/shop"
           },
           {
             "@type": "ListItem",
             position: 3,
             name: product.name,
-            item: `https://mshaiesfragrances.com/product/${product.id}`
+            item: `https://www.mshaiesfragrances.com/product/${product.id}`
           }
         ]
       }
@@ -487,7 +523,8 @@ function ProductDetail() {
                 <motion.img
                   key={currentImage}
                   src={currentImage}
-                  alt={`${product.name} - View ${activeImageIndex + 1}`}
+                  alt={`${product.name} (${product.volume}) — ${product.notes || product.category} by M.shaies Fragrances Pakistan (Photo ${activeImageIndex + 1})`}
+                  title={`${product.name} (${product.volume}) — M.shaies Fragrances`}
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
@@ -505,6 +542,7 @@ function ProductDetail() {
                     key={idx}
                     type="button"
                     onClick={() => setActiveImageIndex(idx)}
+                    title={`View ${product.name} photo ${idx + 1}`}
                     className={`size-16 sm:size-20 rounded-2xl overflow-hidden border-2 p-1 bg-pearl/60 shrink-0 transition-all cursor-pointer ${
                       activeImageIndex === idx
                         ? "border-gold shadow-md ring-1 ring-gold"
@@ -513,7 +551,10 @@ function ProductDetail() {
                   >
                     <img
                       src={img}
-                      alt={`${product.name} thumbnail ${idx + 1}`}
+                      alt={`${product.name} (${product.volume}) gallery view ${idx + 1} — M.shaies Fragrances`}
+                      title={`${product.name} thumbnail ${idx + 1}`}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-contain"
                     />
                   </button>

@@ -7,14 +7,19 @@ import { useProductsStore } from "@/lib/products-store";
 export const Route = createFileRoute("/careers")({
   head: () => ({
     meta: [
-      { title: "Careers at the Maison — M.shaies Fragrances" },
+      { title: "Careers at the Maison — M.shaies Fragrances Pakistan" },
       {
         name: "description",
         content:
-          "Join the artisanal team at M.shaies Fragrances. Explore career opportunities in perfumery, retail concierge, and luxury commerce across Pakistan.",
+          "Join the artisanal team at M.shaies Fragrances in Pakistan. Explore career opportunities in perfumery, retail concierge, and luxury commerce across Pakistan.",
+      },
+      {
+        name: "keywords",
+        content:
+          "M.shaies careers, perfume jobs Pakistan, luxury retail jobs Pakistan, perfumery jobs Lahore Karachi Islamabad",
       },
     ],
-    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/careers" }],
+    links: [{ rel: "canonical", href: "https://www.mshaiesfragrances.com/careers" }],
   }),
   component: CareersPage,
 });
