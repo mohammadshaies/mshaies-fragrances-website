@@ -43,16 +43,27 @@ const CITIES = [
   "Hyderabad", "Bahawalpur", "Sargodha", "Abbottabad", "Other"
 ];
 
+const STATES = [
+  "Punjab",
+  "Sindh",
+  "Khyber Pakhtunkhwa (KPK)",
+  "Islamabad Capital Territory (ICT)",
+  "Balochistan",
+  "Azad Jammu & Kashmir (AJK)",
+  "Gilgit-Baltistan",
+];
+
 function CheckoutPage() {
   const navigate = useNavigate();
   const { items, total: subtotal, clear, add, remove, setQty } = useCart();
   const { placeOrder, products, validateCoupon, settings } = useProductsStore();
 
-  // Customer Form State
+  // Customer Form State (Name, Address, State, Email, Phone Number)
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
+  const [stateProvince, setStateProvince] = useState("Punjab");
   const [city, setCity] = useState("Lahore");
   const [postalCode, setPostalCode] = useState("");
   const [notes, setNotes] = useState("");
@@ -60,13 +71,9 @@ function CheckoutPage() {
   // Shipping Method State ("standard" | "express" | "lahoreLocal")
   const [shippingMethod, setShippingMethod] = useState<"standard" | "express" | "lahoreLocal">("standard");
 
-  // Payment Method State
+  // Payment Method State ("cod" | "easypaisa" | "jazzcash" | "nayapay")
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "jazzcash" | "easypaisa" | "nayapay" | "card">("cod");
   const [transactionId, setTransactionId] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvc, setCardCvc] = useState("");
-  const [cardName, setCardName] = useState("");
 
   // Coupon State
   const [couponInput, setCouponInput] = useState("");
@@ -181,13 +188,13 @@ function CheckoutPage() {
       return;
     }
 
-    if (!name.trim() || !phone.trim() || !address.trim()) {
-      toast.error("Please fill in your name, contact phone, and delivery address.");
+    if (!name.trim() || !phone.trim() || !email.trim() || !address.trim() || !stateProvince.trim()) {
+      toast.error("Please fill in your full name, phone number, email address, street address, and state/province.");
       return;
     }
 
     if ((paymentMethod === "jazzcash" || paymentMethod === "easypaisa" || paymentMethod === "nayapay") && !transactionId.trim()) {
-      toast.error("Please enter the Transaction ID (TID) from your payment app.");
+      toast.error("Please enter the Transaction ID (TID) from your payment app (or click 'Sending proof via WhatsApp?').");
       return;
     }
 
@@ -206,12 +213,16 @@ function CheckoutPage() {
         };
       });
 
+      const combinedCityState = stateProvince && !city.toLowerCase().includes(stateProvince.toLowerCase())
+        ? `${city}, ${stateProvince}`
+        : city;
+
       const orderId = await placeOrder({
-        customerName: name,
-        email,
-        phone,
-        address,
-        city,
+        customerName: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        city: combinedCityState,
         postalCode,
         paymentMethod,
         paymentStatus: paymentMethod === "cod" ? "Pending COD" : "Verification Required",
@@ -351,7 +362,7 @@ function CheckoutPage() {
 
                 <div>
                   <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                    Phone (WhatsApp Active) *
+                    Phone Number (WhatsApp Active) *
                   </label>
                   <input
                     type="tel"
@@ -368,15 +379,16 @@ function CheckoutPage() {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-[11px] uppercase tracking-wider text-ink font-medium">
-                      Email Address
+                      Email Address *
                     </label>
                     <span className="text-[10px] text-gold-deep font-semibold">✨ Digital Invoice Delivery</span>
                   </div>
                   <input
                     type="email"
+                    required
                     inputMode="email"
                     autoComplete="email"
-                    placeholder="e.g. name@example.com (For Invoice Copy)"
+                    placeholder="e.g. name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
@@ -403,6 +415,23 @@ function CheckoutPage() {
 
                 <div>
                   <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
+                    State / Province *
+                  </label>
+                  <select
+                    required
+                    value={stateProvince}
+                    autoComplete="address-level1"
+                    onChange={(e) => setStateProvince(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
+                  >
+                    {STATES.map((st) => (
+                      <option key={st} value={st}>{st}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
                     City *
                   </label>
                   <select
@@ -415,21 +444,6 @@ function CheckoutPage() {
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                    Postal Code (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="postal-code"
-                    placeholder="e.g. 54000"
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
-                  />
                 </div>
               </div>
             </div>
@@ -527,19 +541,20 @@ function CheckoutPage() {
               </div>
             </div>
 
-            {/* Section 3: Pakistani Payment Gateways */}
+            {/* Section 3: Pakistani Payment Gateways (Cash on Delivery or Online Payment) */}
             <div className="p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl bg-card border border-border/80 shadow-sm space-y-5">
               <div className="flex items-center gap-2.5 pb-3 border-b border-border">
                 <CreditCard className="size-5 text-gold-deep" />
                 <h2 className="font-serif text-xl text-ink font-semibold">3. Select Payment Method</h2>
               </div>
 
+              {/* Primary Mode Choice: Cash on Delivery vs Online Payment */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Cash on Delivery */}
+                {/* Option A: Cash on Delivery */}
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("cod")}
-                  className={`p-4 rounded-2xl border text-left transition-all flex items-start justify-between ${
+                  className={`p-4 rounded-2xl border text-left transition-all flex items-start justify-between cursor-pointer ${
                     paymentMethod === "cod"
                       ? "border-gold bg-pearl text-ink font-bold shadow-sm ring-1 ring-gold"
                       : "border-border bg-card text-muted-foreground hover:text-ink hover:border-gold/50"
@@ -548,7 +563,7 @@ function CheckoutPage() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <Banknote className="size-4 text-emerald-600 shrink-0" />
-                      <span className="text-sm font-semibold">Cash on Delivery (COD)</span>
+                      <span className="text-sm font-semibold text-ink">Cash on Delivery (COD)</span>
                       {(settings?.codFee ?? 0) > 0 ? (
                         <span className="text-[10px] font-bold text-amber-700 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded">
                           +₨ {settings?.codFee} Fee
@@ -560,102 +575,99 @@ function CheckoutPage() {
                       )}
                     </div>
                     <p className="text-[11px] font-normal text-muted-foreground">
-                      {(settings?.codFee ?? 0) > 0 
-                        ? `Pay cash at doorstep anywhere in Pakistan (+₨ ${settings?.codFee} COD fee)`
-                        : "Pay cash at doorstep anywhere in Pakistan"}
+                      Pay cash at your doorstep anywhere in Pakistan
                     </p>
                   </div>
                   {paymentMethod === "cod" && <CheckCircle2 className="size-4 text-gold-deep shrink-0" />}
                 </button>
 
-                {/* JazzCash */}
+                {/* Option B: Online Payment (Easypaisa / JazzCash / NayaPay) */}
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod("jazzcash")}
-                  className={`p-4 rounded-2xl border text-left transition-all flex items-start justify-between ${
-                    paymentMethod === "jazzcash"
+                  onClick={() => {
+                    if (paymentMethod === "cod" || paymentMethod === "card") {
+                      setPaymentMethod("easypaisa");
+                    }
+                  }}
+                  className={`p-4 rounded-2xl border text-left transition-all flex items-start justify-between cursor-pointer ${
+                    paymentMethod === "easypaisa" || paymentMethod === "jazzcash" || paymentMethod === "nayapay"
                       ? "border-gold bg-pearl text-ink font-bold shadow-sm ring-1 ring-gold"
                       : "border-border bg-card text-muted-foreground hover:text-ink hover:border-gold/50"
                   }`}
                 >
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="size-4 text-[#d81e05]" />
-                      <span className="text-sm">JazzCash</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Smartphone className="size-4 text-gold-deep shrink-0" />
+                      <span className="text-sm font-semibold text-ink">Online Payment</span>
+                      <span className="text-[10px] font-bold text-gold-deep bg-gold/15 border border-gold/40 px-1.5 py-0.5 rounded">
+                        Instant Transfer
+                      </span>
                     </div>
                     <p className="text-[11px] font-normal text-muted-foreground">
-                      Direct transfer to 0332 5568922
+                      Easypaisa · JazzCash · NayaPay (+92 3325568922)
                     </p>
                   </div>
-                  {paymentMethod === "jazzcash" && <CheckCircle2 className="size-4 text-gold-deep shrink-0" />}
-                </button>
-
-                {/* Easypaisa */}
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("easypaisa")}
-                  className={`p-4 rounded-2xl border text-left transition-all flex items-start justify-between ${
-                    paymentMethod === "easypaisa"
-                      ? "border-gold bg-pearl text-ink font-bold shadow-sm ring-1 ring-gold"
-                      : "border-border bg-card text-muted-foreground hover:text-ink hover:border-gold/50"
-                  }`}
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="size-4 text-[#00a859]" />
-                      <span className="text-sm">Easypaisa</span>
-                    </div>
-                    <p className="text-[11px] font-normal text-muted-foreground">
-                      Direct transfer to 0332 5568922
-                    </p>
-                  </div>
-                  {paymentMethod === "easypaisa" && <CheckCircle2 className="size-4 text-gold-deep shrink-0" />}
-                </button>
-
-                {/* NayaPay */}
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("nayapay")}
-                  className={`p-4 rounded-2xl border text-left transition-all flex items-start justify-between ${
-                    paymentMethod === "nayapay"
-                      ? "border-gold bg-pearl text-ink font-bold shadow-sm ring-1 ring-gold"
-                      : "border-border bg-card text-muted-foreground hover:text-ink hover:border-gold/50"
-                  }`}
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="size-4 text-[#ff5f00]" />
-                      <span className="text-sm">NayaPay</span>
-                    </div>
-                    <p className="text-[11px] font-normal text-muted-foreground">
-                      Direct transfer to 0332 5568922
-                    </p>
-                  </div>
-                  {paymentMethod === "nayapay" && <CheckCircle2 className="size-4 text-gold-deep shrink-0" />}
-                </button>
-
-                {/* Debit / Credit Card */}
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("card")}
-                  className={`p-4 rounded-2xl border text-left transition-all flex items-start justify-between sm:col-span-2 ${
-                    paymentMethod === "card"
-                      ? "border-gold bg-pearl text-ink font-bold shadow-sm ring-1 ring-gold"
-                      : "border-border bg-card text-muted-foreground hover:text-ink hover:border-gold/50"
-                  }`}
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="size-4 text-ink" />
-                      <span className="text-sm">Visa / Mastercard (Credit or Debit)</span>
-                    </div>
-                    <p className="text-[11px] font-normal text-muted-foreground">
-                      Secure Pakistani & International cards accepted
-                    </p>
-                  </div>
-                  {paymentMethod === "card" && <CheckCircle2 className="size-4 text-gold-deep shrink-0" />}
+                  {(paymentMethod === "easypaisa" || paymentMethod === "jazzcash" || paymentMethod === "nayapay") && (
+                    <CheckCircle2 className="size-4 text-gold-deep shrink-0" />
+                  )}
                 </button>
               </div>
+
+              {/* Online Wallet Sub-Selector (Easypaisa, JazzCash, NayaPay) */}
+              {(paymentMethod === "easypaisa" || paymentMethod === "jazzcash" || paymentMethod === "nayapay") && (
+                <div className="grid grid-cols-3 gap-2.5 pt-1">
+                  {/* Easypaisa */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("easypaisa")}
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                      paymentMethod === "easypaisa"
+                        ? "border-[#00a859] bg-emerald-500/10 text-ink font-bold ring-1 ring-[#00a859]"
+                        : "border-border bg-background text-muted-foreground hover:text-ink hover:border-gold/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-1.5">
+                      <Smartphone className="size-3.5 text-[#00a859]" />
+                      <span className="text-xs sm:text-sm font-semibold">Easypaisa</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">+92 3325568922</p>
+                  </button>
+
+                  {/* JazzCash */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("jazzcash")}
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                      paymentMethod === "jazzcash"
+                        ? "border-[#d81e05] bg-red-500/10 text-ink font-bold ring-1 ring-[#d81e05]"
+                        : "border-border bg-background text-muted-foreground hover:text-ink hover:border-gold/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-1.5">
+                      <Smartphone className="size-3.5 text-[#d81e05]" />
+                      <span className="text-xs sm:text-sm font-semibold">JazzCash</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">+92 3325568922</p>
+                  </button>
+
+                  {/* NayaPay */}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("nayapay")}
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                      paymentMethod === "nayapay"
+                        ? "border-[#ff5f00] bg-orange-500/10 text-ink font-bold ring-1 ring-[#ff5f00]"
+                        : "border-border bg-background text-muted-foreground hover:text-ink hover:border-gold/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-1.5">
+                      <Smartphone className="size-3.5 text-[#ff5f00]" />
+                      <span className="text-xs sm:text-sm font-semibold">NayaPay</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">+92 3325568922</p>
+                  </button>
+                </div>
+              )}
 
               {/* Cash on Delivery Information Card */}
               {paymentMethod === "cod" && (
@@ -733,9 +745,9 @@ function CheckoutPage() {
                   },
                 }[paymentMethod];
 
-                const accountTitle = settings?.paymentAccountTitle || "Muhammad Shees";
-                const accountNumber = settings?.paymentAccountNumber || "03325568922";
-                const accountFormatted = settings?.paymentAccountFormatted || "0332 5568922";
+                const accountTitle = "Muhammad Shees";
+                const accountNumber = "+92 3325568922";
+                const accountFormatted = "+92 3325568922";
                 const cleanWhatsApp = (settings?.paymentWhatsapp || "+923390001829").replace(/[^0-9]/g, "");
 
                 const whatsappMsg = encodeURIComponent(
@@ -905,69 +917,6 @@ function CheckoutPage() {
                   </div>
                 );
               })()}
-
-              {paymentMethod === "card" && (
-                <div className="p-5 rounded-2xl border border-border bg-pearl/40 space-y-3">
-                  <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                      Cardholder Name
-                    </label>
-                    <input
-                      type="text"
-                      autoComplete="cc-name"
-                      placeholder="Name on card"
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink focus:border-gold focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                      Card Number
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="cc-number"
-                      placeholder="XXXX XXXX XXXX XXXX"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink font-mono focus:border-gold focus:outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                        Expiry (MM/YY)
-                      </label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        autoComplete="cc-exp"
-                        placeholder="12/28"
-                        value={cardExpiry}
-                        onChange={(e) => setCardExpiry(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink font-mono focus:border-gold focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] uppercase tracking-wider text-ink font-medium mb-1">
-                        CVV / CVC
-                      </label>
-                      <input
-                        type="password"
-                        inputMode="numeric"
-                        autoComplete="cc-csc"
-                        maxLength={4}
-                        placeholder="•••"
-                        value={cardCvc}
-                        onChange={(e) => setCardCvc(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base sm:text-sm text-ink font-mono focus:border-gold focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
