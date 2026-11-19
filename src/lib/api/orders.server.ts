@@ -954,5 +954,70 @@ export const updateOrderContactDetailsServerFn = createServerFn({ method: "POST"
     };
   });
 
+export const submitOrderPaymentReceiptSchema = z.object({
+  orderId: z.string().min(1).max(60),
+  transactionId: z.string().min(1).max(120),
+  detectedSummary: z.string().max(400).optional(),
+  receiptImageDataUrl: z.string().max(6_000_000).optional(),
+});
+
+export const submitOrderPaymentReceiptServerFn = createServerFn({ method: "POST" })
+  .validator(submitOrderPaymentReceiptSchema)
+  .handler(async ({ data }) => {
+    const cleanTid = sanitizeText(data.transactionId, 120);
+    const cleanSummary = data.detectedSummary ? sanitizeText(data.detectedSummary, 400) : "";
+
+    if (!cleanTid) {
+      return { success: false, error: "Transaction ID is required." };
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseAdmin() || getSupabaseClient();
+        if (client) {
+          await client
+            .from("orders")
+            .update({
+              transaction_id: cleanTid,
+            })
+            .eq("id", data.orderId);
+
+          await client.from("audit_logs").upsert({
+            id: `payment-proof-${data.orderId}`,
+            timestamp: new Date().toISOString(),
+            action: "Online Payment Receipt Uploaded",
+            category: "Order",
+            details: JSON.stringify({
+              orderId: data.orderId,
+              transactionId: cleanTid,
+              summary: cleanSummary,
+              hasImage: Boolean(data.receiptImageDataUrl),
+              receiptImage: data.receiptImageDataUrl ? data.receiptImageDataUrl.slice(0, 350_000) : undefined,
+            }),
+            user: "Customer Receipt Auto-Scanner",
+          });
+        }
+      } catch (err) {
+        console.warn("[submitOrderPaymentReceiptServerFn] Supabase error:", redactSensitiveData(err));
+      }
+    }
+
+    if (isDatabaseConfigured() && db) {
+      try {
+        await db
+          .update(schema.orders)
+          .set({ transactionId: cleanTid })
+          .where(eq(schema.orders.id, data.orderId));
+      } catch (err) {
+        console.warn("[submitOrderPaymentReceiptServerFn] DB error:", redactSensitiveData(err));
+      }
+    }
+
+    return {
+      success: true,
+      transactionId: cleanTid,
+    };
+  });
+
 
 

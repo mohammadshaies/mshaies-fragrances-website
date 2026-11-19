@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProductsStore, type Order, type OrderItem } from "@/lib/products-store";
 import { formatPKR } from "@/lib/cart-context";
-import { getOrderByIdServerFn } from "@/lib/api/orders.server";
+import { getOrderByIdServerFn, submitOrderPaymentReceiptServerFn } from "@/lib/api/orders.server";
 import { printDeliveryLabel } from "@/lib/delivery-label";
+import { scanPaymentReceipt, type ExtractedReceiptDetails } from "@/lib/receipt-ocr";
 import { 
   Printer, 
   ArrowLeft, 
@@ -28,6 +29,8 @@ import {
   Building2,
   Edit3,
   X,
+  Upload,
+  FileCheck2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -98,6 +101,8 @@ function InvoicePage() {
   const [editCity, setEditCity] = useState("");
   const [editPostalCode, setEditPostalCode] = useState("");
   const [isSavingContact, setIsSavingContact] = useState(false);
+  const [isScanningInvoiceReceipt, setIsScanningInvoiceReceipt] = useState(false);
+  const [uploadedReceiptInfo, setUploadedReceiptInfo] = useState<ExtractedReceiptDetails | null>(null);
 
   useEffect(() => {
     if (!localOrder && orderId) {
@@ -166,6 +171,49 @@ function InvoicePage() {
       toast.error(err?.message || "Failed to update details.");
     } finally {
       setIsSavingContact(false);
+    }
+  };
+
+  const handleInvoiceReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !order) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image screenshot of your paid receipt.");
+      return;
+    }
+
+    setIsScanningInvoiceReceipt(true);
+    const toastId = toast.loading("Scanning paid invoice screenshot & auto-detecting Transaction ID...");
+    try {
+      const currentWallet =
+        order.paymentMethod === "easypaisa" || order.paymentMethod === "jazzcash" || order.paymentMethod === "nayapay"
+          ? order.paymentMethod
+          : "easypaisa";
+      const scanned = await scanPaymentReceipt(file, currentWallet, order.total);
+      setUploadedReceiptInfo(scanned);
+
+      await submitOrderPaymentReceiptServerFn({
+        data: {
+          orderId: order.id,
+          transactionId: scanned.transactionId,
+          detectedSummary: scanned.summary,
+          receiptImageDataUrl: scanned.imageDataUrl,
+        },
+      });
+
+      if (serverOrder) {
+        setServerOrder({ ...serverOrder, transactionId: scanned.transactionId });
+      }
+      toast.success(
+        scanned.autoDetectedTid
+          ? `Paid invoice scanned & submitted! Auto-copied TID: ${scanned.transactionId}`
+          : `Paid invoice uploaded & submitted! Reference: ${scanned.transactionId}`,
+        { id: toastId }
+      );
+    } catch {
+      toast.error("Failed to upload receipt. Please try again.", { id: toastId });
+    } finally {
+      setIsScanningInvoiceReceipt(false);
     }
   };
 
@@ -328,7 +376,28 @@ function InvoicePage() {
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 pt-1 pl-8">
+            <div className="flex flex-wrap items-center gap-2.5 pt-1 pl-8">
+              <label className="px-4 py-2 rounded-full bg-gold text-ink hover:bg-gold-deep hover:text-white text-xs font-bold inline-flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer">
+                {isScanningInvoiceReceipt ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Scanning Paid Invoice...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="size-3.5" />
+                    {uploadedReceiptInfo ? "Change Paid Invoice Screenshot" : "Upload Paid Invoice Screenshot (Auto-Detect TID)"}
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleInvoiceReceiptUpload}
+                  disabled={isScanningInvoiceReceipt}
+                  className="hidden"
+                />
+              </label>
+
               <a
                 href={`https://wa.me/923390001829?text=${encodeURIComponent(
                   `Assalam-o-Alaikum! Here is the payment receipt screenshot for M.Shaies Order #${order.id} of ${formatPKR(order.total)} via ${order.paymentMethod.toUpperCase()}.${order.transactionId ? ` TID: ${order.transactionId}` : ''}`
@@ -342,6 +411,25 @@ function InvoicePage() {
                 <ExternalLink className="size-3" />
               </a>
             </div>
+
+            {uploadedReceiptInfo && (
+              <div className="ml-8 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-3">
+                <img
+                  src={uploadedReceiptInfo.imageDataUrl}
+                  alt="Uploaded paid invoice receipt"
+                  className="size-12 rounded-lg object-cover border border-emerald-500/40 bg-white shrink-0"
+                />
+                <div className="text-xs min-w-0">
+                  <p className="font-bold text-emerald-800 flex items-center gap-1.5">
+                    <FileCheck2 className="size-3.5 text-emerald-600 shrink-0" />
+                    Paid Invoice Uploaded &amp; Details Auto-Extracted!
+                  </p>
+                  <p className="text-[11px] font-mono text-ink mt-0.5 truncate">
+                    {uploadedReceiptInfo.summary}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
