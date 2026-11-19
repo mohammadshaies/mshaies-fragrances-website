@@ -737,13 +737,16 @@ function CheckoutPage() {
                   },
                 }[paymentMethod];
 
-                const accountTitle = "Muhammad Shees";
+                const accountTitle =
+                  paymentMethod === "easypaisa"
+                    ? "Muhammad Shees"
+                    : "Muhammad Shaies";
                 const accountNumber = "+92 3325568922";
                 const accountFormatted = "+92 3325568922";
                 const cleanWhatsApp = (settings?.paymentWhatsapp || "+923390001829").replace(/[^0-9]/g, "");
 
                 const whatsappMsg = encodeURIComponent(
-                  `Assalam-o-Alaikum Muhammad Shees! I am placing an order on M.Shaies Fragrances for ${formatPKR(finalTotal)} via ${gatewayData.title}.\nCustomer: ${name || 'Customer'}\nContact: ${phone || 'N/A'}\n${transactionId ? `TID: ${transactionId}` : 'I am sharing the payment receipt screenshot here.'}`
+                  `Assalam-o-Alaikum ${accountTitle}! I am placing an order on M.Shaies Fragrances for ${formatPKR(finalTotal)} via ${gatewayData.title}.\nCustomer: ${name || 'Customer'}\nContact: ${phone || 'N/A'}\n${transactionId ? `TID: ${transactionId}` : 'I am sharing the payment receipt screenshot here.'}`
                 );
 
                 return (
