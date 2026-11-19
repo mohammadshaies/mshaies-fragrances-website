@@ -2149,7 +2149,7 @@ function AdminDashboard() {
       ml: "100ml",
       label: "100ml",
       sub: "Grand Extrait",
-      multiplier: 2.0,
+      multiplier: 1.0,
       isEnabled: true,
     };
     setSettingsForm({ ...settingsForm, flaconSizes: [...flaconSizesList, newSize] });

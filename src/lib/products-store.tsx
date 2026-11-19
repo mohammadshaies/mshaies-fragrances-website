@@ -89,23 +89,13 @@ export function getCustomSizeDetails(sizeStr: string): { multiplier: number; sub
   else if (lower.includes("50ml")) sub = "Parfum Spray";
   else if (lower.includes("30ml")) sub = "Travel Spray";
   else if (lower.includes("12ml")) sub = "Royal Flacon";
+  else if (lower.includes("8ml")) sub = "Pure Attar";
   else if (lower.includes("6ml")) sub = "Pocket Attar";
   else if (lower.includes("10ml")) sub = "Pocket Spray";
   else if (lower.includes("200ml")) sub = "Jumbo Flacon";
 
-  let multiplier = 1.0;
-  const match = clean.match(/(\d+)\s*ml/i);
-  if (match) {
-    const ml = parseInt(match[1], 10);
-    if (ml <= 3) multiplier = 0.55;
-    else if (ml <= 6) multiplier = 1.0;
-    else if (ml <= 12) multiplier = 1.9;
-    else if (ml <= 30) multiplier = 2.4;
-    else if (ml <= 50) multiplier = 3.5;
-    else if (ml <= 100) multiplier = 5.5;
-    else if (ml <= 200) multiplier = 9.0;
-    else multiplier = Math.round((ml / 12) * 1.8 * 10) / 10;
-  }
+  // Default to 1.0x so the product displays the exact price entered in the Admin Dashboard
+  const multiplier = 1.0;
   return { multiplier, sub };
 }
 
@@ -123,7 +113,7 @@ export const DEFAULT_FLACON_SIZES: FlaconSizeOption[] = [
     ml: "12ml",
     label: "12ml",
     sub: "Royal Flacon",
-    multiplier: 1.9,
+    multiplier: 1.0,
     isEnabled: true,
   },
   {
@@ -131,7 +121,7 @@ export const DEFAULT_FLACON_SIZES: FlaconSizeOption[] = [
     ml: "50ml",
     label: "50ml",
     sub: "Parfum Spray",
-    multiplier: 3.5,
+    multiplier: 1.0,
     isEnabled: true,
   },
   {
@@ -139,7 +129,7 @@ export const DEFAULT_FLACON_SIZES: FlaconSizeOption[] = [
     ml: "100ml",
     label: "100ml",
     sub: "Grand Extrait",
-    multiplier: 5.5,
+    multiplier: 1.0,
     isEnabled: true,
   },
 ];
@@ -536,7 +526,7 @@ const STORAGE_KEYS = {
   CATEGORIES: "mshaies_categories_v5",
   COUPONS: "mshaies_coupons_v5",
   ORDERS: "mshaies_orders_v5",
-  SETTINGS: "mshaies_settings_v6",
+  SETTINGS: "mshaies_settings_v7",
   REVIEWS: "mshaies_reviews_v5",
   AUDIT_LOGS: "mshaies_audit_logs_v5",
   JOBS: "mshaies_jobs_v5",
@@ -549,7 +539,7 @@ if (typeof window !== "undefined") {
       "mshaies_products_v1", "mshaies_products_v2", "mshaies_products_v3", "mshaies_products_v4",
       "mshaies_orders_v1", "mshaies_orders_v2", "mshaies_orders_v3", "mshaies_orders_v4",
       "mshaies_coupons_v1", "mshaies_coupons_v2", "mshaies_coupons_v3", "mshaies_coupons_v4",
-      "mshaies_settings_v1", "mshaies_settings_v2", "mshaies_settings_v3", "mshaies_settings_v4", "mshaies_settings_v5",
+      "mshaies_settings_v1", "mshaies_settings_v2", "mshaies_settings_v3", "mshaies_settings_v4", "mshaies_settings_v5", "mshaies_settings_v6",
       "mshaies_reviews_v1", "mshaies_reviews_v2", "mshaies_reviews_v3", "mshaies_reviews_v4",
       "mshaies_audit_logs_v1", "mshaies_audit_logs_v2", "mshaies_audit_logs_v3", "mshaies_audit_logs_v4",
       "mshaies_jobs_v1", "mshaies_jobs_v2", "mshaies_jobs_v3", "mshaies_jobs_v4",

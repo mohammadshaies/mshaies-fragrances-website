@@ -137,14 +137,29 @@ function ProductDetail() {
     return allStoreSizes.filter((opt) => opt.isEnabled);
   }, [product?.availableSizes, allStoreSizes]);
 
+  const getMatchingOptionForProductVolume = (options: FlaconSizeOption[]) => {
+    if (options.length === 0) return undefined;
+    const prodVolMatch = (product?.volume || "").match(/(\d+\s*ml)/i);
+    if (prodVolMatch) {
+      const targetMl = prodVolMatch[1].toLowerCase().replace(/\s+/g, "");
+      const matched = options.find((o) => {
+        const m = (o.label || o.ml || "").match(/(\d+\s*ml)/i);
+        return m && m[1].toLowerCase().replace(/\s+/g, "") === targetMl;
+      });
+      if (matched) return matched;
+    }
+    return options[0];
+  };
+
   const [selectedVolume, setSelectedVolume] = useState(() => {
-    return activeSizeOptions[0]?.label || "12ml";
+    return getMatchingOptionForProductVolume(activeSizeOptions)?.label || activeSizeOptions[0]?.label || "12ml";
   });
 
   // Keep selectedVolume valid if available sizes change
   useEffect(() => {
     if (activeSizeOptions.length > 0 && !activeSizeOptions.some((o) => o.label === selectedVolume)) {
-      setSelectedVolume(activeSizeOptions[0].label);
+      const matched = getMatchingOptionForProductVolume(activeSizeOptions);
+      setSelectedVolume((matched || activeSizeOptions[0]).label);
     }
   }, [activeSizeOptions, selectedVolume]);
   const [qty, setQty] = useState(1);
@@ -223,14 +238,46 @@ function ProductDetail() {
     );
   }
 
-  // Calculate price dynamically from selected size option
+  // Calculate price dynamically from selected size option while honoring exact product.price for single-size or base-volume options
+  const getFlaconOptionPrice = (option?: FlaconSizeOption): number => {
+    if (!option) return product.price;
+    if (option.priceOverride && option.priceOverride > 0) {
+      return option.priceOverride;
+    }
+    // Single-size products always display the exact price entered in the Admin Dashboard
+    if (activeSizeOptions.length <= 1) {
+      return product.price;
+    }
+    const prodVolMatch = (product.volume || "").match(/(\d+\s*ml)/i);
+    const optVolMatch = (option.label || option.ml || "").match(/(\d+\s*ml)/i);
+    const prodMl = prodVolMatch ? prodVolMatch[1].toLowerCase().replace(/\s+/g, "") : "";
+    const optMl = optVolMatch ? optVolMatch[1].toLowerCase().replace(/\s+/g, "") : "";
+
+    // If the selected option matches the product's configured base volume, always use exact product.price
+    if (prodMl && optMl && prodMl === optMl) {
+      return product.price;
+    }
+
+    // If another option in activeSizeOptions matches product.volume, scale relative to that base option
+    if (prodMl) {
+      const baseOption = activeSizeOptions.find((o) => {
+        const m = (o.label || o.ml || "").match(/(\d+\s*ml)/i);
+        return m && m[1].toLowerCase().replace(/\s+/g, "") === prodMl;
+      });
+      if (baseOption && baseOption.multiplier && baseOption.multiplier > 0) {
+        const relativeMultiplier = (option.multiplier || 1.0) / baseOption.multiplier;
+        return Math.round(product.price * relativeMultiplier);
+      }
+    }
+
+    return Math.round(product.price * (option.multiplier || 1.0));
+  };
+
   const currentSizeOption = activeSizeOptions.find(
     (o) => o.label === selectedVolume || o.id === selectedVolume || o.ml === selectedVolume
   ) || activeSizeOptions[0];
 
-  const calculatedPrice = currentSizeOption
-    ? Math.round(product.price * (currentSizeOption.multiplier || 1.0))
-    : product.price;
+  const calculatedPrice = getFlaconOptionPrice(currentSizeOption);
 
   const isOutOfStock = product.stock <= 0;
   const isLowStock = product.stock > 0 && product.stock <= 5;
@@ -571,7 +618,7 @@ function ProductDetail() {
                 </div>
                 <div className={`grid grid-cols-2 ${activeSizeOptions.length >= 4 ? "sm:grid-cols-4" : activeSizeOptions.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-2.5`}>
                   {activeSizeOptions.map((vol) => {
-                    const optionPrice = Math.round(product.price * (vol.multiplier || 1.0));
+                    const optionPrice = getFlaconOptionPrice(vol);
                     const subText = vol.sub || formatPKR(optionPrice);
 
                     return (
