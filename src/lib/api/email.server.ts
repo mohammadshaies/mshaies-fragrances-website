@@ -379,7 +379,7 @@ export function generateCustomerInvoiceHtml(order: OrderEmailData): string {
     .join("");
 
   const cleanPhone = order.phone.replace(/[^0-9]/g, "");
-  const invoiceUrl = `https://mshaies.com/invoice/${order.id}`;
+  const invoiceUrl = `https://mshaiesfragrances.com/invoice/${order.id}`;
 
   return `
 <!DOCTYPE html>
@@ -725,8 +725,8 @@ export function generateAdminOrderAlertHtml(order: OrderEmailData): string {
     <!-- Quick Action Bar -->
     <tr>
       <td style="background-color: #fafafa; border-top: 1px solid #eee; padding: 20px 25px; text-align: center;">
-        <a href="https://mshaies.com/admin" target="_blank" style="display: inline-block; padding: 10px 24px; background-color: #111; color: #d4af37; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; text-transform: uppercase; margin-right: 10px;">Open Admin Dashboard →</a>
-        <a href="https://mshaies.com/invoice/${order.id}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #e5e5e5; color: #333; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: bold;">View Web Invoice</a>
+        <a href="https://mshaiesfragrances.com/admin" target="_blank" style="display: inline-block; padding: 10px 24px; background-color: #111; color: #d4af37; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; text-transform: uppercase; margin-right: 10px;">Open Admin Dashboard →</a>
+        <a href="https://mshaiesfragrances.com/invoice/${order.id}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #e5e5e5; color: #333; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: bold;">View Web Invoice</a>
       </td>
     </tr>
 

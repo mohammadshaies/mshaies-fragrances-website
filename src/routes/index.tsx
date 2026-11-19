@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
       },
     ],
     links: [
-      { rel: "canonical", href: "https://mshaies.com/" },
+      { rel: "canonical", href: "https://mshaiesfragrances.com/" },
       { rel: "preload", href: "/bottle-poster.webp", as: "image", type: "image/webp" },
     ],
   }),

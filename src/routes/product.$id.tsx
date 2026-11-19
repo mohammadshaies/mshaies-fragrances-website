@@ -47,7 +47,7 @@ export const Route = createFileRoute("/product/$id")({
   },
   head: ({ loaderData, params }) => {
     const p = loaderData?.initialProduct as any;
-    const canonicalUrl = `https://mshaies.com/product/${params.id}`;
+    const canonicalUrl = `https://mshaiesfragrances.com/product/${params.id}`;
     if (!p) {
       return {
         meta: [
@@ -56,7 +56,7 @@ export const Route = createFileRoute("/product/$id")({
         links: [{ rel: "canonical", href: canonicalUrl }],
       };
     }
-    const seoImageUrl = `https://mshaies.com/api/product-image/${encodeURIComponent(p.id)}`;
+    const seoImageUrl = `https://mshaiesfragrances.com/api/product-image/${encodeURIComponent(p.id)}`;
     const desc = (
       p.description ||
       `${p.name} (${p.volume}) — ${p.tagline || p.notes}. Handcrafted luxury ${p.category} in Pakistan by M.shaies Fragrances. Price: ₨ ${Number(p.price).toLocaleString()}.`
@@ -348,10 +348,10 @@ function ProductDetail() {
         image: (product.images && product.images.length > 0 ? product.images : [product.image]).map(
           (img: string, idx: number) =>
             img.startsWith("data:")
-              ? `https://mshaies.com/api/product-image/${encodeURIComponent(product.id)}${idx > 0 ? `?index=${idx}` : ""}`
+              ? `https://mshaiesfragrances.com/api/product-image/${encodeURIComponent(product.id)}${idx > 0 ? `?index=${idx}` : ""}`
               : img.startsWith("http")
               ? img
-              : `https://mshaies.com${img}`
+              : `https://mshaiesfragrances.com${img}`
         ),
         description: product.description || `${product.name} - ${product.tagline || product.notes}. Handcrafted luxury ${product.category} by M.shaies Haute Parfumerie.`,
         sku: product.id,
@@ -363,7 +363,7 @@ function ProductDetail() {
         category: product.category,
         offers: {
           "@type": "Offer",
-          url: `https://mshaies.com/product/${product.id}`,
+          url: `https://mshaiesfragrances.com/product/${product.id}`,
           priceCurrency: "PKR",
           price: calculatedPrice,
           priceValidUntil: "2027-12-31",
@@ -391,19 +391,19 @@ function ProductDetail() {
             "@type": "ListItem",
             position: 1,
             name: "Home",
-            item: "https://mshaies.com/"
+            item: "https://mshaiesfragrances.com/"
           },
           {
             "@type": "ListItem",
             position: 2,
             name: product.category || "Shop",
-            item: "https://mshaies.com/shop"
+            item: "https://mshaiesfragrances.com/shop"
           },
           {
             "@type": "ListItem",
             position: 3,
             name: product.name,
-            item: `https://mshaies.com/product/${product.id}`
+            item: `https://mshaiesfragrances.com/product/${product.id}`
           }
         ]
       }

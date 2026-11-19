@@ -13,7 +13,7 @@ export const Route = createFileRoute("/attars")({
           "Discover pure concentrated attar oils hand-poured in Pakistan. Aged Cambodian Oud, Midnight Rose, and Royal Ambergris in luxury flacons delivered nationwide.",
       },
     ],
-    links: [{ rel: "canonical", href: "https://mshaies.com/attars" }],
+    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/attars" }],
   }),
   component: AttarsPage,
 });

@@ -13,7 +13,7 @@ export const Route = createFileRoute("/perfumes")({
           "Experience long-lasting Extrait De Parfum sprays crafted for Pakistan's climate. Desert Gold and Velvet Saffron with exceptional projection.",
       },
     ],
-    links: [{ rel: "canonical", href: "https://mshaies.com/perfumes" }],
+    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/perfumes" }],
   }),
   component: PerfumesPage,
 });

@@ -12,7 +12,7 @@ export const Route = createFileRoute("/about")({
         content: "Discover the human journey behind M.shaies Fragrances. Handcrafted pure attars, high-projection extrait perfumes, and horology created for Pakistan with soul, passion, and uncompromising artistry." 
       }
     ],
-    links: [{ rel: "canonical", href: "https://mshaies.com/about" }],
+    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/about" }],
   }),
   component: About,
 });

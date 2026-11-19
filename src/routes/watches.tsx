@@ -13,7 +13,7 @@ export const Route = createFileRoute("/watches")({
           "Curated luxury timepieces, automatic skeletons, and 18K gold chronographs designed to complement the M.shaies signature aesthetics.",
       },
     ],
-    links: [{ rel: "canonical", href: "https://mshaies.com/watches" }],
+    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/watches" }],
   }),
   component: WatchesPage,
 });

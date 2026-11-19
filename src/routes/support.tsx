@@ -25,7 +25,7 @@ export const Route = createFileRoute("/support")({
           "Need help with an order, delivery tracking, or fragrance recommendation? Contact our customer concierge team or browse frequently asked questions.",
       },
     ],
-    links: [{ rel: "canonical", href: "https://mshaies.com/support" }],
+    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/support" }],
   }),
   component: SupportPage,
 });

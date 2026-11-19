@@ -13,7 +13,7 @@ export const Route = createFileRoute("/shop")({
           "Browse all hand-poured pure attar oils, luxury ouds, and concentrated perfumes. Free shipping nationwide in Pakistan on orders over ₨ 5,000.",
       },
     ],
-    links: [{ rel: "canonical", href: "https://mshaies.com/shop" }],
+    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/shop" }],
   }),
   component: Shop,
 });

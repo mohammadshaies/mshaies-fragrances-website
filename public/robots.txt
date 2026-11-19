@@ -1,7 +1,7 @@
 # ==============================================================================
 # M.shaies Haute Parfumerie — Robots Crawler Policy
-# Website: https://mshaies.com
-# Canonical Sitemap: https://mshaies.com/sitemap.xml
+# Website: https://mshaiesfragrances.com
+# Canonical Sitemap: https://mshaiesfragrances.com/sitemap.xml
 # ==============================================================================
 
 # General rules for all compliant search engine web crawlers
@@ -90,5 +90,5 @@ User-agent: SemrushBot
 Crawl-delay: 2
 
 # XML Sitemap Index
-Sitemap: https://mshaies.com/sitemap.xml
-Host: https://mshaies.com
+Sitemap: https://mshaiesfragrances.com/sitemap.xml
+Host: https://mshaiesfragrances.com

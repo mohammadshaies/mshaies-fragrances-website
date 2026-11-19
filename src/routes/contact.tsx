@@ -10,7 +10,7 @@ export const Route = createFileRoute("/contact")({
       { title: "Contact Us — M.shaies Fragrances" },
       { name: "description", content: "Get in touch with M.shaies Maison. Send us an inquiry or reach our concierge helpline." }
     ],
-    links: [{ rel: "canonical", href: "https://mshaies.com/contact" }],
+    links: [{ rel: "canonical", href: "https://mshaiesfragrances.com/contact" }],
   }),
   component: Contact,
 });

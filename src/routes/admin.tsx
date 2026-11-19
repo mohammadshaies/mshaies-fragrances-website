@@ -3464,7 +3464,7 @@ function AdminDashboard() {
     const paymentText = order.paymentMethod !== "cod"
       ? `\nPayment: *${(order.paymentMethod || "").toUpperCase()}* (${order.paymentStatus === "Paid" ? "✅ Verified & Paid" : "⏳ " + (order.paymentStatus || "Pending")})${order.transactionId ? `\nTransaction ID: *${order.transactionId}*` : ""}`
       : `\nPayment: *Cash on Delivery (COD)*`;
-    const message = `Assalam-o-Alaikum ${order.customerName || "Customer"},\n\nThank you for choosing *M.shaies Fragrances*! Your order *#${order.id}* for *${formatPKR(order.total)}* has been *${order.orderStatus}*.${paymentText}${trackingMsg}\n\nView your official invoice here: ${typeof window !== "undefined" ? window.location.origin : "https://mshaies.com"}/invoice/${order.id}\n\nWarm regards,\nMuhammad Shees — M.shaies Maison Concierge`;
+    const message = `Assalam-o-Alaikum ${order.customerName || "Customer"},\n\nThank you for choosing *M.shaies Fragrances*! Your order *#${order.id}* for *${formatPKR(order.total)}* has been *${order.orderStatus}*.${paymentText}${trackingMsg}\n\nView your official invoice here: ${typeof window !== "undefined" ? window.location.origin : "https://mshaiesfragrances.com"}/invoice/${order.id}\n\nWarm regards,\nMuhammad Shees — M.shaies Maison Concierge`;
 
     window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, "_blank");
   };
@@ -3473,15 +3473,15 @@ function AdminDashboard() {
   const MARKETING_TEMPLATES = [
     {
       title: "🌙 Ramadan & Eid Festive Campaign",
-      text: `✨ *M.shaies Fragrances — Grand Eid Maison Privilege* ✨\n\nCelebrate the blessings of Eid with hand-poured pure attars & extrait perfumes. Enjoy *15% OFF* across our entire collection with code *${settings.announcementCode}*.\n\n👑 *Signature Highlights:*\n• Oud Al-Jamil (Aged Cambodian Oud)\n• Desert Gold (35% Extrait EDP)\n• Maison Royal Chronograph Watch\n\n🚚 *Free Express Nationwide Shipping over ${formatPKR(settings.freeShippingThreshold)}*\n👉 Order Online: ${typeof window !== "undefined" ? window.location.origin : "https://mshaies.com"}/shop`,
+      text: `✨ *M.shaies Fragrances — Grand Eid Maison Privilege* ✨\n\nCelebrate the blessings of Eid with hand-poured pure attars & extrait perfumes. Enjoy *15% OFF* across our entire collection with code *${settings.announcementCode}*.\n\n👑 *Signature Highlights:*\n• Oud Al-Jamil (Aged Cambodian Oud)\n• Desert Gold (35% Extrait EDP)\n• Maison Royal Chronograph Watch\n\n🚚 *Free Express Nationwide Shipping over ${formatPKR(settings.freeShippingThreshold)}*\n👉 Order Online: ${typeof window !== "undefined" ? window.location.origin : "https://mshaiesfragrances.com"}/shop`,
     },
     {
       title: "👑 VIP Shaadi / Wedding Gift Offer",
-      text: `⚜️ *M.shaies Fragrances — Luxury Wedding Edition* ⚜️\n\nLooking for an unforgettable signature fragrance for upcoming wedding festivities? Enjoy express delivery across Pakistan with every handcrafted bottle.\n\n💎 100% Alcohol-Free Pure Attars & 18K Gold Watches\n📦 Arrives in gold-embossed presentation boxes\n\n👉 Discover the Collection: ${typeof window !== "undefined" ? window.location.origin : "https://mshaies.com"}/shop`,
+      text: `⚜️ *M.shaies Fragrances — Luxury Wedding Edition* ⚜️\n\nLooking for an unforgettable signature fragrance for upcoming wedding festivities? Enjoy express delivery across Pakistan with every handcrafted bottle.\n\n💎 100% Alcohol-Free Pure Attars & 18K Gold Watches\n📦 Arrives in gold-embossed presentation boxes\n\n👉 Discover the Collection: ${typeof window !== "undefined" ? window.location.origin : "https://mshaiesfragrances.com"}/shop`,
     },
     {
       title: "⚡ 48-Hour Weekend Flash Deal",
-      text: `⚡ *48-HOUR FLASH OFFER — M.SHAIES FRAGRANCES* ⚡\n\nUnlock flat discounts on our best-selling fragrances. Use code *${settings.announcementCode}* at checkout.\n\n💵 Cash on Delivery (COD) + JazzCash / Easypaisa accepted nationwide.\n👉 Grab yours before stock runs out: ${typeof window !== "undefined" ? window.location.origin : "https://mshaies.com"}/shop`,
+      text: `⚡ *48-HOUR FLASH OFFER — M.SHAIES FRAGRANCES* ⚡\n\nUnlock flat discounts on our best-selling fragrances. Use code *${settings.announcementCode}* at checkout.\n\n💵 Cash on Delivery (COD) + JazzCash / Easypaisa accepted nationwide.\n👉 Grab yours before stock runs out: ${typeof window !== "undefined" ? window.location.origin : "https://mshaiesfragrances.com"}/shop`,
     }
   ];
 
