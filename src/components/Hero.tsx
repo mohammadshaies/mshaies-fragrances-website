@@ -130,7 +130,7 @@ export function Hero() {
           <div className="mt-2 sm:mt-4 pt-1.5 sm:pt-3 border-t border-gold/20 flex items-center justify-center gap-1.5 xs:gap-2.5 sm:gap-4 text-center text-[7.5px] xs:text-[8.5px] sm:text-[10px] uppercase tracking-wider text-muted-foreground font-medium overflow-hidden px-1">
             <span className="shrink-0">100% Pure Attars</span>
             <span className="text-gold/60 text-[8px] shrink-0">•</span>
-            <span className="shrink-0">Free Delivery &gt; ₨ 5k</span>
+            <span className="shrink-0">Imported Products</span>
             <span className="text-gold/60 text-[8px] shrink-0">•</span>
             <span className="shrink-0">Nationwide Delivery</span>
           </div>
@@ -212,7 +212,7 @@ export function Hero() {
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="size-1.5 rounded-full bg-gold" />
-                Free Delivery &gt; ₨ 5,000
+                Imported Products
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="size-1.5 rounded-full bg-gold" />
