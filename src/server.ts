@@ -391,6 +391,20 @@ export default {
       const url = new URL(request.url);
       const origin = request.headers.get("origin");
 
+      // 0. Permanent 301 Redirect from *.vercel.app to primary custom domain
+      // Ensures Google de-indexes vercel.app and only displays https://www.mshaiesfragrances.com
+      if (url.hostname.toLowerCase().endsWith(".vercel.app")) {
+        const targetUrl = `https://www.mshaiesfragrances.com${url.pathname}${url.search}`;
+        return new Response(null, {
+          status: 301,
+          headers: {
+            Location: targetUrl,
+            "X-Robots-Tag": "noindex, nofollow",
+            "Cache-Control": "public, max-age=3600",
+          },
+        });
+      }
+
       // 1. CORS Preflight Handling
       if (request.method === "OPTIONS") {
         if (origin && !isAllowedOrigin(origin)) {
