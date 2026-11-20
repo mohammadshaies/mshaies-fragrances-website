@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Hero } from "@/components/Hero";
 import { FeaturedFragrances } from "@/components/FeaturedFragrances";
 import { PromotionalBanner } from "@/components/PromotionalBanner";
-import { useProductsStore } from "@/lib/products-store";
+import { useProductsStore, shouldShowPromotionalBanner } from "@/lib/products-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,16 +35,15 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { settings } = useProductsStore();
-  const hasSlides = settings.promotionalSlides === undefined || (Array.isArray(settings.promotionalSlides) && settings.promotionalSlides.length > 0);
-  const showBanner = settings.heroBannerActive !== false && hasSlides;
+  const showBanner = shouldShowPromotionalBanner(settings, "home");
 
   return (
     <>
       <Hero />
       {showBanner && (
-        <div className="w-full bg-[#f3ece0] px-3 sm:px-8 py-1 sm:py-3">
+        <div className="w-full bg-[#f3ece0] px-3 sm:px-8 py-1.5 sm:py-3">
           <div className="mx-auto max-w-7xl">
-            <PromotionalBanner />
+            <PromotionalBanner page="home" />
           </div>
         </div>
       )}

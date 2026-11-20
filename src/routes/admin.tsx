@@ -11,7 +11,8 @@ import {
   DEFAULT_PROMOTIONAL_SLIDES,
   type PromotionalSlide,
   DEFAULT_ANNOUNCEMENT_ITEMS,
-  type AnnouncementItem
+  type AnnouncementItem,
+  hasCustomHeroBannerGraphic,
 } from "@/lib/products-store";
 import { formatPKR } from "@/lib/cart-context";
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -2178,6 +2179,32 @@ function AdminDashboard() {
       : DEFAULT_PROMOTIONAL_SLIDES;
 
   const [editingSlideIndex, setEditingSlideIndex] = useState<number | null>(null);
+  const [activeBannerSubTab, setActiveBannerSubTab] = useState<"main-banner" | "top-bar">("main-banner");
+
+  const handleUploadHeroBannerImage = async (dataUrl: string) => {
+    const nextMode =
+      settingsForm.heroBannerDisplayMode === "slides"
+        ? "image"
+        : settingsForm.heroBannerDisplayMode || "image";
+    const updated = {
+      ...settingsForm,
+      heroBannerImage: dataUrl,
+      heroBannerActive: true,
+      heroBannerDisplayMode: nextMode,
+    };
+    setSettingsForm(updated);
+    setBannerPreviewKey((k) => k + 1);
+    const toastId = toast.loading("Saving uploaded banner picture to Supabase database...");
+    const res = await updateSettings(updated);
+    if (res.success) {
+      const timeStr = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" });
+      setLastSavedStatus(`Banner picture saved to Supabase at ${timeStr}`);
+      toast.success("✓ Banner picture uploaded, activated & saved to Supabase database!", { id: toastId });
+      await refreshDataFromServer(true);
+    } else {
+      toast.error(res.error || "Banner preview updated, click 'Save Banner to Website' to sync.", { id: toastId });
+    }
+  };
 
   const handleUpdatePromotionalSlide = (index: number, updates: Partial<PromotionalSlide>) => {
     setSettingsForm((prev) => {
@@ -2226,7 +2253,7 @@ function AdminDashboard() {
     const updates: Partial<typeof settingsForm> = {
       promotionalSlides: updated,
     };
-    if (updated.length === 0) {
+    if (updated.length === 0 && !hasCustomHeroBannerGraphic(settingsForm.heroBannerImage)) {
       updates.heroBannerActive = false;
     }
     const newForm = { ...settingsForm, ...updates };
@@ -2762,10 +2789,20 @@ function AdminDashboard() {
     const toastId = toast.loading("Saving changes to Supabase database...");
     try {
       const payload = { ...settingsForm };
-      if (Array.isArray(payload.promotionalSlides) && payload.promotionalSlides.length === 0) {
+      const hasCustomGraphic = hasCustomHeroBannerGraphic(payload.heroBannerImage);
+      if (
+        Array.isArray(payload.promotionalSlides) &&
+        payload.promotionalSlides.length === 0 &&
+        !hasCustomGraphic &&
+        payload.heroBannerDisplayMode === "slides"
+      ) {
         payload.heroBannerActive = false;
       }
-      if (Array.isArray(payload.announcementItems) && payload.announcementItems.length === 0) {
+      if (
+        Array.isArray(payload.announcementItems) &&
+        payload.announcementItems.length === 0 &&
+        !payload.announcementText
+      ) {
         payload.announcementActive = false;
       }
       const res = await updateSettings(payload);
@@ -6808,925 +6845,1285 @@ function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 5: TOP DEALS & ANNOUNCEMENT BANNER */}
+        {/* TAB 5: BANNER STUDIO (MAIN PROMOTIONAL BANNER & TOP ANNOUNCEMENT BAR) */}
         {activeTab === "banner" && (
-          <div className="space-y-8 max-w-4xl">
-            {/* Section 1: Top Ticker Announcement Bar */}
-            <div className="rounded-3xl border border-gold/40 bg-card p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 text-gold-deep text-[11px] font-bold uppercase tracking-wider mb-2">
-                    <Megaphone className="size-3.5" />
-                    <span>Storefront Header Announcement Bar</span>
-                  </div>
-                  <h2 className="font-serif text-2xl text-ink font-bold flex items-center gap-2">
-                    <Megaphone className="size-5 text-gold-deep" />
-                    Top Ticker Announcement Bar
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-                    Pinned across all pages at the very top of your store navigation. Displays auto-rotating announcements, discount codes, shipping perks, and special offers with a dismiss button.
-                  </p>
+          <div className="space-y-6 max-w-5xl">
+            {/* Top Header & Quick Save Bar */}
+            <div className="rounded-3xl border border-gold/40 bg-card p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 text-gold-deep text-[11px] font-bold uppercase tracking-wider mb-1.5">
+                  <Sparkles className="size-3.5" />
+                  <span>Storefront Banner Studio · Direct Supabase Sync</span>
                 </div>
-
-                <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  {/* Instant 1-Click Toggle / Remove Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleAnnouncementActive(!settingsForm.announcementActive)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer border ${
-                      settingsForm.announcementActive
-                        ? "border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive hover:text-white"
-                        : "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
-                    }`}
-                    title={settingsForm.announcementActive ? "Instantly remove announcement bar from site" : "Instantly enable announcement bar on site"}
-                  >
-                    {settingsForm.announcementActive ? (
-                      <>
-                        <EyeOff className="size-3.5" />
-                        <span>Remove / Hide Bar</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check className="size-3.5" />
-                        <span>Activate Bar on Store</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleAddAnnouncementItem}
-                    className="px-3.5 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
-                  >
-                    <Plus className="size-3.5" />
-                    <span>Add Ticker Item</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleResetAnnouncementItems}
-                    className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-pearl text-muted-foreground hover:text-ink text-xs transition-colors cursor-pointer"
-                    title="Reset ticker items to defaults"
-                  >
-                    <RotateCcw className="size-3.5" />
-                  </button>
-                </div>
+                <h2 className="font-serif text-2xl text-ink font-bold">
+                  Website Banners & Visual Customizer
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Your website has <strong>2 different banner locations</strong>. Select a banner below to upload pictures, customize its size & style, or turn it ON/OFF.
+                </p>
               </div>
 
-              {/* Master Announcement Toggle Bar */}
-              <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                settingsForm.announcementActive ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-background"
-              }`}>
-                <div className="flex items-center gap-3">
-                  <div className={`size-3 rounded-full ${settingsForm.announcementActive ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"}`} />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-bold text-ink">Storefront Top Header Announcement Status</p>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        settingsForm.announcementActive ? "bg-emerald-500/20 text-emerald-800" : "bg-zinc-500/15 text-zinc-600"
-                      }`}>
-                        {settingsForm.announcementActive ? "LIVE ON STOREFRONT" : "HIDDEN / REMOVED"}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {settingsForm.announcementActive
-                        ? "Bar is visible on customer storefront with scrolling ticker offers. Click 'Remove / Hide Bar' to instantly take it down."
-                        : "Bar is completely removed and hidden from all store pages. Click 'Activate Bar' to publish it."}
-                    </p>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settingsForm.announcementActive}
-                  onChange={(e) => handleToggleAnnouncementActive(e.target.checked)}
-                  className="size-5 accent-gold cursor-pointer"
-                />
-              </div>
-
-              {/* Optional Announcement Ribbon Background Texture / Image */}
-              <div className="p-4 rounded-2xl border border-border bg-background space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <label className="block text-xs font-bold text-ink flex items-center gap-1.5">
-                      <ImageIcon className="size-3.5 text-gold" />
-                      <span>Announcement Ribbon Background Image / Texture (Optional)</span>
-                    </label>
-                    <p className="text-[11px] text-muted-foreground">
-                      Upload an ultra-wide panoramic luxury texture (e.g. gold dust, dark damask, or noir marble) to span behind the announcement ticker.
-                    </p>
-                  </div>
-                  {settingsForm.announcementBackgroundImage && (
-                    <button
-                      type="button"
-                      onClick={() => setSettingsForm({ ...settingsForm, announcementBackgroundImage: "" })}
-                      className="text-[11px] text-destructive hover:underline font-semibold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
-                    >
-                      <Trash2 className="size-3" />
-                      <span>Remove Background Image</span>
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                  <label className="px-4 py-2.5 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shrink-0 transition-colors">
-                    <Upload className="size-4" />
-                    <span>Upload Ribbon Texture</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          const dataUrl = await compressImageFile(file, 1920, 100, 0.85);
-                          setSettingsForm({ ...settingsForm, announcementBackgroundImage: dataUrl });
-                          toast.success("Announcement background image uploaded!");
-                        } catch {
-                          toast.error("Failed to process background image.");
-                        }
-                      }}
-                    />
-                  </label>
-                  <input
-                    type="text"
-                    value={settingsForm.announcementBackgroundImage || ""}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, announcementBackgroundImage: e.target.value })}
-                    placeholder="Or paste direct image URL (e.g. https://...)"
-                    className="flex-1 px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
-                  />
-                </div>
-
-                {settingsForm.announcementBackgroundImage && (
-                  <div className="relative rounded-xl overflow-hidden border border-gold/40 h-10 w-full bg-[#16120b] flex items-center justify-center shadow-inner">
-                    <img
-                      src={settingsForm.announcementBackgroundImage}
-                      alt="Announcement Bar Background Preview"
-                      className="absolute inset-0 w-full h-full object-cover opacity-80"
-                    />
-                    <div className="relative z-10 px-3 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-[10px] text-gold font-bold uppercase tracking-wider border border-gold/40">
-                      Live Ribbon Texture Preview
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Top Announcement Bar Image Requirements Card */}
-              <div className="p-4 rounded-2xl bg-gold/5 border border-gold/30 space-y-2">
-                <div className="flex items-center gap-2 text-gold-deep font-bold text-xs">
-                  <Info className="size-4 text-gold shrink-0" />
-                  <span>Announcement Bar Image Requirements & Specifications</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] text-muted-foreground pt-1">
-                  <div className="p-3 rounded-xl bg-background/80 border border-gold/20 space-y-1">
-                    <p className="font-bold text-ink flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-gold" />
-                      Per-Item Thumbnail / Badge Icon:
-                    </p>
-                    <ul className="space-y-0.5 list-disc list-inside text-[10.5px]">
-                      <li><strong>Dimensions:</strong> 64×64 px to 128×128 px (1:1 Square)</li>
-                      <li><strong>Formats:</strong> PNG (transparent), WebP, or SVG</li>
-                      <li><strong>Max Size:</strong> Under 100 KB (optimized for instant mobile load)</li>
-                      <li><strong>Best For:</strong> Bottle flacons, gift boxes, crowns, or sale stamps</li>
-                    </ul>
-                  </div>
-                  <div className="p-3 rounded-xl bg-background/80 border border-gold/20 space-y-1">
-                    <p className="font-bold text-ink flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-gold" />
-                      Full-Width Ribbon Background Texture:
-                    </p>
-                    <ul className="space-y-0.5 list-disc list-inside text-[10.5px]">
-                      <li><strong>Dimensions:</strong> 1920×60 px to 2560×80 px (Ultra-wide panorama)</li>
-                      <li><strong>Formats:</strong> WebP or JPG</li>
-                      <li><strong>Max Size:</strong> Under 200 KB (auto-compressed on upload)</li>
-                      <li><strong>Best For:</strong> Subtle dark textures (#16120b), gold dust, or noir damask</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Live Ticker Preview */}
-              <div className="p-4 rounded-2xl bg-pearl border border-gold/40 space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] uppercase tracking-wider text-gold-deep font-bold">Live Ticker Items Preview:</p>
-                  <span className="text-[10px] text-muted-foreground">{announcementItemsList.filter(i => i.isEnabled !== false).length} Active Items</span>
-                </div>
-                <div className="space-y-1.5">
-                  {announcementItemsList.filter(i => i.isEnabled !== false).map((item, idx) => (
-                    <div key={item.id || idx} className="p-2.5 rounded-xl bg-[#1c160c] text-pearl text-xs flex items-center gap-2">
-                      {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.badge}
-                          className="size-5 rounded object-cover border border-gold/60 shrink-0"
-                        />
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-[10px] font-bold uppercase shrink-0">
-                          {item.badge}
-                        </span>
-                      )}
-                      <span className="truncate flex-1 text-white/90">{item.text}</span>
-                      {item.code && (
-                        <span className="font-mono bg-gold text-ink font-bold px-1.5 py-0.5 rounded text-[10px] shrink-0">
-                          {item.code}
-                        </span>
-                      )}
-                      <span className="text-gold text-[10px] underline shrink-0">{item.linkText || "Shop"} →</span>
-                    </div>
-                  ))}
-                  {announcementItemsList.filter(i => i.isEnabled !== false).length === 0 && (
-                    <p className="text-xs text-muted-foreground italic text-center py-2">No active ticker items. All items are disabled.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Ticker Items List */}
-              <div className="space-y-3">
-                {announcementItemsList.length === 0 && (
-                  <div className="p-8 text-center rounded-2xl border border-dashed border-border bg-background space-y-3">
-                    <Megaphone className="size-8 text-muted-foreground mx-auto opacity-50" />
-                    <p className="text-sm font-bold text-ink">No Ticker Items</p>
-                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                      All announcement items have been deleted. The top announcement bar is currently hidden.
-                    </p>
-                    <div className="flex items-center justify-center gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={handleAddAnnouncementItem}
-                        className="px-4 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
-                      >
-                        <Plus className="size-3.5" />
-                        <span>Add Ticker Item</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleResetAnnouncementItems}
-                        className="px-4 py-2 rounded-xl border border-border bg-card text-muted-foreground hover:text-ink text-xs font-semibold transition-colors cursor-pointer"
-                      >
-                        <RotateCcw className="size-3.5" />
-                        <span>Restore Defaults</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {announcementItemsList.map((item, tIndex) => {
-                  const isEditing = editingTickerIndex === tIndex;
-                  const isEnabled = item.isEnabled !== false;
-
-                  return (
-                    <div
-                      key={item.id || tIndex}
-                      className={`rounded-2xl border transition-all ${
-                        isEnabled
-                          ? "border-gold/40 bg-card shadow-xs"
-                          : "border-border/60 bg-muted/30 opacity-75"
-                      } overflow-hidden`}
-                    >
-                      {/* Header */}
-                      <div className="p-4 flex items-center justify-between gap-3 bg-pearl/40">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="size-6 rounded-full bg-gold/20 text-gold-deep text-xs font-bold flex items-center justify-center shrink-0">
-                            #{tIndex + 1}
-                          </span>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                  isEnabled
-                                    ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
-                                    : "bg-zinc-500/15 text-zinc-600 border border-zinc-500/30"
-                                }`}
-                              >
-                                {isEnabled ? "Live in Ticker" : "Hidden"}
-                              </span>
-                              <span className="text-xs font-bold text-ink truncate max-w-[200px] sm:max-w-md">
-                                {item.badge}: {item.text}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {/* Toggle Active */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleUpdateAnnouncementItem(tIndex, { isEnabled: !isEnabled });
-                              toast.info(isEnabled ? `Ticker item #${tIndex + 1} hidden.` : `Ticker item #${tIndex + 1} is now live!`);
-                            }}
-                            className={`p-2 rounded-lg border transition-colors cursor-pointer ${
-                              isEnabled
-                                ? "border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10"
-                                : "border-border text-muted-foreground hover:bg-muted"
-                            }`}
-                            title={isEnabled ? "Click to hide item" : "Click to enable item"}
-                          >
-                            {isEnabled ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-                          </button>
-
-                          {/* Edit Button */}
-                          <button
-                            type="button"
-                            onClick={() => setEditingTickerIndex(isEditing ? null : tIndex)}
-                            className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer ${
-                              isEditing
-                                ? "border-gold bg-gold/20 text-gold-deep font-bold"
-                                : "border-border hover:border-gold hover:bg-pearl text-ink"
-                            }`}
-                          >
-                            <Edit3 className="size-3.5" />
-                            <span>{isEditing ? "Close" : "Edit"}</span>
-                          </button>
-
-                          {/* Delete Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveAnnouncementItem(tIndex)}
-                            className="p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                            title="Delete this ticker item"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Collapsed Item Info */}
-                      {!isEditing && (
-                        <div className="px-4 py-2 border-t border-border/40 bg-card/60 flex flex-wrap items-center gap-2 text-[11px]">
-                          {item.imageUrl && (
-                            <img
-                              src={item.imageUrl}
-                              alt={item.badge}
-                              className="size-6 rounded-md object-cover border border-gold/50 shrink-0 shadow-xs"
-                            />
-                          )}
-                          <span className="px-2 py-0.5 rounded-md bg-gold/15 text-gold-deep font-bold text-[10px]">
-                            Badge: {item.badge}
-                          </span>
-                          {item.code && (
-                            <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 font-mono font-bold text-[10px]">
-                              Code: {item.code}
-                            </span>
-                          )}
-                          <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 text-[10px]">
-                            Link: {item.linkText || "Shop"} → {item.linkTo || "/shop"}
-                          </span>
-                          {item.imageUrl && (
-                            <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-800 border border-blue-500/20 text-[10px] font-semibold">
-                              🖼️ Thumbnail Attached
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Expanded Inline Editor for this Item */}
-                      {isEditing && (
-                        <div className="p-4 sm:p-5 border-t border-gold/30 bg-background space-y-3.5">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {/* Badge */}
-                            <div>
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Tag / Badge Label
-                              </label>
-                              <input
-                                type="text"
-                                value={item.badge || ""}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { badge: e.target.value })}
-                                placeholder="e.g. FLAT 15% OFF, FREE DELIVERY"
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
-                              />
-                            </div>
-
-                            {/* Code */}
-                            <div>
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Promo / Coupon Code (Optional)
-                              </label>
-                              <input
-                                type="text"
-                                value={item.code || ""}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { code: e.target.value })}
-                                placeholder="e.g. LUXE15, FREESHIP"
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono font-bold text-ink focus:border-gold focus:outline-none"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Text */}
-                          <div>
-                            <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                              Announcement Message Text
-                            </label>
-                            <input
-                              type="text"
-                              value={item.text || ""}
-                              onChange={(e) => handleUpdateAnnouncementItem(tIndex, { text: e.target.value })}
-                              placeholder="e.g. Flat 15% OFF on all Pure Attar Oils — Use code LUXE15"
-                              className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            {/* Link Text */}
-                            <div>
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Action Button Text
-                              </label>
-                              <input
-                                type="text"
-                                value={item.linkText || ""}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { linkText: e.target.value })}
-                                placeholder="e.g. Shop Deal, View Collection"
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
-                              />
-                            </div>
-
-                            {/* Link Destination */}
-                            <div>
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Link Destination URL
-                              </label>
-                              <input
-                                type="text"
-                                value={item.linkTo || ""}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { linkTo: e.target.value })}
-                                placeholder="e.g. /shop, /attars, or /perfumes"
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
-                              />
-                            </div>
-
-                            {/* Icon */}
-                            <div>
-                              <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                Ticker Icon
-                              </label>
-                              <select
-                                value={item.icon || "tag"}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { icon: e.target.value as any })}
-                                className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none cursor-pointer"
-                              >
-                                <option value="tag">🏷️ Tag (Deal / Offer)</option>
-                                <option value="truck">🚚 Truck (Shipping / Delivery)</option>
-                                <option value="sparkles">✨ Sparkles (Luxury / Collection)</option>
-                                <option value="gift">🎁 Gift (Free Gift / Coffret)</option>
-                                <option value="flame">🔥 Flame (Hot / Trending)</option>
-                                <option value="shield">🛡️ Shield (Guaranteed Authentic)</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          {/* Item Thumbnail / Icon Image Upload */}
-                          <div className="pt-2 border-t border-border/40">
-                            <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1 flex items-center justify-between">
-                              <span className="flex items-center gap-1.5">
-                                <ImageIcon className="size-3.5 text-gold" />
-                                <span>Item Thumbnail / Icon Image (Optional)</span>
-                              </span>
-                              <span className="text-[10px] text-muted-foreground font-normal lowercase">64×64 to 128×128 px (PNG / WebP / SVG)</span>
-                            </label>
-                            <div className="flex items-center gap-2.5">
-                              {item.imageUrl && (
-                                <img
-                                  src={item.imageUrl}
-                                  alt="Item thumbnail"
-                                  className="size-9 rounded-lg object-cover border border-gold/60 shrink-0 shadow-xs bg-[#16120b]"
-                                />
-                              )}
-                              <label className="px-3.5 py-2 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors">
-                                <Upload className="size-3.5" />
-                                <span>Upload Image</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    try {
-                                      const dataUrl = await compressImageFile(file, 256, 256, 0.9);
-                                      handleUpdateAnnouncementItem(tIndex, { imageUrl: dataUrl });
-                                      toast.success("Thumbnail image uploaded!");
-                                    } catch {
-                                      toast.error("Failed to process thumbnail image.");
-                                    }
-                                  }}
-                                />
-                              </label>
-                              <input
-                                type="text"
-                                value={item.imageUrl || ""}
-                                onChange={(e) => handleUpdateAnnouncementItem(tIndex, { imageUrl: e.target.value })}
-                                placeholder="Or paste direct thumbnail image URL"
-                                className="flex-1 px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
-                              />
-                              {item.imageUrl && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateAnnouncementItem(tIndex, { imageUrl: "" })}
-                                  className="p-2 text-destructive hover:bg-destructive/10 rounded-lg text-xs transition-colors cursor-pointer"
-                                  title="Remove thumbnail"
-                                >
-                                  <Trash2 className="size-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-end pt-1">
-                            <button
-                              type="button"
-                              onClick={() => setEditingTickerIndex(null)}
-                              className="px-4 py-1.5 rounded-full bg-gold/20 hover:bg-gold text-ink font-bold text-xs transition-colors cursor-pointer"
-                            >
-                              ✓ Done Editing Item #{tIndex + 1}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Master Save Button for Top Announcement Bar */}
-              <div className="pt-2 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">
-                    Changes save to your database and update live on the customer header.
-                  </p>
-                  {lastSavedStatus && (
-                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                      <CheckCircle2 className="size-3.5" />
-                      <span>{lastSavedStatus}</span>
-                    </div>
-                  )}
-                </div>
+              <div className="flex flex-col items-stretch sm:items-end gap-1.5 shrink-0">
                 <button
                   type="button"
                   disabled={isSavingSettings}
                   onClick={handleSaveSettings}
-                  className="btn-gold btn-gold-hover px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                  className="btn-gold btn-gold-hover px-6 py-3 rounded-full text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   <Check className="size-4" />
-                  <span>{isSavingSettings ? "Saving to Database..." : "Save Announcement Bar to Database"}</span>
+                  <span>{isSavingSettings ? "Saving to Database..." : "Save Banner Settings to Website"}</span>
                 </button>
+                {lastSavedStatus && (
+                  <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30 self-center sm:self-end">
+                    <CheckCircle2 className="size-3" />
+                    <span>{lastSavedStatus}</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Section 2: Storewide Promotional Long Banner */}
-            <div className="rounded-3xl border border-gold/40 bg-card p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 text-gold-deep text-[11px] font-bold uppercase tracking-wider mb-2">
-                    <Sparkles className="size-3.5" />
-                    <span>Storewide Promotional Showcase</span>
-                  </div>
-                  <h2 className="font-serif text-2xl text-ink font-bold flex items-center gap-2">
-                    <ImageIcon className="size-5 text-gold-deep" />
-                    Promotional Long Banner (Home, Shop, Attars, Perfumes, Watches)
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Display an animated, high-impact promotional banner across the public store: directly below the 3D Hero on the Home page, and atop All Products, Attars, Perfumes, and Watches pages.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setBannerPreviewKey((k) => k + 1)}
-                  className="px-4 py-2 rounded-full border border-gold/50 bg-pearl/80 hover:bg-gold hover:text-ink text-gold-deep text-xs font-semibold flex items-center gap-2 transition-all shrink-0 cursor-pointer"
-                >
-                  <RotateCcw className="size-3.5" />
-                  <span>Replay Animation</span>
-                </button>
-              </div>
-
-              {/* Active Page Coverage Badges */}
-              <div className="p-3.5 rounded-2xl bg-pearl border border-gold/30 flex flex-wrap items-center gap-2 text-xs">
-                <span className="text-[11px] font-bold text-ink uppercase tracking-wider mr-1">Active On Pages:</span>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 text-[10px] font-semibold">✓ Home (Below Hero)</span>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 text-[10px] font-semibold">✓ All Products (/shop)</span>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 text-[10px] font-semibold">✓ Pure Attars (/attars)</span>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 text-[10px] font-semibold">✓ Perfumes (/perfumes)</span>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 text-[10px] font-semibold">✓ Watches (/watches)</span>
-              </div>
-
-              {/* Master Promotional Banner Status & Switch */}
-              <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                settingsForm.heroBannerActive ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-background"
-              }`}>
-                <div className="flex items-center gap-3">
-                  <div className={`size-3 rounded-full ${settingsForm.heroBannerActive ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"}`} />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-bold text-ink">Storefront Promotional Banner Status</p>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        settingsForm.heroBannerActive ? "bg-emerald-500/20 text-emerald-800" : "bg-zinc-500/15 text-zinc-600"
-                      }`}>
-                        {settingsForm.heroBannerActive ? "LIVE ON STOREFRONT" : "HIDDEN / REMOVED"}
-                      </span>
+            {/* 2-Card Visual Banner Location Switcher */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Selector Card 1: Main Storefront Promotional Banner */}
+              <button
+                type="button"
+                onClick={() => setActiveBannerSubTab("main-banner")}
+                className={`p-5 rounded-3xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                  activeBannerSubTab === "main-banner"
+                    ? "border-gold bg-gradient-to-br from-card via-pearl/70 to-gold/10 shadow-md"
+                    : "border-border bg-card/70 hover:border-gold/50 opacity-85 hover:opacity-100"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-10 rounded-2xl bg-gold/20 border border-gold/40 grid place-items-center text-gold-deep shrink-0">
+                      <ImageIcon className="size-5" />
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {settingsForm.heroBannerActive
-                        ? "Promotional banner is published across Home, Shop, Attars, Perfumes, and Watches. Click switch to take it down."
-                        : "Promotional banner is completely hidden and removed from all store pages. Click switch to publish it."}
-                    </p>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gold-deep block">
+                        Banner Location #1 (Main Graphic)
+                      </span>
+                      <h3 className="font-serif text-base sm:text-lg font-bold text-ink leading-tight">
+                        Main Storefront Promotional Banner
+                      </h3>
+                    </div>
                   </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settingsForm.heroBannerActive ?? true}
-                  onChange={(e) => handleToggleHeroBannerActive(e.target.checked)}
-                  className="size-5 accent-gold cursor-pointer"
-                />
-              </div>
-
-              {/* Quick 1-Click Campaign Templates */}
-              <div className="space-y-2">
-                <p className="text-[11px] uppercase tracking-wider text-ink font-bold">1-Click Campaign Presets:</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSettingsForm((prev) => ({
-                        ...prev,
-                        heroBannerTag: "Maison Exclusive · Limited Festive Release",
-                        heroBannerTitle: "Free Express Nationwide Delivery With Every Order Over ₨ 5,000",
-                        heroBannerSubtitle: "100% Alcohol-Free Pure Attar Oils & 35% Extrait Parfums. Use Code LUXE15 for Flat 15% OFF.",
-                        heroBannerButtonText: "Claim Exclusive Offer →",
-                        heroBannerLink: "/shop",
-                        heroBannerTransitionEffect: "slide",
-                        heroBannerAnimation: "slideLeft",
-                      }));
-                      setBannerPreviewKey((k) => k + 1);
-                      toast.info("Applied 'Eid Festive Attars' campaign preset!");
-                    }}
-                    className="p-3 text-left rounded-xl border border-border bg-background hover:border-gold hover:bg-pearl/40 transition-all cursor-pointer text-xs"
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                      settingsForm.heroBannerActive !== false
+                        ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                        : "bg-zinc-500/15 text-zinc-600 border border-zinc-500/30"
+                    }`}
                   >
-                    <p className="font-bold text-ink">🌸 Festive Attars & Delivery</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Free express delivery with orders over ₨ 5k</p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSettingsForm((prev) => ({
-                        ...prev,
-                        heroBannerTag: "Climate Formulation 2026",
-                        heroBannerTitle: "Flat 15% OFF All Extrait De Parfum Sprays (35% Oil Concentration)",
-                        heroBannerSubtitle: "Engineered specifically for Pakistan's heat with 16+ hours longevity. Code LUXE15.",
-                        heroBannerButtonText: "Shop Perfumes →",
-                        heroBannerLink: "/perfumes",
-                        heroBannerTransitionEffect: "slide",
-                        heroBannerAnimation: "slideLeft",
-                      }));
-                      setBannerPreviewKey((k) => k + 1);
-                      toast.info("Applied 'Extrait Perfumes Launch' preset!");
-                    }}
-                    className="p-3 text-left rounded-xl border border-border bg-background hover:border-gold hover:bg-pearl/40 transition-all cursor-pointer text-xs"
-                  >
-                    <p className="font-bold text-ink">💎 Extrait Perfumes</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Flat 15% OFF 35% oil concentration perfumes</p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSettingsForm((prev) => ({
-                        ...prev,
-                        heroBannerTag: "Horology & Fragrance Connoisseurs",
-                        heroBannerTitle: "Complimentary Velvet Saffron EDP with Maison Chronograph Watches",
-                        heroBannerSubtitle: "Automatic skeletons & 18K gold chronographs with sapphire crystal. Code MAISON1000.",
-                        heroBannerButtonText: "View Watches →",
-                        heroBannerLink: "/watches",
-                        heroBannerTransitionEffect: "slide",
-                        heroBannerAnimation: "slideLeft",
-                      }));
-                      setBannerPreviewKey((k) => k + 1);
-                      toast.info("Applied 'Horology Luxury Coffret' preset!");
-                    }}
-                    className="p-3 text-left rounded-xl border border-border bg-background hover:border-gold hover:bg-pearl/40 transition-all cursor-pointer text-xs"
-                  >
-                    <p className="font-bold text-ink">⌚ Horology & Coffrets</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Free EDP with luxury timepieces</p>
-                  </button>
-                </div>
-              </div>
-
-              {/* Image Specifications & Guidance Box */}
-              <div className="p-5 rounded-3xl bg-amber-500/5 border border-amber-500/30 space-y-4 text-xs shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/20 pb-3">
-                  <div className="flex items-center gap-2 text-amber-900 font-bold uppercase tracking-wider text-xs">
-                    <AlertTriangle className="size-4 text-amber-600 shrink-0" />
-                    <span>Recommended Banner Image Specifications & Creative Standards</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 text-[10px] font-bold tracking-wide">
-                    Optimal Ratio: 6:1 Panoramic
+                    {settingsForm.heroBannerActive !== false ? "● LIVE" : "○ HIDDEN"}
                   </span>
                 </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  The large picture or offer banner displayed <strong>below the Hero on the Home page</strong> and at the <strong>top of Shop, Attars, Perfumes, Watches & Product pages</strong>.
+                </p>
+                <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px] font-bold text-gold-deep">
+                  <span>
+                    {hasCustomHeroBannerGraphic(settingsForm.heroBannerImage)
+                      ? "✓ Custom Picture Uploaded in Database"
+                      : "Using Text / Offer Template"}
+                  </span>
+                  <span>{activeBannerSubTab === "main-banner" ? "Editing Now →" : "Click to Customize →"}</span>
+                </div>
+              </button>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* Pillar 1: Resolution */}
-                  <div className="p-3.5 rounded-2xl bg-background border border-amber-500/20 space-y-1">
-                    <p className="font-bold text-ink text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-gold" />
-                      Dimensions & Ratio
-                    </p>
-                    <p className="font-mono text-xs font-bold text-gold-deep">1600 × 260 px</p>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Standard: 1200 × 200 px (6:1 ratio). Keeps banner slim (max 140–190px height) so product catalog stays prominent.
-                    </p>
+              {/* Selector Card 2: Top Header Announcement Bar */}
+              <button
+                type="button"
+                onClick={() => setActiveBannerSubTab("top-bar")}
+                className={`p-5 rounded-3xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                  activeBannerSubTab === "top-bar"
+                    ? "border-gold bg-gradient-to-br from-card via-pearl/70 to-gold/10 shadow-md"
+                    : "border-border bg-card/70 hover:border-gold/50 opacity-85 hover:opacity-100"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-10 rounded-2xl bg-gold/20 border border-gold/40 grid place-items-center text-gold-deep shrink-0">
+                      <Megaphone className="size-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gold-deep block">
+                        Banner Location #2 (Top Navbar Ribbon)
+                      </span>
+                      <h3 className="font-serif text-base sm:text-lg font-bold text-ink leading-tight">
+                        Top Header Announcement Bar
+                      </h3>
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                      settingsForm.announcementActive !== false
+                        ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                        : "bg-zinc-500/15 text-zinc-600 border border-zinc-500/30"
+                    }`}
+                  >
+                    {settingsForm.announcementActive !== false ? "● LIVE" : "○ HIDDEN"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  The thin horizontal ticker bar pinned at the <strong>very top of the navigation bar</strong> across every page for short promo codes & free shipping alerts.
+                </p>
+                <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px] font-bold text-gold-deep">
+                  <span>
+                    {announcementItemsList.filter((i) => i.isEnabled !== false).length} Active Ticker Messages
+                  </span>
+                  <span>{activeBannerSubTab === "top-bar" ? "Editing Now →" : "Click to Customize →"}</span>
+                </div>
+              </button>
+            </div>
+
+            {/* ===================================================================== */}
+            {/* SUB-TAB 1: MAIN STOREFRONT PROMOTIONAL BANNER STUDIO                  */}
+            {/* ===================================================================== */}
+            {activeBannerSubTab === "main-banner" && (
+              <div className="rounded-3xl border border-gold/40 bg-card p-6 sm:p-8 shadow-sm space-y-8">
+                {/* Master Status Bar & 1-Click Activate / Hide Button */}
+                <div
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all ${
+                    settingsForm.heroBannerActive !== false
+                      ? "border-emerald-500/40 bg-emerald-500/5"
+                      : "border-amber-500/40 bg-amber-500/5"
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div
+                      className={`size-4 rounded-full shrink-0 ${
+                        settingsForm.heroBannerActive !== false ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                      }`}
+                    />
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm font-bold text-ink">
+                          Main Storefront Promotional Banner Status
+                        </h3>
+                        <span
+                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                            settingsForm.heroBannerActive !== false
+                              ? "bg-emerald-500/20 text-emerald-800"
+                              : "bg-amber-500/20 text-amber-900"
+                          }`}
+                        >
+                          {settingsForm.heroBannerActive !== false ? "LIVE ON WEBSITE" : "CURRENTLY HIDDEN"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {settingsForm.heroBannerActive !== false
+                          ? "Your banner is active and visible to customers on your selected pages."
+                          : "Your banner is currently hidden. Click the green button on the right to activate it immediately."}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Pillar 2: Mobile Safe Zone */}
-                  <div className="p-3.5 rounded-2xl bg-background border border-amber-500/20 space-y-1">
-                    <p className="font-bold text-ink text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      Mobile Safe Zone
-                    </p>
-                    <p className="font-mono text-xs font-bold text-emerald-800">Central 900 × 200 px</p>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Keep text, promo codes, and logos within the central 900px with 24px edge margins to avoid corner clipping.
-                    </p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleHeroBannerActive(!(settingsForm.heroBannerActive !== false))}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer shrink-0 border ${
+                      settingsForm.heroBannerActive !== false
+                        ? "border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive hover:text-white"
+                        : "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+                    }`}
+                  >
+                    {settingsForm.heroBannerActive !== false ? (
+                      <>
+                        <EyeOff className="size-4" />
+                        <span>Hide Banner from Website</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="size-4" />
+                        <span>Activate Banner on Website Now</span>
+                      </>
+                    )}
+                  </button>
+                </div>
 
-                  {/* Pillar 3: Formats & Size */}
-                  <div className="p-3.5 rounded-2xl bg-background border border-amber-500/20 space-y-1">
-                    <p className="font-bold text-ink text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-blue-500" />
-                      Format & File Size
-                    </p>
-                    <p className="font-mono text-xs font-bold text-blue-800">WebP / PNG / JPG</p>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Recommended: Under 500 KB (Max 1 MB). Built-in client compressor automatically optimizes uploads for 4G speeds.
-                    </p>
+                {/* Live Storefront Preview Box */}
+                <div className="space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="size-2.5 rounded-full bg-gold animate-pulse" />
+                      <p className="text-xs uppercase tracking-wider text-gold-deep font-bold">
+                        Live Real-Time Website Preview (Updates Instantly As You Customize Below)
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBannerPreviewKey((k) => k + 1)}
+                      className="px-3 py-1 rounded-full border border-gold/40 bg-pearl hover:bg-gold hover:text-ink text-gold-deep text-[11px] font-semibold flex items-center gap-1.5 transition-all self-start sm:self-auto cursor-pointer"
+                    >
+                      <RotateCcw className="size-3" />
+                      <span>Replay Animation</span>
+                    </button>
                   </div>
-
-                  {/* Pillar 4: Brand Aesthetic */}
-                  <div className="p-3.5 rounded-2xl bg-background border border-amber-500/20 space-y-1">
-                    <p className="font-bold text-ink text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-amber-500" />
-                      Color & Contrast
-                    </p>
-                    <p className="font-mono text-xs font-bold text-amber-800">Espresso & Gold</p>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">
-                      Dark obsidian/espresso backgrounds (#17130e) with metallic gold text (#C5A880) maintain high outdoor legibility.
-                    </p>
+                  <div className="p-3 sm:p-5 rounded-2xl bg-[#f3ece0] border-2 border-gold/40 overflow-hidden shadow-inner">
+                    <PromotionalBanner
+                      key={bannerPreviewKey}
+                      previewSettings={settingsForm}
+                      forceVisible={true}
+                    />
                   </div>
                 </div>
-              </div>
 
-              {/* Live Animation Preview */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] uppercase tracking-wider text-gold-deep font-bold">
-                    Live Animated Banner Preview ({settingsForm.heroBannerTransitionEffect || "slide"}):
+                {/* STEP 1: CHOOSE BANNER DISPLAY MODE */}
+                <div className="space-y-3 pt-2 border-t border-border">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gold-deep">
+                      Step 1 of 4 · Choose Banner Display Style
+                    </span>
+                    <h3 className="font-serif text-lg font-bold text-ink">
+                      How Do You Want Your Banner to Display?
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      {
+                        id: "image",
+                        title: "🖼️ Picture Banner Only",
+                        badge: "Best for Uploaded Designs",
+                        desc: "Shows your uploaded banner picture cleanly across the page with no extra text covering your design.",
+                      },
+                      {
+                        id: "overlay",
+                        title: "🎨 Picture + Text & Button Overlay",
+                        badge: "Background + Headline",
+                        desc: "Displays your uploaded picture as a background with a customizable headline, promo code & button on top.",
+                      },
+                      {
+                        id: "slides",
+                        title: "🎠 Luxury Offer Card / Carousel",
+                        badge: "Multi-Slide Deck",
+                        desc: "Displays styled text & offer cards or multiple rotating promotional slides.",
+                      },
+                    ].map((modeOption) => {
+                      const currentMode =
+                        settingsForm.heroBannerDisplayMode === "auto" || !settingsForm.heroBannerDisplayMode
+                          ? hasCustomHeroBannerGraphic(settingsForm.heroBannerImage)
+                            ? "image"
+                            : "slides"
+                          : settingsForm.heroBannerDisplayMode;
+                      const isSelected = currentMode === modeOption.id;
+
+                      return (
+                        <button
+                          key={modeOption.id}
+                          type="button"
+                          onClick={() => {
+                            setSettingsForm({
+                              ...settingsForm,
+                              heroBannerDisplayMode: modeOption.id as any,
+                              heroBannerActive: true,
+                            });
+                            setBannerPreviewKey((k) => k + 1);
+                          }}
+                          className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                            isSelected
+                              ? "border-gold bg-gold/10 shadow-sm"
+                              : "border-border bg-background hover:border-gold/50"
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-bold text-xs sm:text-sm text-ink">{modeOption.title}</span>
+                              {isSelected && (
+                                <span className="size-5 rounded-full bg-gold text-ink grid place-items-center text-[10px] font-bold shrink-0">
+                                  ✓
+                                </span>
+                              )}
+                            </div>
+                            <span className="inline-block px-2 py-0.5 rounded-full bg-gold/20 text-gold-deep text-[9px] font-bold uppercase tracking-wider mb-1.5">
+                              {modeOption.badge}
+                            </span>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              {modeOption.desc}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* STEP 2: UPLOAD BANNER PICTURE & CLICK LINK */}
+                <div className="space-y-4 pt-4 border-t border-border">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gold-deep">
+                        Step 2 of 4 · Upload Banner Graphic & Destination Link
+                      </span>
+                      <h3 className="font-serif text-lg font-bold text-ink flex items-center gap-2">
+                        <ImageIcon className="size-4 text-gold-deep" />
+                        <span>Your Banner Picture (Auto-Saves to Database on Upload)</span>
+                      </h3>
+                    </div>
+
+                    {hasCustomHeroBannerGraphic(settingsForm.heroBannerImage) && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const updated = {
+                            ...settingsForm,
+                            heroBannerImage: "",
+                            heroBannerDisplayMode: "slides" as const,
+                          };
+                          setSettingsForm(updated);
+                          setBannerPreviewKey((k) => k + 1);
+                          await updateSettings(updated);
+                          await refreshDataFromServer(true);
+                          toast.info("Removed custom banner picture.");
+                        }}
+                        className="px-3 py-1.5 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/10 text-xs font-semibold flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                      >
+                        <Trash2 className="size-3.5" />
+                        <span>Remove Uploaded Picture</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="p-4 sm:p-5 rounded-2xl border border-gold/40 bg-background space-y-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                      <label className="px-5 py-3 rounded-xl bg-gold hover:bg-gold-light text-ink text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shrink-0 transition-all shadow-xs">
+                        <Upload className="size-4" />
+                        <span>Upload Banner Picture from Device</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              const dataUrl = await compressImageFile(file, 1800, 700, 0.9);
+                              await handleUploadHeroBannerImage(dataUrl);
+                            } catch {
+                              toast.error("Failed to process banner picture.");
+                            }
+                          }}
+                        />
+                      </label>
+
+                      <input
+                        type="text"
+                        value={
+                          settingsForm.heroBannerImage === "/product-box.jpg"
+                            ? ""
+                            : settingsForm.heroBannerImage || ""
+                        }
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerImage: e.target.value,
+                            heroBannerActive: true,
+                          });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        placeholder="Or paste a direct image URL (https://...) or data:image/..."
+                        className="flex-1 px-4 py-3 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                      />
+                    </div>
+
+                    {hasCustomHeroBannerGraphic(settingsForm.heroBannerImage) ? (
+                      <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={settingsForm.heroBannerImage}
+                            alt="Uploaded Banner Thumbnail"
+                            className="h-14 w-28 sm:w-36 rounded-lg object-cover border border-gold/50 bg-[#16120b] shrink-0"
+                          />
+                          <div>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 text-[10px] font-bold uppercase">
+                              <CheckCircle2 className="size-3" />
+                              Picture Stored in Database
+                            </span>
+                            <p className="text-xs text-ink font-semibold mt-1">
+                              Your custom banner picture is loaded and ready.
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Tip: Use <strong>"Full Picture Auto-Fit (No Cropping)"</strong> in Step 3 below so your whole graphic shows cleanly.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">
+                        Recommended size: <strong>1200×250 px</strong> to <strong>1600×400 px</strong> (WebP, PNG, or JPG). Any aspect ratio works when <em>Full Picture Auto-Fit</em> is selected!
+                      </p>
+                    )}
+
+                    {/* Click Destination URL & Quick Presets */}
+                    <div className="pt-3 border-t border-border/60 space-y-2">
+                      <label className="block text-xs font-bold text-ink">
+                        Where Should Clicking the Banner Take Customers?
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2.5">
+                        <input
+                          type="text"
+                          value={settingsForm.heroBannerLink || "/shop"}
+                          onChange={(e) =>
+                            setSettingsForm({ ...settingsForm, heroBannerLink: e.target.value })
+                          }
+                          placeholder="/shop, /attars, /perfumes, /watches, or https://..."
+                          className="flex-1 px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
+                        />
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {[
+                            { label: "All Products", url: "/shop" },
+                            { label: "Pure Attars", url: "/attars" },
+                            { label: "Perfumes", url: "/perfumes" },
+                            { label: "Watches", url: "/watches" },
+                          ].map((preset) => (
+                            <button
+                              key={preset.url}
+                              type="button"
+                              onClick={() =>
+                                setSettingsForm({ ...settingsForm, heroBannerLink: preset.url })
+                              }
+                              className={`px-3 py-2 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
+                                (settingsForm.heroBannerLink || "/shop") === preset.url
+                                  ? "border-gold bg-gold text-ink"
+                                  : "border-border bg-pearl/60 text-ink hover:border-gold"
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* STEP 3: RICH VISUAL CUSTOMIZATION OPTIONS (SIZE, FIT, FRAME, PAGES) */}
+                <div className="space-y-5 pt-4 border-t border-border">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gold-deep">
+                      Step 3 of 4 · Customize Size, Fit, Borders & Page Placement
+                    </span>
+                    <h3 className="font-serif text-lg font-bold text-ink flex items-center gap-2">
+                      <Sliders className="size-4 text-gold-deep" />
+                      <span>Banner Appearance & Page Visibility Controls</span>
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* 1. Banner Height / Aspect Ratio */}
+                    <div className="p-4 rounded-2xl border border-border bg-background space-y-1.5">
+                      <label className="block text-xs font-bold text-ink">
+                        1. Banner Height & Proportions
+                      </label>
+                      <select
+                        value={settingsForm.heroBannerHeight || "auto"}
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerHeight: e.target.value as any,
+                          });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-xs font-semibold text-ink focus:border-gold focus:outline-none cursor-pointer"
+                      >
+                        <option value="auto">📐 Full Picture Auto-Fit (No Cropping)</option>
+                        <option value="slim">📏 Slim Ribbon (140px High)</option>
+                        <option value="medium">🖼️ Medium Banner (220px High)</option>
+                        <option value="tall">🏛️ Tall Showcase (320px High)</option>
+                        <option value="hero">👑 Grand Hero Size (420px High)</option>
+                      </select>
+                      <p className="text-[10px] text-muted-foreground">
+                        Choose "Full Picture Auto-Fit" to display your entire uploaded image without top/bottom cropping.
+                      </p>
+                    </div>
+
+                    {/* 2. Image Fit Mode */}
+                    <div className="p-4 rounded-2xl border border-border bg-background space-y-1.5">
+                      <label className="block text-xs font-bold text-ink">
+                        2. Image Scaling Mode
+                      </label>
+                      <select
+                        value={settingsForm.heroBannerImageFit || "cover"}
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerImageFit: e.target.value as any,
+                          });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-xs font-semibold text-ink focus:border-gold focus:outline-none cursor-pointer"
+                      >
+                        <option value="cover">🖼️ Cover (Fills Frame Edge-to-Edge)</option>
+                        <option value="contain">🔍 Contain (Fit Entire Picture Inside Frame)</option>
+                        <option value="fill">↔️ Stretch to Exact Box Dimensions</option>
+                      </select>
+                      <p className="text-[10px] text-muted-foreground">
+                        Controls how your uploaded picture scales inside fixed-height frames.
+                      </p>
+                    </div>
+
+                    {/* 3. Corner Rounding */}
+                    <div className="p-4 rounded-2xl border border-border bg-background space-y-1.5">
+                      <label className="block text-xs font-bold text-ink">
+                        3. Corner Style
+                      </label>
+                      <select
+                        value={settingsForm.heroBannerBorderRadius || "rounded"}
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerBorderRadius: e.target.value as any,
+                          });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-xs font-semibold text-ink focus:border-gold focus:outline-none cursor-pointer"
+                      >
+                        <option value="rounded">✨ Luxury Rounded Corners (Default)</option>
+                        <option value="pill">💊 Soft Extra-Rounded</option>
+                        <option value="none">⬛ Sharp Edge-to-Edge Corners</option>
+                      </select>
+                      <p className="text-[10px] text-muted-foreground">
+                        Adjusts the outer corner curve of the banner frame.
+                      </p>
+                    </div>
+
+                    {/* 4. Border & Glow Style */}
+                    <div className="p-4 rounded-2xl border border-border bg-background space-y-1.5">
+                      <label className="block text-xs font-bold text-ink">
+                        4. Frame & Border Effect
+                      </label>
+                      <select
+                        value={settingsForm.heroBannerBorderStyle || "gold"}
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerBorderStyle: e.target.value as any,
+                          });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-xs font-semibold text-ink focus:border-gold focus:outline-none cursor-pointer"
+                      >
+                        <option value="gold">🥇 Classic Metallic Gold Border</option>
+                        <option value="glow">🌟 Illuminated Golden Aura Glow</option>
+                        <option value="minimal">🪶 Minimal Subtle Border</option>
+                        <option value="none">🚫 No Border (Frameless)</option>
+                      </select>
+                      <p className="text-[10px] text-muted-foreground">
+                        Adds a royal gold trim or glowing aura around your banner.
+                      </p>
+                    </div>
+
+                    {/* 5. Color Theme (for Overlay / Text Cards) */}
+                    <div className="p-4 rounded-2xl border border-border bg-background space-y-1.5">
+                      <label className="block text-xs font-bold text-ink">
+                        5. Luxury Color Theme
+                      </label>
+                      <select
+                        value={settingsForm.heroBannerTheme || "obsidian-gold"}
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerTheme: e.target.value as any,
+                          });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        className="w-full px-3 py-2.5 rounded-xl border border-border bg-card text-xs font-semibold text-ink focus:border-gold focus:outline-none cursor-pointer"
+                      >
+                        <option value="obsidian-gold">🖤 Obsidian Espresso & Gold</option>
+                        <option value="emerald-royal">💚 Royal Emerald & Gold</option>
+                        <option value="crimson-velvet">❤️ Crimson Velvet & Gold</option>
+                        <option value="midnight-noir">🌑 Midnight Noir & Platinum</option>
+                        <option value="pearl-light">🤍 Champagne Pearl & Espresso</option>
+                      </select>
+                      <p className="text-[10px] text-muted-foreground">
+                        Used when displaying Offer Cards or Multi-Slide Carousels.
+                      </p>
+                    </div>
+
+                    {/* 6. Metallic Gold Shimmer Sweep */}
+                    <div className="p-4 rounded-2xl border border-border bg-background flex flex-col justify-between">
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="text-xs font-bold text-ink flex items-center gap-1.5">
+                          <Sparkles className="size-3.5 text-gold" />
+                          <span>6. Gold Shimmer Beam</span>
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={settingsForm.heroBannerShimmer ?? true}
+                          onChange={(e) => {
+                            setSettingsForm({
+                              ...settingsForm,
+                              heroBannerShimmer: e.target.checked,
+                            });
+                            setBannerPreviewKey((k) => k + 1);
+                          }}
+                          className="size-5 accent-gold cursor-pointer"
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Sweeps an animated luxury light reflection diagonally across your banner every few seconds.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Page Visibility Checkboxes: Choose Exactly Which Pages Show the Banner */}
+                  <div className="p-4 sm:p-5 rounded-2xl border border-gold/30 bg-pearl/40 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <div>
+                        <h4 className="text-xs font-bold text-ink uppercase tracking-wider">
+                          Where Should This Banner Appear on Your Website?
+                        </h4>
+                        <p className="text-[11px] text-muted-foreground">
+                          Check or uncheck individual pages below to control exactly where customers see this banner.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerPages: {
+                              home: true,
+                              shop: true,
+                              attars: true,
+                              perfumes: true,
+                              watches: true,
+                              product: true,
+                            },
+                          })
+                        }
+                        className="text-[11px] text-gold-deep hover:underline font-bold self-start sm:self-auto cursor-pointer"
+                      >
+                        Select All Pages
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                      {[
+                        { key: "home", label: "Home Page", sub: "Below Hero" },
+                        { key: "shop", label: "Shop All", sub: "/shop" },
+                        { key: "attars", label: "Pure Attars", sub: "/attars" },
+                        { key: "perfumes", label: "Perfumes", sub: "/perfumes" },
+                        { key: "watches", label: "Watches", sub: "/watches" },
+                        { key: "product", label: "Product Pages", sub: "/product/..." },
+                      ].map((p) => {
+                        const pagesConfig = settingsForm.heroBannerPages || {
+                          home: true,
+                          shop: true,
+                          attars: true,
+                          perfumes: true,
+                          watches: true,
+                          product: true,
+                        };
+                        const isChecked = (pagesConfig as any)[p.key] !== false;
+
+                        return (
+                          <label
+                            key={p.key}
+                            className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start gap-2.5 select-none ${
+                              isChecked
+                                ? "border-emerald-500/40 bg-emerald-500/10 text-ink font-bold"
+                                : "border-border bg-card text-muted-foreground"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                setSettingsForm({
+                                  ...settingsForm,
+                                  heroBannerPages: {
+                                    ...pagesConfig,
+                                    [p.key]: e.target.checked,
+                                  },
+                                });
+                              }}
+                              className="size-4 accent-gold mt-0.5 cursor-pointer"
+                            />
+                            <div className="min-w-0">
+                              <span className="block truncate leading-tight">{p.label}</span>
+                              <span className="block text-[10px] text-muted-foreground font-normal">
+                                {p.sub}
+                              </span>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* STEP 4: OVERLAY TEXT, BUTTONS & MULTI-SLIDE CAROUSEL EDITOR */}
+                <div className="space-y-5 pt-4 border-t border-border">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gold-deep">
+                        Step 4 of 4 · Text Overlay, Animation & Carousel Slides
+                      </span>
+                      <h3 className="font-serif text-lg font-bold text-ink">
+                        Banner Text, Promo Code & Carousel Slides
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        {settingsForm.heroBannerDisplayMode === "image" ||
+                        ((!settingsForm.heroBannerDisplayMode ||
+                          settingsForm.heroBannerDisplayMode === "auto") &&
+                          hasCustomHeroBannerGraphic(settingsForm.heroBannerImage))
+                          ? "Note: You are currently in 'Picture Banner Only' mode, so your uploaded graphic displays cleanly without extra overlay text. Switch to 'Picture + Text Overlay' or 'Carousel' in Step 1 if you want text on top."
+                          : "Customize the headline, promo code, button text, alignment, and slides displayed on your banner."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Text Overlay & Primary Offer Fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 sm:p-5 rounded-2xl border border-border bg-background">
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Top Pill / Badge Tag
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.heroBannerTag || ""}
+                        onChange={(e) => {
+                          setSettingsForm({ ...settingsForm, heroBannerTag: e.target.value });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        placeholder="e.g. Maison Exclusive · Limited Release"
+                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Promo Code Badge (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.heroBannerCode ?? "LUXE15"}
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerCode: e.target.value.toUpperCase(),
+                          });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        placeholder="e.g. LUXE15 or FREEDELIVERY"
+                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono font-bold text-ink uppercase focus:border-gold focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Action Button Label
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.heroBannerButtonText || ""}
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerButtonText: e.target.value,
+                          });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        placeholder="e.g. Shop Collection →"
+                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2 lg:col-span-3">
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Main Headline
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.heroBannerTitle || ""}
+                        onChange={(e) => {
+                          setSettingsForm({ ...settingsForm, heroBannerTitle: e.target.value });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        placeholder="e.g. Free Delivery on Orders Above Rs. 3,000"
+                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-semibold text-ink focus:border-gold focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2 lg:col-span-3">
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Subtitle / Offer Details
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.heroBannerSubtitle || ""}
+                        onChange={(e) => {
+                          setSettingsForm({ ...settingsForm, heroBannerSubtitle: e.target.value });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        placeholder="e.g. Discover Your Signature Scent — 100% Pure Alcohol-Free Attars & Extrait Parfums"
+                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Text Alignment */}
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Text Alignment
+                      </label>
+                      <select
+                        value={settingsForm.heroBannerTextAlign || "left"}
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerTextAlign: e.target.value as any,
+                          });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none cursor-pointer"
+                      >
+                        <option value="left">⬅️ Left Aligned (Classic)</option>
+                        <option value="center">↔️ Center Aligned (Editorial)</option>
+                        <option value="right">➡️ Right Aligned</option>
+                      </select>
+                    </div>
+
+                    {/* Overlay Darkness Slider (For Picture + Overlay Mode) */}
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Overlay Background Tint ({settingsForm.heroBannerOverlayOpacity ?? 50}%)
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={85}
+                        step={5}
+                        value={settingsForm.heroBannerOverlayOpacity ?? 50}
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerOverlayOpacity: Number(e.target.value),
+                          });
+                        }}
+                        className="w-full accent-gold cursor-pointer mt-2"
+                      />
+                    </div>
+
+                    {/* Transition Animation */}
+                    <div>
+                      <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
+                        Animation & Transition Effect
+                      </label>
+                      <select
+                        value={settingsForm.heroBannerTransitionEffect || "slide"}
+                        onChange={(e) => {
+                          setSettingsForm({
+                            ...settingsForm,
+                            heroBannerTransitionEffect: e.target.value as any,
+                          });
+                          setBannerPreviewKey((k) => k + 1);
+                        }}
+                        className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none cursor-pointer"
+                      >
+                        <option value="slide">➡️ Smooth Horizontal Slide</option>
+                        <option value="marquee">♾️ Continuous Marquee Ticker Ribbon</option>
+                        <option value="fade">✨ Opulent Crossfade Dissolve</option>
+                        <option value="zoom">🔍 Modern Scale Zoom</option>
+                        <option value="flip">💎 3D Perspective Flip</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Multi-Slide Carousel Deck (Only expanded when Mode is "slides" or user wants multiple slides) */}
+                  {settingsForm.heroBannerDisplayMode === "slides" && (
+                    <div className="space-y-4 pt-4 border-t border-border">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-serif text-base font-bold text-ink">
+                              Multi-Slide Carousel Deck ({promotionalSlidesList.length} Slides)
+                            </h4>
+                            <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold-deep text-[10px] font-bold">
+                              {promotionalSlidesList.filter((s) => s.isEnabled !== false).length} Active
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Add or edit multiple rotating slides for your carousel.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={settingsForm.heroBannerTransitionSpeed ?? 4500}
+                            onChange={(e) => {
+                              setSettingsForm({
+                                ...settingsForm,
+                                heroBannerTransitionSpeed: parseInt(e.target.value, 10),
+                              });
+                              setBannerPreviewKey((k) => k + 1);
+                            }}
+                            className="px-3 py-2 rounded-xl border border-border bg-background text-xs text-ink focus:border-gold focus:outline-none cursor-pointer"
+                          >
+                            <option value="2500">⚡ 2.5s Speed</option>
+                            <option value="3500">🏎️ 3.5s Speed</option>
+                            <option value="4500">✨ 4.5s Speed</option>
+                            <option value="6000">⏳ 6.0s Speed</option>
+                            <option value="0">🛑 Paused</option>
+                          </select>
+
+                          <button
+                            type="button"
+                            onClick={handleAddPromotionalSlide}
+                            className="px-3.5 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
+                          >
+                            <Plus className="size-3.5" />
+                            <span>Add Slide</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleResetPromotionalSlides}
+                            className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-pearl text-muted-foreground hover:text-ink text-xs transition-colors cursor-pointer"
+                            title="Restore 4 Default Maison Slides"
+                          >
+                            <RotateCcw className="size-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {promotionalSlidesList.map((slide, sIndex) => {
+                          const isEditing = editingSlideIndex === sIndex;
+                          const isEnabled = slide.isEnabled !== false;
+
+                          return (
+                            <div
+                              key={slide.id || sIndex}
+                              className={`rounded-2xl border transition-all ${
+                                isEnabled
+                                  ? "border-gold/40 bg-card shadow-xs"
+                                  : "border-border/60 bg-muted/30 opacity-75"
+                              } overflow-hidden`}
+                            >
+                              <div className="p-4 flex items-center justify-between gap-3 bg-pearl/40">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <span className="size-6 rounded-full bg-gold/20 text-gold-deep text-xs font-bold flex items-center justify-center shrink-0">
+                                    #{sIndex + 1}
+                                  </span>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                          isEnabled
+                                            ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
+                                            : "bg-zinc-500/15 text-zinc-600 border border-zinc-500/30"
+                                        }`}
+                                      >
+                                        {isEnabled ? "Active" : "Hidden"}
+                                      </span>
+                                      <span className="text-xs font-bold text-ink truncate max-w-[240px] sm:max-w-md">
+                                        {slide.title || "Untitled Slide"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleUpdatePromotionalSlide(sIndex, { isEnabled: !isEnabled })
+                                    }
+                                    className="p-2 rounded-lg border border-border text-ink hover:bg-pearl transition-colors cursor-pointer"
+                                  >
+                                    {isEnabled ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingSlideIndex(isEditing ? null : sIndex)}
+                                    className="px-3 py-1.5 rounded-lg border border-border hover:border-gold bg-card text-xs font-medium flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Edit3 className="size-3.5" />
+                                    <span>{isEditing ? "Close" : "Edit"}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemovePromotionalSlide(sIndex)}
+                                    className="p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {isEditing && (
+                                <div className="p-4 border-t border-gold/30 bg-background grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-[11px] uppercase font-bold mb-1">Tagline</label>
+                                    <input
+                                      type="text"
+                                      value={slide.tag || ""}
+                                      onChange={(e) =>
+                                        handleUpdatePromotionalSlide(sIndex, { tag: e.target.value })
+                                      }
+                                      className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] uppercase font-bold mb-1">Promo Code</label>
+                                    <input
+                                      type="text"
+                                      value={slide.code || ""}
+                                      onChange={(e) =>
+                                        handleUpdatePromotionalSlide(sIndex, {
+                                          code: e.target.value.toUpperCase(),
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs font-mono font-bold"
+                                    />
+                                  </div>
+                                  <div className="sm:col-span-2">
+                                    <label className="block text-[11px] uppercase font-bold mb-1">Headline</label>
+                                    <input
+                                      type="text"
+                                      value={slide.title || ""}
+                                      onChange={(e) =>
+                                        handleUpdatePromotionalSlide(sIndex, { title: e.target.value })
+                                      }
+                                      className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs font-semibold"
+                                    />
+                                  </div>
+                                  <div className="sm:col-span-2">
+                                    <label className="block text-[11px] uppercase font-bold mb-1">Subtitle</label>
+                                    <input
+                                      type="text"
+                                      value={slide.subtitle || ""}
+                                      onChange={(e) =>
+                                        handleUpdatePromotionalSlide(sIndex, { subtitle: e.target.value })
+                                      }
+                                      className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] uppercase font-bold mb-1">Button Text</label>
+                                    <input
+                                      type="text"
+                                      value={slide.buttonText || ""}
+                                      onChange={(e) =>
+                                        handleUpdatePromotionalSlide(sIndex, { buttonText: e.target.value })
+                                      }
+                                      className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] uppercase font-bold mb-1">Link URL</label>
+                                    <input
+                                      type="text"
+                                      value={slide.linkUrl || ""}
+                                      onChange={(e) =>
+                                        handleUpdatePromotionalSlide(sIndex, { linkUrl: e.target.value })
+                                      }
+                                      className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs font-mono"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Save Button */}
+                <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">
+                    Click Save to publish all Main Promotional Banner customizations to Supabase and your live website.
                   </p>
-                  <span className="text-[10px] text-muted-foreground">Preview below hero container</span>
-                </div>
-                <div className="p-4 rounded-2xl bg-[#f3ece0] border border-gold/40 overflow-hidden shadow-inner">
-                  <PromotionalBanner
-                    key={bannerPreviewKey}
-                    imageUrl={settingsForm.heroBannerImage}
-                    alt={settingsForm.heroBannerAlt || "Maison Promotion"}
-                    linkUrl={settingsForm.heroBannerLink || "/shop"}
-                    animationType={(settingsForm.heroBannerTransitionEffect || settingsForm.heroBannerAnimation as any) || "slide"}
-                    tag={settingsForm.heroBannerTag}
-                    title={settingsForm.heroBannerTitle}
-                    subtitle={settingsForm.heroBannerSubtitle}
-                    buttonText={settingsForm.heroBannerButtonText}
-                    autoPlayInterval={settingsForm.heroBannerTransitionSpeed || 4500}
-                  />
+                  <button
+                    type="button"
+                    disabled={isSavingSettings}
+                    onClick={handleSaveSettings}
+                    className="btn-gold btn-gold-hover px-7 py-3 rounded-full text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-sm"
+                  >
+                    <Check className="size-4" />
+                    <span>{isSavingSettings ? "Saving to Database..." : "Save Main Banner to Website"}</span>
+                  </button>
                 </div>
               </div>
+            )}
 
-              {/* Form Controls */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                {/* Active Toggle */}
-                <div className="sm:col-span-2 flex items-center justify-between p-4 rounded-2xl border border-border bg-background">
-                  <div>
-                    <p className="text-xs font-bold text-ink">Enable Promotional Banner Across Storefront</p>
-                    <p className="text-[11px] text-muted-foreground">Renders banner on Home (below Hero), Shop, Attars, Perfumes, and Watches</p>
+            {/* ===================================================================== */}
+            {/* SUB-TAB 2: TOP HEADER ANNOUNCEMENT BAR STUDIO                         */}
+            {/* ===================================================================== */}
+            {activeBannerSubTab === "top-bar" && (
+              <div className="rounded-3xl border border-gold/40 bg-card p-6 sm:p-8 shadow-sm space-y-6">
+                {/* Master Status & Toggle */}
+                <div
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all ${
+                    settingsForm.announcementActive !== false
+                      ? "border-emerald-500/40 bg-emerald-500/5"
+                      : "border-amber-500/40 bg-amber-500/5"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`size-4 rounded-full shrink-0 ${
+                        settingsForm.announcementActive !== false
+                          ? "bg-emerald-500 animate-pulse"
+                          : "bg-amber-500"
+                      }`}
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-ink">Top Header Announcement Bar Status</p>
+                        <span
+                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                            settingsForm.announcementActive !== false
+                              ? "bg-emerald-500/20 text-emerald-800"
+                              : "bg-amber-500/20 text-amber-900"
+                          }`}
+                        >
+                          {settingsForm.announcementActive !== false ? "LIVE ON WEBSITE" : "HIDDEN"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Pinned at the very top of the navigation bar across all pages.
+                      </p>
+                    </div>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={settingsForm.heroBannerActive ?? true}
-                    onChange={(e) => handleToggleHeroBannerActive(e.target.checked)}
-                    className="size-5 accent-gold cursor-pointer"
-                  />
-                </div>
 
-                {/* Tagline */}
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                    Banner Top Pill / Tagline
-                  </label>
-                  <input
-                    type="text"
-                    value={settingsForm.heroBannerTag || ""}
-                    onChange={(e) => {
-                      setSettingsForm({ ...settingsForm, heroBannerTag: e.target.value });
-                      setBannerPreviewKey((k) => k + 1);
-                    }}
-                    placeholder="e.g. Maison Exclusive · Limited Festive Release"
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none"
-                  />
-                </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleAnnouncementActive(!settingsForm.announcementActive)}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer border ${
+                        settingsForm.announcementActive
+                          ? "border-destructive/30 text-destructive bg-destructive/5 hover:bg-destructive hover:text-white"
+                          : "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+                      }`}
+                    >
+                      {settingsForm.announcementActive ? (
+                        <>
+                          <EyeOff className="size-3.5" />
+                          <span>Hide Top Bar</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="size-3.5" />
+                          <span>Activate Top Bar</span>
+                        </>
+                      )}
+                    </button>
 
-                {/* Transition Effect Style Selector */}
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                    Animated Transition Effect
-                  </label>
-                  <select
-                    value={settingsForm.heroBannerTransitionEffect || "slide"}
-                    onChange={(e) => {
-                      setSettingsForm({ ...settingsForm, heroBannerTransitionEffect: e.target.value as any });
-                      setBannerPreviewKey((k) => k + 1);
-                    }}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none cursor-pointer"
-                  >
-                    <option value="slide">➡️ Smooth Horizontal Slide Track (Glides In & Out Simultaneously)</option>
-                    <option value="marquee">♾️ Continuous Infinite Sliding Ribbon (Endless Gliding Ticker)</option>
-                    <option value="fade">✨ Opulent Crossfade Dissolve (Subtle Luxury)</option>
-                    <option value="zoom">🔍 Modern Scale Morph (Zoom Dynamics)</option>
-                    <option value="flip">💎 3D Perspective Luxury Flip</option>
-                  </select>
-                </div>
+                    <button
+                      type="button"
+                      onClick={handleAddAnnouncementItem}
+                      className="px-4 py-2.5 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
+                    >
+                      <Plus className="size-3.5" />
+                      <span>Add Message</span>
+                    </button>
 
-                {/* Auto-Transition Speed */}
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                    Auto-Rotation Transition Speed
-                  </label>
-                  <select
-                    value={settingsForm.heroBannerTransitionSpeed || 4500}
-                    onChange={(e) => {
-                      setSettingsForm({ ...settingsForm, heroBannerTransitionSpeed: parseInt(e.target.value, 10) });
-                      setBannerPreviewKey((k) => k + 1);
-                    }}
-                    className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-sm text-ink focus:border-gold focus:outline-none cursor-pointer font-mono text-xs"
-                  >
-                    <option value="2500">⚡ 2.5 Seconds (Rapid Slide)</option>
-                    <option value="3500">🏎️ 3.5 Seconds (Fast Rotation)</option>
-                    <option value="4500">✨ 4.5 Seconds (Standard Recommended)</option>
-                    <option value="6000">⏳ 6.0 Seconds (Relaxed)</option>
-                    <option value="8000">🌿 8.0 Seconds (Gentle)</option>
-                    <option value="0">🛑 Paused (Manual Arrow/Dot Navigation Only)</option>
-                  </select>
-                </div>
-
-                {/* Shimmer Light Beam Effect Toggle */}
-                <div className="sm:col-span-2 flex items-center justify-between p-3.5 rounded-2xl border border-border bg-background">
-                  <div>
-                    <p className="text-xs font-bold text-ink flex items-center gap-1.5">
-                      <Sparkles className="size-3.5 text-gold" />
-                      Continuous Metallic Gold Shimmer Light Beam
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">Sweeps an animated radiant light reflection diagonally across the banner</p>
+                    <button
+                      type="button"
+                      onClick={handleResetAnnouncementItems}
+                      className="px-3 py-2.5 rounded-xl border border-border bg-background hover:bg-pearl text-muted-foreground hover:text-ink text-xs transition-colors cursor-pointer"
+                      title="Restore Default Ticker Messages"
+                    >
+                      <RotateCcw className="size-3.5" />
+                    </button>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={settingsForm.heroBannerShimmer ?? true}
-                    onChange={(e) => {
-                      setSettingsForm({ ...settingsForm, heroBannerShimmer: e.target.checked });
-                      setBannerPreviewKey((k) => k + 1);
-                    }}
-                    className="size-5 accent-gold cursor-pointer"
-                  />
                 </div>
 
-                {/* Default Storewide Graphic Banner Image */}
-                <div className="sm:col-span-2 p-4 rounded-2xl border border-border bg-background space-y-3">
+                {/* Top Bar Style Customizations (Theme, Speed, Dismissible, Background Texture) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-2xl border border-border bg-background space-y-1.5">
+                    <label className="block text-xs font-bold text-ink">1. Top Bar Color Theme</label>
+                    <select
+                      value={settingsForm.announcementTheme || "obsidian-gold"}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          announcementTheme: e.target.value as any,
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs font-semibold text-ink focus:border-gold focus:outline-none cursor-pointer"
+                    >
+                      <option value="obsidian-gold">🖤 Obsidian Espresso & Gold</option>
+                      <option value="gold-solid">🥇 Solid Metallic Gold Ribbon</option>
+                      <option value="emerald-royal">💚 Royal Emerald & Gold</option>
+                      <option value="crimson-velvet">❤️ Crimson Velvet & Gold</option>
+                    </select>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-border bg-background space-y-1.5">
+                    <label className="block text-xs font-bold text-ink">2. Message Rotation Speed</label>
+                    <select
+                      value={settingsForm.announcementSpeed ?? 5000}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          announcementSpeed: Number(e.target.value),
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs font-semibold text-ink focus:border-gold focus:outline-none cursor-pointer"
+                    >
+                      <option value={3000}>⚡ 3 Seconds (Fast)</option>
+                      <option value={5000}>✨ 5 Seconds (Standard)</option>
+                      <option value={8000}>⏳ 8 Seconds (Relaxed)</option>
+                      <option value={0}>🛑 Static (Show First Message Only)</option>
+                    </select>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-border bg-background flex items-center justify-between gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-ink">3. Allow Close (✕) Button</label>
+                      <p className="text-[10px] text-muted-foreground">
+                        Lets visitors dismiss the top ribbon
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={settingsForm.announcementDismissible !== false}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          announcementDismissible: e.target.checked,
+                        })
+                      }
+                      className="size-5 accent-gold cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Optional Announcement Ribbon Background Texture */}
+                <div className="p-4 rounded-2xl border border-border bg-background space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <label className="block text-xs font-bold text-ink flex items-center gap-1.5">
                         <ImageIcon className="size-3.5 text-gold" />
-                        <span>Default Storewide Graphic Banner Image (Optional)</span>
+                        <span>Top Bar Background Texture Image (Optional)</span>
                       </label>
                       <p className="text-[11px] text-muted-foreground">
-                        Upload a wide promotional graphic banner (1600×320 px) to display as the default graphic across the public storefront.
+                        Upload a wide texture (1920×80 px) to span behind the top announcement bar.
                       </p>
                     </div>
-                    {settingsForm.heroBannerImage && (
+                    {settingsForm.announcementBackgroundImage && (
                       <button
                         type="button"
-                        onClick={() => {
-                          setSettingsForm({ ...settingsForm, heroBannerImage: "" });
-                          setBannerPreviewKey((k) => k + 1);
-                        }}
-                        className="text-[11px] text-destructive hover:underline font-semibold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                        onClick={() =>
+                          setSettingsForm({ ...settingsForm, announcementBackgroundImage: "" })
+                        }
+                        className="text-[11px] text-destructive hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                       >
                         <Trash2 className="size-3" />
-                        <span>Remove Default Graphic</span>
+                        <span>Remove Texture</span>
                       </button>
                     )}
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                    <label className="px-4 py-2.5 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shrink-0 transition-colors">
+                    <label className="px-4 py-2 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shrink-0 transition-colors">
                       <Upload className="size-4" />
-                      <span>Upload Banner Graphic</span>
+                      <span>Upload Ribbon Texture</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -7735,437 +8132,206 @@ function AdminDashboard() {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           try {
-                            const dataUrl = await compressImageFile(file, 1600, 320, 0.88);
-                            setSettingsForm({ ...settingsForm, heroBannerImage: dataUrl });
-                            setBannerPreviewKey((k) => k + 1);
-                            toast.success("Default banner graphic uploaded & compressed!");
+                            const dataUrl = await compressImageFile(file, 1920, 120, 0.85);
+                            setSettingsForm({
+                              ...settingsForm,
+                              announcementBackgroundImage: dataUrl,
+                            });
+                            toast.success("Top bar background image uploaded!");
                           } catch {
-                            toast.error("Failed to process banner graphic.");
+                            toast.error("Failed to process background image.");
                           }
                         }}
                       />
                     </label>
                     <input
                       type="text"
-                      value={settingsForm.heroBannerImage || ""}
-                      onChange={(e) => {
-                        setSettingsForm({ ...settingsForm, heroBannerImage: e.target.value });
-                        setBannerPreviewKey((k) => k + 1);
-                      }}
-                      placeholder="Or paste direct image URL (e.g. https://...)"
+                      value={settingsForm.announcementBackgroundImage || ""}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          announcementBackgroundImage: e.target.value,
+                        })
+                      }
+                      placeholder="Or paste direct image URL (https://...)"
                       className="flex-1 px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
                     />
                   </div>
+                </div>
 
-                  {settingsForm.heroBannerImage && (
-                    <div className="relative rounded-xl overflow-hidden border border-gold/40 h-24 sm:h-28 w-full bg-[#16120b] shadow-inner">
-                      <img
-                        src={settingsForm.heroBannerImage}
-                        alt="Hero Banner Graphic Preview"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-xs text-[10px] text-gold font-bold uppercase tracking-wider border border-gold/40">
-                        Default Graphic Preview
+                {/* Live Ticker Messages List */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-ink">
+                      Rotating Announcement Messages ({announcementItemsList.length})
+                    </h4>
+                  </div>
+
+                  {announcementItemsList.length === 0 && (
+                    <div className="p-6 text-center rounded-2xl border border-dashed border-border bg-background space-y-2">
+                      <p className="text-xs font-bold text-ink">No Announcement Messages</p>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleAddAnnouncementItem}
+                          className="px-4 py-2 rounded-xl bg-gold text-ink font-bold text-xs cursor-pointer"
+                        >
+                          + Add Message
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleResetAnnouncementItems}
+                          className="px-4 py-2 rounded-xl border border-border bg-card text-xs font-semibold cursor-pointer"
+                        >
+                          Restore Defaults
+                        </button>
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
 
-              {/* Slides Deck Carousel Manager */}
-              <div className="space-y-4 pt-2">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-border pt-6">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-serif text-lg font-bold text-ink">
-                        Carousel Slides Deck ({promotionalSlidesList.length} Slides)
-                      </h3>
-                      <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold-deep text-[10px] font-bold">
-                        {promotionalSlidesList.filter((s) => s.isEnabled !== false).length} Active on site
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Edit text, links, promo codes, custom graphic images, or remove any slide from rotation.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={handleAddPromotionalSlide}
-                      className="px-3.5 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
-                    >
-                      <Plus className="size-3.5" />
-                      <span>Add New Slide</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleResetPromotionalSlides}
-                      className="px-3 py-2 rounded-xl border border-border bg-background hover:bg-pearl text-muted-foreground hover:text-ink text-xs transition-colors cursor-pointer"
-                      title="Reset slides to factory Maison defaults"
-                    >
-                      <RotateCcw className="size-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Slides List */}
-                <div className="space-y-3">
-                  {promotionalSlidesList.map((slide, sIndex) => {
-                    const isEditing = editingSlideIndex === sIndex;
-                    const isEnabled = slide.isEnabled !== false;
+                  {announcementItemsList.map((item, tIndex) => {
+                    const isEditing = editingTickerIndex === tIndex;
+                    const isEnabled = item.isEnabled !== false;
 
                     return (
                       <div
-                        key={slide.id || sIndex}
+                        key={item.id || tIndex}
                         className={`rounded-2xl border transition-all ${
                           isEnabled
                             ? "border-gold/40 bg-card shadow-xs"
                             : "border-border/60 bg-muted/30 opacity-75"
                         } overflow-hidden`}
                       >
-                        {/* Slide Card Header */}
                         <div className="p-4 flex items-center justify-between gap-3 bg-pearl/40">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span className="size-6 rounded-full bg-gold/20 text-gold-deep text-xs font-bold flex items-center justify-center shrink-0">
-                              #{sIndex + 1}
+                              #{tIndex + 1}
                             </span>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                    isEnabled
-                                      ? "bg-emerald-500/15 text-emerald-800 border border-emerald-500/30"
-                                      : "bg-zinc-500/15 text-zinc-600 border border-zinc-500/30"
-                                  }`}
-                                >
-                                  {isEnabled ? "Live on Store" : "Disabled / Hidden"}
-                                </span>
-                                <span className="text-xs font-bold text-ink truncate max-w-[240px] sm:max-w-md">
-                                  {slide.title || "Untitled Slide"}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-muted-foreground truncate max-w-[280px] sm:max-w-lg mt-0.5">
-                                <strong className="text-gold-deep">{slide.tag || "Maison Offer"}</strong> · {slide.subtitle || "No subtitle"}
-                              </p>
-                            </div>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                isEnabled
+                                  ? "bg-emerald-500/15 text-emerald-800"
+                                  : "bg-zinc-500/15 text-zinc-600"
+                              }`}
+                            >
+                              {isEnabled ? "Live" : "Hidden"}
+                            </span>
+                            <span className="text-xs font-bold text-ink truncate">
+                              {item.badge}: {item.text}
+                            </span>
                           </div>
 
                           <div className="flex items-center gap-1.5 shrink-0">
-                            {/* Toggle Live / Hidden */}
                             <button
                               type="button"
-                              onClick={() => {
-                                handleUpdatePromotionalSlide(sIndex, { isEnabled: !isEnabled });
-                                toast.info(isEnabled ? `Slide #${sIndex + 1} hidden from site.` : `Slide #${sIndex + 1} is now live!`);
-                              }}
-                              className={`p-2 rounded-lg border transition-colors cursor-pointer ${
-                                isEnabled
-                                  ? "border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10"
-                                  : "border-border text-muted-foreground hover:bg-muted"
-                              }`}
-                              title={isEnabled ? "Click to hide slide from storefront" : "Click to enable slide"}
+                              onClick={() =>
+                                handleUpdateAnnouncementItem(tIndex, { isEnabled: !isEnabled })
+                              }
+                              className="p-2 rounded-lg border border-border hover:bg-pearl cursor-pointer"
                             >
                               {isEnabled ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
                             </button>
-
-                            {/* Edit Button */}
                             <button
                               type="button"
-                              onClick={() => setEditingSlideIndex(isEditing ? null : sIndex)}
-                              className={`px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer ${
-                                isEditing
-                                  ? "border-gold bg-gold/20 text-gold-deep font-bold"
-                                  : "border-border hover:border-gold hover:bg-pearl text-ink"
-                              }`}
+                              onClick={() => setEditingTickerIndex(isEditing ? null : tIndex)}
+                              className="px-3 py-1.5 rounded-lg border border-border hover:border-gold text-xs font-medium flex items-center gap-1 cursor-pointer"
                             >
                               <Edit3 className="size-3.5" />
                               <span>{isEditing ? "Close" : "Edit"}</span>
                             </button>
-
-                            {/* Delete Button */}
                             <button
                               type="button"
-                              onClick={() => handleRemovePromotionalSlide(sIndex)}
-                              className="p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                              title="Delete this slide"
+                              onClick={() => handleRemoveAnnouncementItem(tIndex)}
+                              className="p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 cursor-pointer"
                             >
                               <Trash2 className="size-3.5" />
                             </button>
                           </div>
                         </div>
 
-                        {/* Collapsed Slide Info Chips */}
-                        {!isEditing && (
-                          <div className="px-4 py-2.5 border-t border-border/40 bg-card/60 flex flex-wrap items-center gap-2 text-[11px]">
-                            {slide.imageUrl && (
-                              <img
-                                src={slide.imageUrl}
-                                alt={slide.title}
-                                className="h-6 w-14 rounded object-cover border border-gold/50 shrink-0 shadow-xs"
-                              />
-                            )}
-                            {slide.code && (
-                              <span className="px-2 py-0.5 rounded-md bg-gold/15 text-gold-deep font-mono font-bold text-[10px]">
-                                Code: {slide.code}
-                              </span>
-                            )}
-                            <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 text-[10px]">
-                              Button: {slide.buttonText || "Shop"} → {slide.linkUrl}
-                            </span>
-                            <span className="px-2 py-0.5 rounded-md bg-pearl text-ink border border-border/60 text-[10px] capitalize">
-                              Icon: {slide.icon || "sparkles"}
-                            </span>
-                            {slide.imageUrl && (
-                              <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-800 border border-blue-500/20 text-[10px] font-semibold">
-                                🖼️ Custom Graphic Attached
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Expanded Inline Editor for this Slide */}
                         {isEditing && (
-                          <div className="p-4 sm:p-5 border-t border-gold/30 bg-background space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                              {/* Slide Tagline */}
-                              <div>
-                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                  Top Pill / Tagline
-                                </label>
-                                <input
-                                  type="text"
-                                  value={slide.tag || ""}
-                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { tag: e.target.value })}
-                                  placeholder="e.g. Nationwide Expedited Logistics"
-                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
-                                />
-                              </div>
-
-                              {/* Promo Code */}
-                              <div>
-                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                  Promo Coupon Code (Optional)
-                                </label>
-                                <input
-                                  type="text"
-                                  value={slide.code || ""}
-                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { code: e.target.value.toUpperCase() })}
-                                  placeholder="e.g. LUXE15 or FREESHIP"
-                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono font-bold text-ink uppercase focus:border-gold focus:outline-none"
-                                />
-                              </div>
-
-                              {/* Main Headline */}
-                              <div className="sm:col-span-2">
-                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                  Main Headline / Title
-                                </label>
-                                <input
-                                  type="text"
-                                  value={slide.title || ""}
-                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { title: e.target.value })}
-                                  placeholder="e.g. Free Express Shipping Across All Pakistan On Orders Over ₨ 5,000"
-                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-semibold text-ink focus:border-gold focus:outline-none"
-                                />
-                              </div>
-
-                              {/* Subtitle / Description */}
-                              <div className="sm:col-span-2">
-                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                  Subtitle / Description
-                                </label>
-                                <textarea
-                                  rows={2}
-                                  value={slide.subtitle || ""}
-                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { subtitle: e.target.value })}
-                                  placeholder="e.g. 100% in stock and safely dispatched via TCS Express & Leopards with luxury packaging seal."
-                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none resize-none"
-                                />
-                              </div>
-
-                              {/* Button Label */}
-                              <div>
-                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                  Action Button Label
-                                </label>
-                                <input
-                                  type="text"
-                                  value={slide.buttonText || ""}
-                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { buttonText: e.target.value })}
-                                  placeholder="e.g. Shop Collection →"
-                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none"
-                                />
-                              </div>
-
-                              {/* Link URL */}
-                              <div>
-                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                  Click Link Destination
-                                </label>
-                                <input
-                                  type="text"
-                                  value={slide.linkUrl || ""}
-                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { linkUrl: e.target.value })}
-                                  placeholder="e.g. /shop, /attars, /perfumes, or /watches"
-                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
-                                />
-                              </div>
-
-                              {/* Icon Selector */}
-                              <div>
-                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1">
-                                  Pill Icon
-                                </label>
-                                <select
-                                  value={slide.icon || "sparkles"}
-                                  onChange={(e) => handleUpdatePromotionalSlide(sIndex, { icon: e.target.value as any })}
-                                  className="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-xs text-ink focus:border-gold focus:outline-none cursor-pointer"
-                                >
-                                  <option value="sparkles">✨ Sparkles (Luxury / General)</option>
-                                  <option value="truck">🚚 Truck (Nationwide Express Shipping)</option>
-                                  <option value="flame">🔥 Flame (Pure Attar Oils / Hot Release)</option>
-                                  <option value="watch">⌚ Watch (Horology / Timepieces)</option>
-                                  <option value="gift">🎁 Gift (Complimentary Offer)</option>
-                                  <option value="tag">🏷️ Tag (Discount / Sale)</option>
-                                  <option value="shield">🛡️ Shield (Authenticity Guarantee)</option>
-                                  <option value="gem">💎 Gem (Royal Extrait Parfums)</option>
-                                </select>
-                              </div>
-
-                              {/* Custom Graphic Banner Image */}
-                              <div className="sm:col-span-2 pt-1">
-                                <label className="block text-[11px] uppercase tracking-wider text-ink font-bold mb-1 flex items-center justify-between">
-                                  <span className="flex items-center gap-1.5">
-                                    <ImageIcon className="size-3.5 text-gold" />
-                                    <span>Slide Custom Graphic Image (Optional)</span>
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground font-normal lowercase">1600×320 px (WebP / JPG)</span>
-                                </label>
-                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                  <label className="px-3.5 py-2 rounded-xl border border-dashed border-gold/60 bg-pearl hover:bg-gold/10 text-gold-deep text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-colors">
-                                    <Upload className="size-3.5" />
-                                    <span>Upload Graphic</span>
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (!file) return;
-                                        try {
-                                          const dataUrl = await compressImageFile(file, 1600, 320, 0.88);
-                                          handleUpdatePromotionalSlide(sIndex, { imageUrl: dataUrl });
-                                          toast.success("Slide image uploaded & compressed!");
-                                        } catch {
-                                          toast.error("Failed to process image.");
-                                        }
-                                      }}
-                                    />
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={slide.imageUrl || ""}
-                                    onChange={(e) => handleUpdatePromotionalSlide(sIndex, { imageUrl: e.target.value })}
-                                    placeholder="Or paste direct image URL (e.g. https://...)"
-                                    className="flex-1 px-3 py-2 rounded-xl border border-border bg-card text-xs font-mono text-ink focus:border-gold focus:outline-none"
-                                  />
-                                  {slide.imageUrl && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUpdatePromotionalSlide(sIndex, { imageUrl: "" })}
-                                      className="p-2 text-destructive hover:bg-destructive/10 rounded-lg text-xs transition-colors cursor-pointer"
-                                      title="Remove image"
-                                    >
-                                      <Trash2 className="size-3.5" />
-                                    </button>
-                                  )}
-                                </div>
-
-                                {slide.imageUrl && (
-                                  <div className="mt-2.5 relative rounded-xl overflow-hidden border border-gold/40 h-20 sm:h-24 w-full bg-[#16120b] shadow-inner">
-                                    <img
-                                      src={slide.imageUrl}
-                                      alt={`Slide ${sIndex + 1} Preview`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-[9px] text-gold font-bold uppercase tracking-wider border border-gold/40">
-                                      Slide #{sIndex + 1} Graphic Preview
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
+                          <div className="p-4 border-t border-gold/30 bg-background grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[11px] uppercase font-bold mb-1">Badge Label</label>
+                              <input
+                                type="text"
+                                value={item.badge || ""}
+                                onChange={(e) =>
+                                  handleUpdateAnnouncementItem(tIndex, { badge: e.target.value })
+                                }
+                                className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs"
+                              />
                             </div>
-
-                            <div className="flex justify-end pt-1">
-                              <button
-                                type="button"
-                                onClick={() => setEditingSlideIndex(null)}
-                                className="px-4 py-1.5 rounded-full bg-gold/20 hover:bg-gold text-ink font-bold text-xs transition-colors cursor-pointer"
-                              >
-                                ✓ Done Editing Slide #{sIndex + 1}
-                              </button>
+                            <div>
+                              <label className="block text-[11px] uppercase font-bold mb-1">Promo Code</label>
+                              <input
+                                type="text"
+                                value={item.code || ""}
+                                onChange={(e) =>
+                                  handleUpdateAnnouncementItem(tIndex, { code: e.target.value })
+                                }
+                                className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs font-mono font-bold"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-[11px] uppercase font-bold mb-1">
+                                Announcement Message Text
+                              </label>
+                              <input
+                                type="text"
+                                value={item.text || ""}
+                                onChange={(e) =>
+                                  handleUpdateAnnouncementItem(tIndex, { text: e.target.value })
+                                }
+                                className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] uppercase font-bold mb-1">Link Label</label>
+                              <input
+                                type="text"
+                                value={item.linkText || ""}
+                                onChange={(e) =>
+                                  handleUpdateAnnouncementItem(tIndex, { linkText: e.target.value })
+                                }
+                                className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] uppercase font-bold mb-1">Link URL</label>
+                              <input
+                                type="text"
+                                value={item.linkTo || ""}
+                                onChange={(e) =>
+                                  handleUpdateAnnouncementItem(tIndex, { linkTo: e.target.value })
+                                }
+                                className="w-full px-3 py-2 rounded-xl border border-border bg-card text-xs font-mono"
+                              />
                             </div>
                           </div>
                         )}
                       </div>
                     );
                   })}
-
-                  {promotionalSlidesList.length === 0 && (
-                    <div className="p-8 text-center rounded-2xl border border-dashed border-border bg-background space-y-3">
-                      <ImageIcon className="size-8 text-muted-foreground mx-auto opacity-50" />
-                      <p className="text-sm font-bold text-ink">No Carousel Slides</p>
-                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                        All promotional slides have been deleted. The promotional banner is currently hidden from the storefront.
-                      </p>
-                      <div className="flex items-center justify-center gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={handleAddPromotionalSlide}
-                          className="px-4 py-2 rounded-xl bg-gold text-ink font-bold text-xs flex items-center gap-1.5 hover:bg-gold-light transition-colors shadow-xs cursor-pointer"
-                        >
-                          <Plus className="size-3.5" />
-                          <span>Add Slide</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleResetPromotionalSlides}
-                          className="px-4 py-2 rounded-xl border border-border bg-card text-muted-foreground hover:text-ink text-xs font-semibold transition-colors cursor-pointer"
-                        >
-                          <RotateCcw className="size-3.5" />
-                          <span>Restore Defaults</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              </div>
 
-              <div className="pt-2 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
+                {/* Bottom Save Button */}
+                <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <p className="text-xs text-muted-foreground">
-                    Saves promotional carousel configuration directly into Supabase.
+                    Saves Top Header Announcement Bar settings directly to Supabase.
                   </p>
-                  {lastSavedStatus && (
-                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                      <CheckCircle2 className="size-3.5" />
-                      <span>{lastSavedStatus}</span>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    disabled={isSavingSettings}
+                    onClick={handleSaveSettings}
+                    className="btn-gold btn-gold-hover px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                  >
+                    <Check className="size-4" />
+                    <span>{isSavingSettings ? "Saving to Database..." : "Save Top Bar to Website"}</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  disabled={isSavingSettings}
-                  onClick={handleSaveSettings}
-                  className="btn-gold btn-gold-hover px-6 py-3 rounded-full text-xs uppercase tracking-widest font-bold flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs"
-                >
-                  <Check className="size-4" />
-                  <span>{isSavingSettings ? "Saving to Database..." : "Save Promotional Banner to Database"}</span>
-                </button>
               </div>
-            </div>
-
+            )}
           </div>
         )}
 

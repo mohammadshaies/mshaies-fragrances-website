@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useProductsStore, DEFAULT_FLACON_SIZES, getCustomSizeDetails, type FlaconSizeOption, type Product } from "@/lib/products-store";
+import { useProductsStore, DEFAULT_FLACON_SIZES, getCustomSizeDetails, shouldShowPromotionalBanner, type FlaconSizeOption, type Product } from "@/lib/products-store";
 import { useCart, formatPKR } from "@/lib/cart-context";
 import { trackViewContent } from "@/lib/pixel-tracking";
 import { useState, useEffect, useMemo } from "react";
@@ -489,9 +489,9 @@ function ProductDetail() {
         </nav>
 
         {/* Promotional Banner */}
-        {settings.heroBannerActive !== false && (settings.promotionalSlides === undefined || (Array.isArray(settings.promotionalSlides) && settings.promotionalSlides.length > 0)) && (
+        {shouldShowPromotionalBanner(settings, "product") && (
           <div className="mb-6 sm:mb-8">
-            <PromotionalBanner />
+            <PromotionalBanner page="product" />
           </div>
         )}
 

@@ -356,11 +356,32 @@ export type StoreSettings = {
   heroBannerTitle?: string;
   heroBannerSubtitle?: string;
   heroBannerButtonText?: string;
+  heroBannerCode?: string;
   heroBannerStyle?: "image" | "luxuryCard" | "hybrid";
+  heroBannerDisplayMode?: "auto" | "image" | "overlay" | "slides";
+  heroBannerHeight?: "auto" | "slim" | "medium" | "tall" | "hero";
+  heroBannerImageFit?: "cover" | "contain" | "fill";
+  heroBannerBorderRadius?: "none" | "rounded" | "pill";
+  heroBannerBorderStyle?: "gold" | "glow" | "minimal" | "none";
+  heroBannerOverlayOpacity?: number;
+  heroBannerTextAlign?: "left" | "center" | "right";
+  heroBannerTheme?: "obsidian-gold" | "emerald-royal" | "crimson-velvet" | "pearl-light" | "midnight-noir";
+  heroBannerPages?: {
+    home?: boolean;
+    shop?: boolean;
+    attars?: boolean;
+    perfumes?: boolean;
+    watches?: boolean;
+    product?: boolean;
+  };
   heroBannerTransitionEffect?: "slide" | "marquee" | "fade" | "zoom" | "flip";
   heroBannerTransitionSpeed?: number;
   heroBannerShimmer?: boolean;
+  // Top Announcement Bar Customization
   announcementBackgroundImage?: string;
+  announcementTheme?: "obsidian-gold" | "gold-solid" | "emerald-royal" | "crimson-velvet";
+  announcementSpeed?: number;
+  announcementDismissible?: boolean;
   // Flacon & Bottle Size Options Configuration
   flaconSizes?: FlaconSizeOption[];
   // Dynamic Banner & Announcement Deck
@@ -373,12 +394,48 @@ export type StoreSettings = {
   googleTagEnabled?: boolean;
 };
 
+export function hasCustomHeroBannerGraphic(imageUrl?: string | null): boolean {
+  if (!imageUrl || typeof imageUrl !== "string") return false;
+  const trimmed = imageUrl.trim();
+  if (!trimmed || trimmed === "/product-box.jpg") return false;
+  return (
+    trimmed.length > 15 &&
+    (trimmed.startsWith("data:image/") ||
+      trimmed.startsWith("http://") ||
+      trimmed.startsWith("https://") ||
+      trimmed.startsWith("/"))
+  );
+}
+
+export function shouldShowPromotionalBanner(
+  settings: Partial<StoreSettings> | null | undefined,
+  page?: "home" | "shop" | "attars" | "perfumes" | "watches" | "product"
+): boolean {
+  if (!settings) return false;
+  if (settings.heroBannerActive === false) return false;
+  if (page && settings.heroBannerPages && settings.heroBannerPages[page] === false) {
+    return false;
+  }
+
+  const hasGraphic = hasCustomHeroBannerGraphic(settings.heroBannerImage);
+  const slides =
+    settings.promotionalSlides !== undefined && settings.promotionalSlides !== null
+      ? settings.promotionalSlides
+      : DEFAULT_PROMOTIONAL_SLIDES;
+  const hasEnabledSlides = Array.isArray(slides) && slides.some((s) => s.isEnabled !== false);
+
+  return hasGraphic || hasEnabledSlides;
+}
+
 export const DEFAULT_SETTINGS: StoreSettings = {
   adminPin: "7860",
   announcementText: "Flat 15% OFF on all Pure Attar Oils — Use code",
   announcementCode: "LUXE15",
   announcementActive: true,
   announcementBackgroundImage: undefined,
+  announcementTheme: "obsidian-gold",
+  announcementSpeed: 5000,
+  announcementDismissible: true,
   freeShippingThreshold: 5000,
   standardShippingFee: 400,
   expressShippingFee: 450,
@@ -417,7 +474,24 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   heroBannerTitle: "Free Express Delivery Across Pakistan On Orders Over ₨ 5,000",
   heroBannerSubtitle: "100% Alcohol-Free Pure Attar Oils & 35% Extrait Parfums. Use Code LUXE15 for Flat 15% OFF Nationwide.",
   heroBannerButtonText: "Claim Exclusive Offer →",
+  heroBannerCode: "LUXE15",
   heroBannerStyle: "hybrid",
+  heroBannerDisplayMode: "auto",
+  heroBannerHeight: "auto",
+  heroBannerImageFit: "cover",
+  heroBannerBorderRadius: "rounded",
+  heroBannerBorderStyle: "gold",
+  heroBannerOverlayOpacity: 50,
+  heroBannerTextAlign: "left",
+  heroBannerTheme: "obsidian-gold",
+  heroBannerPages: {
+    home: true,
+    shop: true,
+    attars: true,
+    perfumes: true,
+    watches: true,
+    product: true,
+  },
   heroBannerTransitionEffect: "slide",
   heroBannerTransitionSpeed: 4500,
   heroBannerShimmer: true,

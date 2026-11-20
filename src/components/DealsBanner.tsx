@@ -53,7 +53,7 @@ export function DealsBanner() {
       : DEFAULT_ANNOUNCEMENT_ITEMS;
 
   const deals = useMemo(() => {
-    return configuredItems
+    const activeItems = configuredItems
       .filter((item) => item.isEnabled !== false)
       .map((item) => ({
         id: item.id,
@@ -65,19 +65,39 @@ export function DealsBanner() {
         linkTo: item.linkTo || "/shop",
         imageUrl: item.imageUrl,
       }));
-  }, [configuredItems]);
 
-  // Auto-rotate deals every 5 seconds
+    if (activeItems.length === 0 && settings.announcementText) {
+      return [
+        {
+          id: "fallback-primary",
+          icon: Sparkles,
+          badge: "Maison Offer",
+          text: settings.announcementText,
+          code: settings.announcementCode,
+          linkText: "Shop Now",
+          linkTo: "/shop",
+          imageUrl: undefined,
+        },
+      ];
+    }
+    return activeItems;
+  }, [configuredItems, settings.announcementText, settings.announcementCode]);
+
+  const rotationSpeed = settings.announcementSpeed !== undefined ? Number(settings.announcementSpeed) : 5000;
+  const isDismissible = settings.announcementDismissible !== false;
+  const theme = settings.announcementTheme || "obsidian-gold";
+
+  // Auto-rotate deals
   useEffect(() => {
-    if (deals.length <= 1) return;
+    if (deals.length <= 1 || rotationSpeed <= 0) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % deals.length);
-    }, 5000);
+    }, rotationSpeed);
     return () => clearInterval(interval);
-  }, [deals.length]);
+  }, [deals.length, rotationSpeed]);
 
   // CRITICAL: All hooks must execute on every render; early returns only happen after hooks
-  if (!settings.announcementActive || isDismissed || deals.length === 0) {
+  if (!settings.announcementActive || (isDismissible && isDismissed) || deals.length === 0) {
     return null;
   }
 
@@ -85,13 +105,26 @@ export function DealsBanner() {
   const currentDeal = deals[safeIndex];
   const Icon = currentDeal.icon;
 
+  const themeClasses =
+    theme === "gold-solid"
+      ? "bg-gradient-to-r from-[#b8923a] via-[#d4af37] to-[#b8923a] text-[#16120b] border-b border-[#16120b]/20"
+      : theme === "emerald-royal"
+      ? "bg-gradient-to-r from-[#071f18] via-[#0c3126] to-[#071f18] text-white border-b border-emerald-400/40"
+      : theme === "crimson-velvet"
+      ? "bg-gradient-to-r from-[#28090e] via-[#3f0e17] to-[#28090e] text-white border-b border-rose-400/40"
+      : "bg-[#16120b] text-white border-b border-gold/40";
+
+  const isLightTheme = theme === "gold-solid";
+
   return (
     <div
-      className="relative z-50 bg-[#16120b] text-white border-b border-gold/40 py-1.5 sm:py-2.5 px-2.5 sm:px-4 select-none shadow-md overflow-hidden bg-cover bg-center"
+      className={`relative z-50 ${themeClasses} py-1.5 sm:py-2.5 px-2.5 sm:px-4 select-none shadow-md overflow-hidden bg-cover bg-center`}
       style={settings.announcementBackgroundImage ? { backgroundImage: `url(${settings.announcementBackgroundImage})` } : undefined}
     >
       {/* High-visibility golden ambient glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.22),transparent_70%)] pointer-events-none" />
+      {!isLightTheme && (
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.22),transparent_70%)] pointer-events-none" />
+      )}
 
       <div className="mx-auto max-w-7xl flex items-center justify-between gap-2 sm:gap-3 text-xs sm:text-sm font-medium">
         {/* Animated Deal Content Container */}
@@ -115,26 +148,40 @@ export function DealsBanner() {
               )}
 
               {/* Desktop Badge Tag */}
-              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gold text-[#16120b] font-bold text-[10px] uppercase tracking-wider shadow-sm shrink-0">
+              <span
+                className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wider shadow-sm shrink-0 ${
+                  isLightTheme ? "bg-[#16120b] text-gold" : "bg-gold text-[#16120b]"
+                }`}
+              >
                 {!currentDeal.imageUrl && <Icon className="size-3" />}
                 <span>{currentDeal.badge}</span>
               </span>
 
               {/* Mobile Icon */}
               {!currentDeal.imageUrl && (
-                <span className="sm:hidden text-gold shrink-0">
+                <span className={`sm:hidden shrink-0 ${isLightTheme ? "text-[#16120b]" : "text-gold"}`}>
                   <Icon className="size-3" />
                 </span>
               )}
 
               {/* Deal Description Text */}
-              <span className="text-white/90 font-medium text-[10.5px] xs:text-[11.5px] sm:text-sm leading-tight truncate max-w-[190px] xs:max-w-[250px] sm:max-w-none">
+              <span
+                className={`font-medium text-[10.5px] xs:text-[11.5px] sm:text-sm leading-tight truncate max-w-[190px] xs:max-w-[250px] sm:max-w-none ${
+                  isLightTheme ? "text-[#16120b] font-semibold" : "text-white/90"
+                }`}
+              >
                 {currentDeal.text}
               </span>
 
               {/* Promo Code Chip */}
               {currentDeal.code && (
-                <span className="shrink-0 border border-gold/60 text-gold px-1.5 py-0.2 rounded text-[9px] sm:text-[11px] font-mono font-bold tracking-wider bg-gold/10">
+                <span
+                  className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] sm:text-[11px] font-mono font-bold tracking-wider ${
+                    isLightTheme
+                      ? "border border-[#16120b]/40 text-[#16120b] bg-[#16120b]/10"
+                      : "border border-gold/60 text-gold bg-gold/10"
+                  }`}
+                >
                   {currentDeal.code}
                 </span>
               )}
@@ -142,7 +189,9 @@ export function DealsBanner() {
               {/* Direct Shop Link */}
               <Link
                 to={currentDeal.linkTo}
-                className="shrink-0 inline-flex items-center gap-0.5 text-gold hover:text-white underline underline-offset-2 font-semibold text-[10.5px] sm:text-xs transition-colors"
+                className={`shrink-0 inline-flex items-center gap-0.5 underline underline-offset-2 font-semibold text-[10.5px] sm:text-xs transition-colors ${
+                  isLightTheme ? "text-[#16120b] hover:text-black font-bold" : "text-gold hover:text-white"
+                }`}
               >
                 <span>{currentDeal.linkText}</span>
                 <ArrowRight className="size-2.5 sm:size-3" />
@@ -152,20 +201,26 @@ export function DealsBanner() {
         </div>
 
         {/* Dismiss / Close Button */}
-        <button
-          onClick={() => {
-            setIsDismissed(true);
-            try {
-              sessionStorage.setItem("mshaies_announcement_dismissed", "true");
-            } catch {
-              // ignore
-            }
-          }}
-          className="size-5 sm:size-6 rounded-full hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors shrink-0 cursor-pointer"
-          aria-label="Dismiss banner"
-        >
-          <X className="size-3 sm:size-3.5" />
-        </button>
+        {isDismissible && (
+          <button
+            onClick={() => {
+              setIsDismissed(true);
+              try {
+                sessionStorage.setItem("mshaies_announcement_dismissed", "true");
+              } catch {
+                // ignore
+              }
+            }}
+            className={`size-5 sm:size-6 rounded-full flex items-center justify-center transition-colors shrink-0 cursor-pointer ${
+              isLightTheme
+                ? "hover:bg-black/10 text-[#16120b]/70 hover:text-[#16120b]"
+                : "hover:bg-white/10 text-white/50 hover:text-white"
+            }`}
+            aria-label="Dismiss banner"
+          >
+            <X className="size-3 sm:size-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );

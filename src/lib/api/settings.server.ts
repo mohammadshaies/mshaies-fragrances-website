@@ -48,9 +48,22 @@ function mapSupabaseSettings(s: any) {
     heroBannerTitle: s.hero_banner_title ?? s.heroBannerTitle,
     heroBannerSubtitle: s.hero_banner_subtitle ?? s.heroBannerSubtitle,
     heroBannerButtonText: s.hero_banner_button_text ?? s.heroBannerButtonText,
+    heroBannerCode: s.hero_banner_code ?? s.heroBannerCode,
+    heroBannerDisplayMode: s.hero_banner_display_mode ?? s.heroBannerDisplayMode,
+    heroBannerHeight: s.hero_banner_height ?? s.heroBannerHeight,
+    heroBannerImageFit: s.hero_banner_image_fit ?? s.heroBannerImageFit,
+    heroBannerBorderRadius: s.hero_banner_border_radius ?? s.heroBannerBorderRadius,
+    heroBannerBorderStyle: s.hero_banner_border_style ?? s.heroBannerBorderStyle,
+    heroBannerOverlayOpacity: s.hero_banner_overlay_opacity ?? s.heroBannerOverlayOpacity,
+    heroBannerTextAlign: s.hero_banner_text_align ?? s.heroBannerTextAlign,
+    heroBannerTheme: s.hero_banner_theme ?? s.heroBannerTheme,
+    heroBannerPages: s.hero_banner_pages ?? s.heroBannerPages,
     heroBannerTransitionEffect: s.hero_banner_transition_effect ?? s.heroBannerTransitionEffect,
     heroBannerTransitionSpeed: s.hero_banner_transition_speed ?? s.heroBannerTransitionSpeed,
     heroBannerShimmer: s.hero_banner_shimmer ?? s.heroBannerShimmer,
+    announcementTheme: s.announcement_theme ?? s.announcementTheme,
+    announcementSpeed: s.announcement_speed ?? s.announcementSpeed,
+    announcementDismissible: s.announcement_dismissible ?? s.announcementDismissible,
     flaconSizes: Array.isArray(s.flacon_sizes)
       ? s.flacon_sizes
       : (Array.isArray(s.flaconSizes) ? s.flaconSizes : undefined),
@@ -88,12 +101,25 @@ async function enrichBannerConfig(client: any, mapped: any) {
       if (parsed.heroBannerTitle !== undefined) mapped.heroBannerTitle = parsed.heroBannerTitle;
       if (parsed.heroBannerSubtitle !== undefined) mapped.heroBannerSubtitle = parsed.heroBannerSubtitle;
       if (parsed.heroBannerButtonText !== undefined) mapped.heroBannerButtonText = parsed.heroBannerButtonText;
+      if (parsed.heroBannerCode !== undefined) mapped.heroBannerCode = parsed.heroBannerCode;
       if (parsed.heroBannerLink !== undefined) mapped.heroBannerLink = parsed.heroBannerLink;
       if (parsed.heroBannerImage !== undefined) mapped.heroBannerImage = parsed.heroBannerImage;
+      if (parsed.heroBannerDisplayMode !== undefined) mapped.heroBannerDisplayMode = parsed.heroBannerDisplayMode;
+      if (parsed.heroBannerHeight !== undefined) mapped.heroBannerHeight = parsed.heroBannerHeight;
+      if (parsed.heroBannerImageFit !== undefined) mapped.heroBannerImageFit = parsed.heroBannerImageFit;
+      if (parsed.heroBannerBorderRadius !== undefined) mapped.heroBannerBorderRadius = parsed.heroBannerBorderRadius;
+      if (parsed.heroBannerBorderStyle !== undefined) mapped.heroBannerBorderStyle = parsed.heroBannerBorderStyle;
+      if (parsed.heroBannerOverlayOpacity !== undefined) mapped.heroBannerOverlayOpacity = parsed.heroBannerOverlayOpacity;
+      if (parsed.heroBannerTextAlign !== undefined) mapped.heroBannerTextAlign = parsed.heroBannerTextAlign;
+      if (parsed.heroBannerTheme !== undefined) mapped.heroBannerTheme = parsed.heroBannerTheme;
+      if (parsed.heroBannerPages !== undefined) mapped.heroBannerPages = parsed.heroBannerPages;
       if (parsed.heroBannerTransitionEffect !== undefined) mapped.heroBannerTransitionEffect = parsed.heroBannerTransitionEffect;
       if (parsed.heroBannerTransitionSpeed !== undefined) mapped.heroBannerTransitionSpeed = parsed.heroBannerTransitionSpeed;
       if (parsed.heroBannerShimmer !== undefined) mapped.heroBannerShimmer = parsed.heroBannerShimmer;
       if (parsed.announcementBackgroundImage !== undefined) mapped.announcementBackgroundImage = parsed.announcementBackgroundImage;
+      if (parsed.announcementTheme !== undefined) mapped.announcementTheme = parsed.announcementTheme;
+      if (parsed.announcementSpeed !== undefined) mapped.announcementSpeed = parsed.announcementSpeed;
+      if (parsed.announcementDismissible !== undefined) mapped.announcementDismissible = parsed.announcementDismissible;
       if (parsed.metaPixelId !== undefined) mapped.metaPixelId = parsed.metaPixelId;
       if (parsed.metaPixelEnabled !== undefined) mapped.metaPixelEnabled = parsed.metaPixelEnabled;
       if (parsed.googleTagId !== undefined) mapped.googleTagId = parsed.googleTagId;
@@ -258,12 +284,25 @@ export const updateSettingsServerFn = createServerFn({ method: "POST" })
       heroBannerTitle: safeSettings.heroBannerTitle,
       heroBannerSubtitle: safeSettings.heroBannerSubtitle,
       heroBannerButtonText: safeSettings.heroBannerButtonText,
+      heroBannerCode: safeSettings.heroBannerCode,
       heroBannerLink: safeSettings.heroBannerLink,
       heroBannerImage: safeSettings.heroBannerImage,
+      heroBannerDisplayMode: safeSettings.heroBannerDisplayMode,
+      heroBannerHeight: safeSettings.heroBannerHeight,
+      heroBannerImageFit: safeSettings.heroBannerImageFit,
+      heroBannerBorderRadius: safeSettings.heroBannerBorderRadius,
+      heroBannerBorderStyle: safeSettings.heroBannerBorderStyle,
+      heroBannerOverlayOpacity: safeSettings.heroBannerOverlayOpacity,
+      heroBannerTextAlign: safeSettings.heroBannerTextAlign,
+      heroBannerTheme: safeSettings.heroBannerTheme,
+      heroBannerPages: safeSettings.heroBannerPages,
       heroBannerTransitionEffect: safeSettings.heroBannerTransitionEffect,
       heroBannerTransitionSpeed: safeSettings.heroBannerTransitionSpeed,
       heroBannerShimmer: safeSettings.heroBannerShimmer,
       announcementBackgroundImage: safeSettings.announcementBackgroundImage,
+      announcementTheme: safeSettings.announcementTheme,
+      announcementSpeed: safeSettings.announcementSpeed,
+      announcementDismissible: safeSettings.announcementDismissible,
       metaPixelId: safeSettings.metaPixelId,
       metaPixelEnabled: safeSettings.metaPixelEnabled,
       googleTagId: safeSettings.googleTagId,
