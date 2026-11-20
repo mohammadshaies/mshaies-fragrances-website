@@ -165,7 +165,7 @@ export const PromotionalBanner: React.FC<Props> = (props) => {
   const primaryTitle =
     props.title ||
     settings.heroBannerTitle ||
-    "Free Express Delivery Across Pakistan On Orders Over ₨ 5,000";
+    "Free Express Delivery Across Pakistan On Orders Over ₨ 3,000";
   const primaryTag =
     props.tag || settings.heroBannerTag || "Maison Exclusive · Limited Festive Release";
   const primarySubtitle =

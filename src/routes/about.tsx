@@ -119,7 +119,7 @@ function About() {
             </div>
             <h3 className="font-serif text-lg text-ink font-bold mb-2">Nationwide Express</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Speedy delivery via TCS and Leopards across every corner of Pakistan, with 100% free shipping on orders over ₨ 5,000.
+              Speedy delivery via TCS and Leopards across every corner of Pakistan, with 100% free shipping on orders over ₨ 3,000.
             </p>
           </div>
         </div>

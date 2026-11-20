@@ -378,7 +378,7 @@ function ProductDetail() {
             "@type": "OfferShippingDetails",
             shippingRate: {
               "@type": "MonetaryAmount",
-              value: calculatedPrice >= 5000 ? 0 : 250,
+              value: calculatedPrice >= (settings?.freeShippingThreshold ?? 3000) ? 0 : (settings?.standardShippingFee ?? 400),
               currency: "PKR"
             },
             shippingDestination: {
@@ -952,7 +952,7 @@ function ProductDetail() {
                 <div className="flex flex-col items-center gap-1 p-2.5 rounded-2xl bg-pearl/50">
                   <Truck className="size-4 text-gold-deep" />
                   <span className="text-xs text-ink font-bold">Nationwide Express</span>
-                  <span className="text-[11px] text-muted-foreground">Free above ₨ 5,000</span>
+                  <span className="text-[11px] text-muted-foreground">Free above {formatPKR(settings?.freeShippingThreshold ?? 3000)}</span>
                 </div>
                 <div className="flex flex-col items-center gap-1 p-2.5 rounded-2xl bg-pearl/50">
                   <ShieldCheck className="size-4 text-emerald-600" />

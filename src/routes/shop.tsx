@@ -10,7 +10,7 @@ export const Route = createFileRoute("/shop")({
       {
         name: "description",
         content:
-          "Browse all hand-poured 100% alcohol-free pure attar oils, Millionaire Attar, CEO Pure Attar, Lady Million, Cherry Blossom & concentrated EDP perfumes in Pakistan. Nationwide COD & Free Shipping over ₨ 5,000.",
+          "Browse all hand-poured 100% alcohol-free pure attar oils, Millionaire Attar, CEO Pure Attar, Lady Million, Cherry Blossom & concentrated EDP perfumes in Pakistan. Nationwide COD & Free Shipping over ₨ 3,000.",
       },
       {
         name: "keywords",

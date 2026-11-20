@@ -1,12 +1,15 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useCart, formatPKR } from "@/lib/cart-context";
+import { useProductsStore } from "@/lib/products-store";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 
 export function CartDrawer() {
   const { items, open, setOpen, setQty, remove, total, clear } = useCart();
-  const freeShipping = total >= 5000;
+  const { settings } = useProductsStore();
+  const freeThreshold = settings?.freeShippingThreshold ?? 3000;
+  const freeShipping = total >= freeThreshold;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -95,7 +98,7 @@ export function CartDrawer() {
             <p className={`text-xs ${freeShipping ? "text-emerald-600 font-semibold" : "text-muted-foreground"}`}>
               {freeShipping
                 ? "✓ You qualify for free nationwide shipping."
-                : `Add ${formatPKR(5000 - total)} more for free shipping.`}
+                : `Add ${formatPKR(freeThreshold - total)} more for free shipping.`}
             </p>
             <Link
               to="/checkout"

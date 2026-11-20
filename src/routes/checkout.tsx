@@ -147,7 +147,7 @@ function CheckoutPage() {
   };
 
   // Dynamic Shipping Calculation — Single Standard Courier Delivery (₨ 400)
-  const freeThreshold = settings?.freeShippingThreshold ?? 5000;
+  const freeThreshold = settings?.freeShippingThreshold ?? 3000;
   const isFreeEligible = (settings?.freeShippingEnabled !== false && subtotal >= freeThreshold) || appliedCoupon?.freeShipping;
   const baseShippingRate = settings?.standardShippingFee ?? 400;
 

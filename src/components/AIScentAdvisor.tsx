@@ -117,7 +117,7 @@ export function AIScentAdvisor() {
 
 MAISON IDENTITY & VALUES:
 - M.shaies crafts pure alcohol-free attars and high-projection extrait de parfums (35% oil concentration) in Pakistan. All items are in stock and ready to ship nationwide.
-- Free nationwide shipping across Pakistan on orders over ₨ 5,000 via TCS and Leopards Express (2 to 4 business days).
+- Free nationwide shipping across Pakistan on orders over ₨ 3,000 via TCS and Leopards Express (2 to 4 business days).
 - Official WhatsApp Concierge: +92 339 0001829 (https://wa.me/923390001829).
 - Official Promo Code: "${settings.announcementCode || "LUXE15"}" for 15% discount.
 - Payment Options: Cash on Delivery (COD), JazzCash, Easypaisa, NayaPay, and Bank Transfer.
@@ -281,7 +281,7 @@ ${catalogContext}`;
     // 9. Shipping & Delivery
     if (lower.includes("delivery") || lower.includes("shipping") || lower.includes("charges") || lower.includes("tcs") || lower.includes("leopards") || lower.includes("days") || lower.includes("din") || lower.includes("karachi") || lower.includes("islamabad") || lower.includes("lahore")) {
       return {
-        replyText: "We dispatch immediately with **express delivery across all of Pakistan in 2 to 4 business days** via TCS & Leopards! Orders over ₨ 5,000 enjoy **100% Free Shipping**.",
+        replyText: "We dispatch immediately with **express delivery across all of Pakistan in 2 to 4 business days** via TCS & Leopards! Orders over ₨ 3,000 enjoy **100% Free Shipping**.",
         matchedProducts: [],
         actionLink: { text: "View Customer Care & Delivery", to: "/support" },
         quickReplies: ["How do I pay COD?", "Active promo codes", "Recommend best attar"],
@@ -292,7 +292,7 @@ ${catalogContext}`;
     if (lower.includes("discount") || lower.includes("coupon") || lower.includes("code") || lower.includes("promo") || lower.includes("off") || lower.includes("deal") || lower.includes("sasta")) {
       const code = settings.announcementCode || "LUXE15";
       return {
-        replyText: `You can use privilege voucher code **${code}** at checkout for **15% off** your entire order! Plus, orders over ₨ 5,000 qualify for automated Free Nationwide Shipping.`,
+        replyText: `You can use privilege voucher code **${code}** at checkout for **15% off** your entire order! Plus, orders over ₨ 3,000 qualify for automated Free Nationwide Shipping.`,
         matchedProducts: products.slice(0, 2),
         actionLink: { text: "Go to Checkout & Apply Code", to: "/checkout" },
         quickReplies: ["Shop pure attars", "Shop extrait perfumes", "WhatsApp VIP Concierge"],

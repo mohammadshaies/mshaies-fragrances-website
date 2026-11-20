@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Shop M.shaies Fragrances in Pakistan. 100% alcohol-free pure attars (Millionaire Attar, CEO Pure Attar, Lady Million, Cherry Blossom) & 35% Extrait Perfumes. Cash on Delivery & Free Shipping over ₨ 5,000.",
+          "Shop M.shaies Fragrances in Pakistan. 100% alcohol-free pure attars (Millionaire Attar, CEO Pure Attar, Lady Million, Cherry Blossom) & 35% Extrait Perfumes. Cash on Delivery & Free Shipping over ₨ 3,000.",
       },
       {
         name: "keywords",

@@ -436,7 +436,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   announcementTheme: "obsidian-gold",
   announcementSpeed: 5000,
   announcementDismissible: true,
-  freeShippingThreshold: 5000,
+  freeShippingThreshold: 3000,
   standardShippingFee: 400,
   expressShippingFee: 450,
   expressShippingActive: true,

@@ -46,7 +46,7 @@ const FAQS = [
   },
   {
     q: "Do you offer Cash on Delivery (COD)?",
-    a: "Yes! Cash on Delivery is available nationwide across Pakistan without any hidden surcharges. Free delivery applies automatically to all orders over ₨ 5,000."
+    a: "Yes! Cash on Delivery is available nationwide across Pakistan without any hidden surcharges. Free delivery applies automatically to all orders over ₨ 3,000."
   },
   {
     q: "How do I pay with JazzCash, Easypaisa, or NayaPay?",
@@ -138,7 +138,7 @@ function SupportPage() {
             <h3 className="font-serif text-xl text-ink">Nationwide Shipping</h3>
             <p className="text-xs text-muted-foreground mt-1">Express dispatch via TCS & Leopards</p>
             <span className="text-xs text-gold-deep font-semibold mt-3">
-              Free over ₨ 5,000 (2-4 Days All Pakistan)
+              Free over ₨ 3,000 (2-4 Days All Pakistan)
             </span>
           </div>
 

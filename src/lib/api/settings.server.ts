@@ -10,7 +10,7 @@ function mapSupabaseSettings(s: any) {
     announcementText: s.announcement_text ?? s.announcementText ?? "✨ Grand Inaugural Gift: Complimentary 3ml Pure Attar with orders above ₨ 5,000",
     announcementCode: s.announcement_code ?? s.announcementCode ?? "ROYALTY10",
     announcementActive: s.announcement_active ?? s.announcementActive ?? true,
-    freeShippingThreshold: Number(s.free_shipping_threshold ?? s.freeShippingThreshold ?? 5000),
+    freeShippingThreshold: Number(s.free_shipping_threshold ?? s.freeShippingThreshold ?? 3000),
     standardShippingFee: Number(s.standard_shipping_fee ?? s.standardShippingFee ?? 400),
     expressShippingFee: Number(s.express_shipping_fee ?? s.expressShippingFee ?? 450),
     expressShippingActive: Boolean(s.express_shipping_active ?? s.expressShippingActive ?? true),

@@ -1,7 +1,12 @@
 import { Truck, Instagram, Facebook, Mail, ShieldCheck, Heart } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useProductsStore } from "@/lib/products-store";
+import { formatPKR } from "@/lib/cart-context";
 
 export function Footer() {
+  const { settings } = useProductsStore();
+  const freeThreshold = settings?.freeShippingThreshold ?? 3000;
+
   return (
     <footer id="contact" className="bg-background pt-8 sm:pt-14 pb-6 sm:pb-8 border-t border-border/30">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
@@ -14,7 +19,7 @@ export function Footer() {
             </div>
             <p className="font-serif text-sm sm:text-base text-ink">
               Free Nationwide Shipping across Pakistan on all orders over{" "}
-              <span className="gold-gradient-text font-bold">₨ 5,000</span>.
+              <span className="gold-gradient-text font-bold">{formatPKR(freeThreshold)}</span>.
             </p>
           </div>
           <Link
