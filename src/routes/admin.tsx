@@ -3743,63 +3743,113 @@ function AdminDashboard() {
         </div>
 
         {/* =============================================================== */}
-        {/* LUXURY DEPARTMENTAL NAVIGATION — Zero Horizontal Scrolling      */}
+        {/* 1-CLICK QUICK ACTIONS STRIP (Instant Access to Daily Tasks)     */}
+        {/* =============================================================== */}
+        <div className="mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-card via-pearl/60 to-card border border-gold/40 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-gold-deep">
+              Quick Actions:
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("orders")}
+              className="px-3.5 py-1.5 rounded-xl bg-ink text-gold hover:bg-ink/90 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+            >
+              <Receipt className="size-3.5" />
+              <span>Orders & Print Slips ({orders.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("products");
+                setShowAddModal(true);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-gold text-ink hover:bg-gold-light text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+            >
+              <Plus className="size-3.5" />
+              <span>Add Product</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("banner")}
+              className="px-3.5 py-1.5 rounded-xl border border-gold/50 bg-card hover:bg-gold/15 text-ink text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <ImageIcon className="size-3.5 text-gold-deep" />
+              <span>Edit Banners</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("shipping")}
+              className="px-3.5 py-1.5 rounded-xl border border-border bg-card hover:border-gold text-ink text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Truck className="size-3.5 text-gold-deep" />
+              <span>Shipping ({formatPKR(settingsForm.standardShippingFee)})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("settings")}
+              className="px-3.5 py-1.5 rounded-xl border border-border bg-card hover:border-gold text-ink text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <CreditCard className="size-3.5 text-gold-deep" />
+              <span>Payments & Settings</span>
+            </button>
+          </div>
+        </div>
+
+        {/* =============================================================== */}
+        {/* CLEAN 5-PILLAR NAVIGATION — Plain English & Zero Clutter        */}
         {/* =============================================================== */}
         {(() => {
           const TAB_DEPARTMENTS = [
             {
               id: "intelligence",
-              label: "Executive Analytics",
+              label: "Overview",
               icon: TrendingUp,
               tabs: [
-                { id: "analytics" as TabType, label: "Smart Analytics Hub", icon: BarChart3 },
-              ],
-            },
-            {
-              id: "catalog",
-              label: "Catalog & Stock",
-              icon: Boxes,
-              tabs: [
-                { id: "inventory" as TabType, label: "Smart Inventory", icon: Boxes },
-                { id: "products" as TabType, label: "Products & Pricing", icon: Tag },
-                { id: "categories" as TabType, label: "Categories", icon: Layers },
+                { id: "analytics" as TabType, label: "Dashboard & Sales", icon: BarChart3 },
               ],
             },
             {
               id: "sales",
-              label: "Sales & Fulfillment",
+              label: "Orders & Shipping",
               icon: Receipt,
               tabs: [
                 { id: "orders" as TabType, label: `Orders (${orders.length})`, icon: Receipt, count: orders.length },
-                { id: "customers" as TabType, label: `VIP Clients (${uniqueCustomers.length})`, icon: Users, count: uniqueCustomers.length },
-                { id: "shipping" as TabType, label: "Shipping Rates", icon: Truck },
+                { id: "customers" as TabType, label: `Customers (${uniqueCustomers.length})`, icon: Users, count: uniqueCustomers.length },
+                { id: "shipping" as TabType, label: "Delivery & Shipping", icon: Truck },
+              ],
+            },
+            {
+              id: "catalog",
+              label: "Products & Stock",
+              icon: Boxes,
+              tabs: [
+                { id: "products" as TabType, label: "Products & Pricing", icon: Tag },
+                { id: "inventory" as TabType, label: "Stock & Inventory", icon: Boxes },
+                { id: "categories" as TabType, label: "Categories", icon: Layers },
               ],
             },
             {
               id: "marketing",
-              label: "Marketing & Growth",
+              label: "Banners & Promos",
               icon: Megaphone,
               tabs: [
+                { id: "banner" as TabType, label: "Website Banners Studio", icon: ImageIcon },
                 { id: "coupons" as TabType, label: `Discount Codes (${coupons.length})`, icon: Percent, count: coupons.length },
-                { id: "banner" as TabType, label: "Top Announcement Bar & Banners", icon: Megaphone },
                 { id: "marketing" as TabType, label: "WhatsApp Broadcasts", icon: MessageCircle },
               ],
             },
             {
-              id: "careers",
-              label: "Careers & Hiring",
-              icon: Briefcase,
-              tabs: [
-                { id: "jobs" as TabType, label: `Job Postings (${jobs.length})`, icon: Briefcase, count: jobs.length },
-              ],
-            },
-            {
               id: "operations",
-              label: "Security & Ops",
+              label: "Settings & More",
               icon: SettingsIcon,
               tabs: [
-                { id: "settings" as TabType, label: "Security & Settings", icon: SettingsIcon },
-                { id: "audit" as TabType, label: `Audit Trail (${auditLogs.length})`, icon: History, count: auditLogs.length },
+                { id: "settings" as TabType, label: "Store & Payment Settings", icon: SettingsIcon },
+                { id: "audit" as TabType, label: `Activity Logs (${auditLogs.length})`, icon: History, count: auditLogs.length },
+                { id: "jobs" as TabType, label: `Careers (${jobs.length})`, icon: Briefcase, count: jobs.length },
               ],
             },
           ];
@@ -3809,8 +3859,8 @@ function AdminDashboard() {
 
           return (
             <div className="space-y-4 mb-8">
-              {/* Tier 1: Department Pillars (Clean Grid, Zero Side Scroll) */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 p-1.5 rounded-2xl bg-card border border-border/80 shadow-xs">
+              {/* Tier 1: Department Pillars (Clean 5-Column Grid, Zero Side Scroll) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-1.5 rounded-2xl bg-card border border-border/80 shadow-xs">
                 {TAB_DEPARTMENTS.map((dept) => {
                   const DeptIcon = dept.icon;
                   const isDeptActive = dept.tabs.some((t) => t.id === activeTab);
@@ -5047,81 +5097,14 @@ function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Card 3: Express VIP Flight Courier & Lahore Local Delivery */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {/* Express VIP Air Dispatch */}
-                    <div className="p-5 rounded-3xl border border-border/80 bg-card space-y-3">
-                      <div className="flex items-center justify-between pb-2 border-b border-border">
-                        <div>
-                          <h4 className="font-serif text-base text-ink font-bold">VIP Express Flight Dispatch</h4>
-                          <p className="text-[10px] text-muted-foreground">Priority next-day courier for urgent orders</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={settingsForm.expressShippingActive !== false}
-                          onChange={(e) => setSettingsForm({ ...settingsForm, expressShippingActive: e.target.checked })}
-                          className="size-4 accent-gold cursor-pointer"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
-                          Express Courier Fee (PKR)
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-2 text-xs text-muted-foreground font-serif">₨</span>
-                          <input
-                            type="number"
-                            min={0}
-                            value={settingsForm.expressShippingFee || 450}
-                            onChange={(e) => setSettingsForm({ ...settingsForm, expressShippingFee: Number(e.target.value) })}
-                            className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-border bg-background text-xs font-semibold text-ink focus:border-gold focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Lahore Local Studio Delivery */}
-                    <div className="p-5 rounded-3xl border border-border/80 bg-card space-y-3">
-                      <div className="flex items-center justify-between pb-2 border-b border-border">
-                        <div>
-                          <h4 className="font-serif text-base text-ink font-bold">Local City Rider Rate</h4>
-                          <p className="text-[10px] text-muted-foreground">Same-day rider dispatch for local city deliveries</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={settingsForm.lahoreLocalActive !== false}
-                          onChange={(e) => setSettingsForm({ ...settingsForm, lahoreLocalActive: e.target.checked })}
-                          className="size-4 accent-gold cursor-pointer"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] uppercase tracking-wider text-ink font-bold mb-1">
-                          Local Rider Fee (PKR)
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-2 text-xs text-muted-foreground font-serif">₨</span>
-                          <input
-                            type="number"
-                            min={0}
-                            value={settingsForm.lahoreLocalFee || 150}
-                            onChange={(e) => setSettingsForm({ ...settingsForm, lahoreLocalFee: Number(e.target.value) })}
-                            className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-border bg-background text-xs font-semibold text-ink focus:border-gold focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 4: Cash on Delivery Handling Fee */}
+                  {/* Card 3: Cash on Delivery Handling Fee */}
                   <div className="p-5 rounded-3xl border border-border/80 bg-card space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
                       <div>
                         <h4 className="font-serif text-base text-ink font-bold">Cash on Delivery (COD) Handling Surcharge</h4>
                         <p className="text-[11px] text-muted-foreground">Additional courier fee charged when paying cash at doorstep (Enter 0 for Free COD)</p>
                       </div>
-                      <div className="w-36">
+                      <div className="w-36 shrink-0">
                         <div className="relative">
                           <span className="absolute left-3 top-2 text-xs text-muted-foreground font-serif">₨</span>
                           <input
@@ -5144,45 +5127,31 @@ function AdminDashboard() {
                   <div className="p-6 rounded-3xl border border-gold/50 bg-card shadow-md space-y-5 sticky top-24">
                     <div className="flex items-center gap-2 pb-3 border-b border-border">
                       <Truck className="size-4 text-gold-deep" />
-                      <h3 className="font-serif text-lg text-ink font-bold">Checkout Rates Preview</h3>
+                      <h3 className="font-serif text-lg text-ink font-bold">Live Checkout Preview</h3>
                     </div>
 
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Here is how shipping will automatically calculate for customers on your store:
+                      Your store uses <strong>1 unified delivery method</strong> (Standard Courier Delivery):
                     </p>
 
                     <div className="space-y-3 text-xs">
-                      <div className="p-3 rounded-2xl bg-pearl border border-border flex items-center justify-between">
+                      <div className="p-3.5 rounded-2xl bg-pearl border border-gold/40 flex items-center justify-between">
                         <div>
-                          <p className="font-semibold text-ink">Standard Order (&lt; {formatPKR(settingsForm.freeShippingThreshold)})</p>
+                          <p className="font-semibold text-ink">Standard Courier (&lt; {formatPKR(settingsForm.freeShippingThreshold)})</p>
                           <p className="text-[10px] text-muted-foreground">{settingsForm.shippingEstimateDays || "2-4 Business Days"}</p>
                         </div>
                         <span className="font-serif font-bold text-ink">{formatPKR(settingsForm.standardShippingFee)}</span>
                       </div>
 
-                      <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-emerald-800">Free Shipping Order (&ge; {formatPKR(settingsForm.freeShippingThreshold)})</p>
-                          <p className="text-[10px] text-emerald-600">Automatic Nationwide Waiver</p>
+                      {settingsForm.freeShippingEnabled !== false && (
+                        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-emerald-800">Free Delivery (&ge; {formatPKR(settingsForm.freeShippingThreshold)})</p>
+                            <p className="text-[10px] text-emerald-600">Automatic Nationwide Waiver</p>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">FREE (₨ 0)</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">FREE (₨ 0)</span>
-                      </div>
-
-                      <div className="p-3 rounded-2xl bg-pearl border border-border flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-ink">VIP Express Air Dispatch</p>
-                          <p className="text-[10px] text-muted-foreground">Urgent 24-48 Hours</p>
-                        </div>
-                        <span className="font-serif font-bold text-gold-deep">{formatPKR(settingsForm.expressShippingFee || 450)}</span>
-                      </div>
-
-                      <div className="p-3 rounded-2xl bg-pearl border border-border flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-ink">Local City Bike Dispatch</p>
-                          <p className="text-[10px] text-muted-foreground">Same-Day Local Rider</p>
-                        </div>
-                        <span className="font-serif font-bold text-ink">{formatPKR(settingsForm.lahoreLocalFee || 150)}</span>
-                      </div>
+                      )}
                     </div>
 
                     <button
