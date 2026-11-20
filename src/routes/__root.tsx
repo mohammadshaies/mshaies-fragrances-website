@@ -303,7 +303,7 @@ function RootShell({ children }: { children: ReactNode }) {
               function gtag(){dataLayer.push(arguments);}
               window.gtag = window.gtag || gtag;
               gtag('js', new Date());
-              gtag('config', 'G-PL28RYTDWW', { send_page_view: false });
+              gtag('config', 'G-PL28RYTDWW');
             `,
           }}
         />
