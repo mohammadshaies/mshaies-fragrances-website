@@ -618,6 +618,23 @@ function InvoicePage() {
           </form>
         )}
 
+        {/* Cancelled / Returned Order Status Notice */}
+        {(order.orderStatus === "Cancelled" || order.orderStatus === "Returned") && (
+          <div
+            className={`mb-6 p-4 sm:p-5 rounded-2xl border-2 text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 ${
+              order.orderStatus === "Cancelled"
+                ? "bg-red-500/10 border-red-500/40 text-red-800"
+                : "bg-amber-500/10 border-amber-500/40 text-amber-900"
+            }`}
+          >
+            <span>
+              {order.orderStatus === "Cancelled"
+                ? `✕ This order (#${order.id}) has been CANCELLED. For assistance, contact M.shaies Concierge on WhatsApp.`
+                : `↩ This order (#${order.id}) has been marked as RETURNED. For refund or exchange updates, contact M.shaies Concierge on WhatsApp.`}
+            </span>
+          </div>
+        )}
+
         {/* ========================================================================= */}
         {/* OFFICIAL LUXURY INVOICE SHEET (PRINTS ON A4 PORTRAIT)                     */}
         {/* ========================================================================= */}

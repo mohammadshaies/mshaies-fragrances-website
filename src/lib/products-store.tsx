@@ -304,7 +304,7 @@ export type Order = {
   discountAmount?: number;
   shipping: number;
   total: number;
-  orderStatus: "Confirmed" | "Processing" | "Dispatched" | "Delivered";
+  orderStatus: "Confirmed" | "Processing" | "Dispatched" | "Delivered" | "Cancelled" | "Returned";
   courierName?: string;
   trackingNumber?: string;
   isGiftWrapped?: boolean;

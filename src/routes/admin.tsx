@@ -2822,9 +2822,12 @@ function AdminDashboard() {
     }
   };
 
-  // Stats Calculations
-  const totalRevenue = orders.reduce((a, b) => a + b.total, 0);
-  const totalDiscountsGiven = orders.reduce((a, b) => a + (b.discountAmount || 0), 0);
+  // Stats Calculations (Exclude Cancelled & Returned orders so revenue stays accurate)
+  const activeOrders = orders.filter(
+    (o) => o.orderStatus !== "Cancelled" && o.orderStatus !== "Returned"
+  );
+  const totalRevenue = activeOrders.reduce((a, b) => a + b.total, 0);
+  const totalDiscountsGiven = activeOrders.reduce((a, b) => a + (b.discountAmount || 0), 0);
 
   const handleSaveNewProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -5696,13 +5699,17 @@ function AdminDashboard() {
                 </div>
 
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                  {["All", "Confirmed", "Processing", "Dispatched", "Delivered"].map((status) => (
+                  {["All", "Confirmed", "Processing", "Dispatched", "Delivered", "Returned", "Cancelled"].map((status) => (
                     <button
                       key={status}
                       onClick={() => setOrderStatusFilter(status)}
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors whitespace-nowrap ${
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                         orderStatusFilter === status
-                          ? "bg-gold text-ink font-bold shadow-xs"
+                          ? status === "Cancelled"
+                            ? "bg-red-600 text-white font-bold shadow-xs"
+                            : status === "Returned"
+                            ? "bg-amber-600 text-white font-bold shadow-xs"
+                            : "bg-gold text-ink font-bold shadow-xs"
                           : "bg-background border border-border text-muted-foreground hover:text-ink"
                       }`}
                     >
@@ -5874,15 +5881,33 @@ function AdminDashboard() {
                             <select
                               value={o.orderStatus}
                               onChange={(e) => {
-                                updateOrderStatus(o.id, e.target.value as any);
-                                toast.success(`Updated order ${o.id} status to ${e.target.value}`);
+                                const nextStatus = e.target.value as Order["orderStatus"];
+                                updateOrderStatus(o.id, nextStatus);
+                                if (nextStatus === "Cancelled" || nextStatus === "Returned") {
+                                  toast.info(
+                                    `Order ${o.id} marked as ${nextStatus} — product stock automatically restored & excluded from revenue.`
+                                  );
+                                  setTimeout(() => refreshDataFromServer(true), 800);
+                                } else {
+                                  toast.success(`Updated order ${o.id} status to ${nextStatus}`);
+                                }
                               }}
-                              className="px-2.5 py-1 rounded-full text-[10px] font-bold border border-border bg-background text-ink cursor-pointer focus:border-gold focus:outline-none"
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold border cursor-pointer focus:outline-none ${
+                                o.orderStatus === "Cancelled"
+                                  ? "border-red-500/50 bg-red-500/10 text-red-700"
+                                  : o.orderStatus === "Returned"
+                                  ? "border-amber-500/50 bg-amber-500/10 text-amber-800"
+                                  : o.orderStatus === "Delivered"
+                                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-800"
+                                  : "border-border bg-background text-ink focus:border-gold"
+                              }`}
                             >
                               <option value="Confirmed">Confirmed</option>
                               <option value="Processing">Processing</option>
                               <option value="Dispatched">Dispatched</option>
                               <option value="Delivered">Delivered</option>
+                              <option value="Returned">Returned</option>
+                              <option value="Cancelled">Cancelled</option>
                             </select>
                           </td>
                           <td className="py-4 px-5 text-right">

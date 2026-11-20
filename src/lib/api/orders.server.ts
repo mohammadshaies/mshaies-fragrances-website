@@ -538,7 +538,7 @@ export const getOrdersServerFn = createServerFn({ method: "POST" })
 
 export const updateOrderStatusSchema = z.object({
   id: z.string().min(1),
-  status: z.enum(["Confirmed", "Processing", "Dispatched", "Delivered"]),
+  status: z.enum(["Confirmed", "Processing", "Dispatched", "Delivered", "Cancelled", "Returned"]),
   courierName: z.string().optional(),
   trackingNumber: z.string().optional(),
   authToken: z.string().optional(),
@@ -551,26 +551,73 @@ export async function processUpdateOrderStatus(data: UpdateOrderStatusInput) {
       return { success: false, error: auth.error || "Unauthorized admin action." };
     }
 
+    const isInactiveStatus = (s?: string | null) => s === "Cancelled" || s === "Returned";
+    let stockNote = "";
+
     // 1. Supabase REST API
     if (isSupabaseConfigured()) {
       try {
         const client = getSupabaseAdmin() || getSupabaseClient();
         if (client) {
+          // Fetch previous status so we can automatically restore/adjust product stock
+          const { data: existingOrder } = await client
+            .from("orders")
+            .select("order_status")
+            .eq("id", data.id)
+            .maybeSingle();
+
+          const prevStatus = existingOrder?.order_status || "Confirmed";
+          const wasInactive = isInactiveStatus(prevStatus);
+          const nowInactive = isInactiveStatus(data.status);
+
+          const updatePayload: Record<string, any> = {
+            order_status: data.status,
+          };
+          if (data.courierName !== undefined) updatePayload.courier_name = data.courierName || null;
+          if (data.trackingNumber !== undefined) updatePayload.tracking_number = data.trackingNumber || null;
+
           await client
             .from("orders")
-            .update({
-              order_status: data.status,
-              courier_name: data.courierName || null,
-              tracking_number: data.trackingNumber || null,
-            })
+            .update(updatePayload)
             .eq("id", data.id);
+
+          // Automatic inventory stock restoration when Cancelled/Returned (or re-deduction if reactivated)
+          if (wasInactive !== nowInactive) {
+            const { data: orderItems } = await client
+              .from("order_items")
+              .select("product_id, qty")
+              .eq("order_id", data.id);
+
+            if (Array.isArray(orderItems) && orderItems.length > 0) {
+              for (const item of orderItems) {
+                if (!item.product_id) continue;
+                const { data: prod } = await client
+                  .from("products")
+                  .select("stock")
+                  .eq("id", item.product_id)
+                  .maybeSingle();
+                if (prod && typeof prod.stock === "number") {
+                  const qty = Number(item.qty) || 1;
+                  const nextStock = nowInactive
+                    ? prod.stock + qty
+                    : Math.max(0, prod.stock - qty);
+                  await client
+                    .from("products")
+                    .update({ stock: nextStock, updated_at: new Date().toISOString() })
+                    .eq("id", item.product_id);
+                }
+              }
+              serverCache.invalidateTags("products");
+              stockNote = nowInactive ? " · Inventory stock automatically restored" : " · Inventory stock deducted";
+            }
+          }
 
           await client.from("audit_logs").insert({
             id: `log-${Date.now()}`,
             timestamp: new Date().toISOString(),
-            action: "Order Status Updated",
+            action: data.status === "Cancelled" ? "Order Cancelled" : data.status === "Returned" ? "Order Returned" : "Order Status Updated",
             category: "Order",
-            details: `Order #${data.id} updated to "${data.status}"${data.trackingNumber ? ` (Tracking: ${data.trackingNumber} via ${data.courierName})` : ""}`,
+            details: `Order #${data.id} updated from "${prevStatus}" to "${data.status}"${data.trackingNumber ? ` (Tracking: ${data.trackingNumber} via ${data.courierName})` : ""}${stockNote}`,
             user: auth.user?.email || "Admin",
           });
         }
