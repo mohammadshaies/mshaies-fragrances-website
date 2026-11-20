@@ -443,14 +443,24 @@ export default {
         return attachSecurityHeaders(webhookRes, request, rateLimit.remaining);
       }
 
-      // 5. Dynamic Sitemap & Binary Product Image Endpoints
-      if (request.method === "GET" && (url.pathname === "/sitemap.xml" || url.pathname === "/api/sitemap.xml")) {
+      // 5. Dynamic Sitemap & Binary Product Image Endpoints (Supports both GET and HEAD for Googlebot)
+      const isReadMethod = request.method === "GET" || request.method === "HEAD";
+      const normalizedPath = url.pathname.replace(/^\/+/, "/");
+      if (isReadMethod && (normalizedPath === "/sitemap.xml" || normalizedPath === "/api/sitemap.xml")) {
         const sitemapRes = await handleDynamicSitemap(request);
-        return attachSecurityHeaders(sitemapRes, request, rateLimit.remaining);
+        const finalRes =
+          request.method === "HEAD"
+            ? new Response(null, { status: sitemapRes.status, headers: sitemapRes.headers })
+            : sitemapRes;
+        return attachSecurityHeaders(finalRes, request, rateLimit.remaining);
       }
-      if (request.method === "GET" && url.pathname.startsWith("/api/product-image/")) {
+      if (isReadMethod && normalizedPath.startsWith("/api/product-image/")) {
         const imgRes = await handleProductImageRequest(request, url);
-        return attachSecurityHeaders(imgRes, request, rateLimit.remaining);
+        const finalRes =
+          request.method === "HEAD"
+            ? new Response(null, { status: imgRes.status, headers: imgRes.headers })
+            : imgRes;
+        return attachSecurityHeaders(finalRes, request, rateLimit.remaining);
       }
 
       const handler = await getServerEntry();
