@@ -82,6 +82,50 @@ Disallow: /admin
 Disallow: /checkout
 Disallow: /invoice/
 
+# AI Search & Discovery Crawlers (ChatGPT Search, Perplexity, Claude, Google AI)
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /llms.txt
+Allow: /sitemap.xml
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+Disallow: /admin
+Disallow: /checkout
+Disallow: /invoice/
+
 # Rate crawl delay for aggressive non-major bots
 User-agent: AhrefsBot
 Crawl-delay: 2
