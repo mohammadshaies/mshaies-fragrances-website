@@ -500,8 +500,8 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   announcementItems: DEFAULT_ANNOUNCEMENT_ITEMS,
   metaPixelId: "",
   metaPixelEnabled: false,
-  googleTagId: "",
-  googleTagEnabled: false,
+  googleTagId: "G-PL28RYTDWW",
+  googleTagEnabled: true,
 };
 
 export const DEFAULT_CATEGORIES: Category[] = [

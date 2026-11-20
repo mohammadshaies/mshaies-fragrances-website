@@ -290,6 +290,23 @@ function RootShell({ children }: { children: ReactNode }) {
           }}
         />
         <HeadContent />
+        {/* Google Analytics 4 (GA4) Tag — G-PL28RYTDWW */}
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-PL28RYTDWW"
+          data-tracking-provider="gtag-G-PL28RYTDWW"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = window.gtag || gtag;
+              gtag('js', new Date());
+              gtag('config', 'G-PL28RYTDWW', { send_page_view: false });
+            `,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }}
