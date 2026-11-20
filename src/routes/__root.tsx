@@ -120,6 +120,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Shop M.shaies Fragrances in Pakistan — 100% alcohol-free pure attar oils, Millionaire Attar, CEO Pure Attar, Lady Million, Cherry Blossom & 35% Extrait De Parfum sprays. 16+ hours longevity. Cash on Delivery & Free Shipping over ₨ 5,000." },
       { name: "keywords", content: "M.shaies Fragrances, mshaiesfragrances.com, best attar in Pakistan, buy pure attar online Pakistan, Millionaire Attar 1 Million inspired, CEO Pure Attar Pakistan, Lady Million Attar Pakistan, Cherry Blossom Pure Attar, non alcoholic attar oils, long lasting perfumes Pakistan, luxury perfumes Karachi Lahore Islamabad, extrait de parfum Pakistan, pure oud oil Pakistan, mens luxury watches Pakistan" },
       { name: "author", content: "M.shaies Haute Parfumerie" },
+      { name: "google-site-verification", content: "hJqgPAeBebqSo4AbnN-_61Jt2je6hWahKlFomzUbeRo" },
       { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
       { name: "googlebot", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
       { name: "theme-color", content: "#c5a059" },
