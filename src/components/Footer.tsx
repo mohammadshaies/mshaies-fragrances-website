@@ -141,9 +141,24 @@ export function Footer() {
 
         {/* Bottom Copyright, Social Links & Staff Portal */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground text-center sm:text-left">
-          <p className="text-center sm:text-left">
-            © {new Date().getFullYear()} M.shaies Fragrances. Pakistan. Delivering Nationwide.
-          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-center sm:text-left">
+            <p>
+              © {new Date().getFullYear()} M.shaies Fragrances. Pakistan. Delivering Nationwide.
+            </p>
+            <span className="hidden sm:inline text-gold/50">·</span>
+            <p>
+              Developed by{" "}
+              <a
+                href="https://muhammadshaies.me"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-gold-deep hover:text-gold underline underline-offset-4 transition-colors"
+                title="Visit Muhammad Shaies Portfolio"
+              >
+                Muhammad Shaies
+              </a>
+            </p>
+          </div>
 
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-5">
             {/* Official Social Media Channels */}
