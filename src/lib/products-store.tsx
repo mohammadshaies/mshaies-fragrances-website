@@ -498,8 +498,8 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   flaconSizes: DEFAULT_FLACON_SIZES,
   promotionalSlides: DEFAULT_PROMOTIONAL_SLIDES,
   announcementItems: DEFAULT_ANNOUNCEMENT_ITEMS,
-  metaPixelId: "",
-  metaPixelEnabled: false,
+  metaPixelId: "708390911578617",
+  metaPixelEnabled: true,
   googleTagId: "G-PL28RYTDWW",
   googleTagEnabled: true,
 };

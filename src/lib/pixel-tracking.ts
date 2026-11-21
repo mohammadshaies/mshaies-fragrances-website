@@ -50,6 +50,11 @@ export function initTracking(config: TrackingConfig) {
 
 function setupMetaPixel(pixelId: string) {
   try {
+    // Avoid duplicate init / duplicate PageView if SSR <head> already initialized this exact Pixel ID
+    if ((window as any).__mshaiesMetaPixelInitId === pixelId && window.fbq) {
+      return;
+    }
+
     if (!window.fbq) {
       (function (f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
         if (f.fbq) return;
@@ -71,6 +76,7 @@ function setupMetaPixel(pixelId: string) {
     }
 
     if (window.fbq) {
+      (window as any).__mshaiesMetaPixelInitId = pixelId;
       window.fbq("init", pixelId);
       window.fbq("track", "PageView");
       console.info(`[PixelTracker] Meta Pixel initialized with ID: ${pixelId}`);
